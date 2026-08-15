@@ -1,5 +1,5 @@
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::{CreditCardID, InvoiceID};
+use crate::shared::ids::{CreditCardID, InvoiceID, UserID};
 use async_trait::async_trait;
 
 use super::card::CreditCard;
@@ -9,6 +9,7 @@ use super::invoice::Invoice;
 pub trait CreditCardRepository: Send + Sync {
     async fn save(&self, card: &CreditCard) -> Result<(), RepositoryError>;
     async fn find_by_id(&self, id: CreditCardID) -> Result<Option<CreditCard>, RepositoryError>;
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<CreditCard>, RepositoryError>;
     async fn delete(&self, id: CreditCardID) -> Result<(), RepositoryError>;
 }
 

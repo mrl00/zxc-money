@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::shared::ids::CreditCardID;
+use crate::shared::ids::{CreditCardID, UserID};
 use crate::shared::money::Money;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreditCard {
     pub id: CreditCardID,
+    pub owner_id: UserID,
     pub name: String,
     pub brand: String,
     pub limit: Money,
@@ -18,6 +19,7 @@ pub struct CreditCard {
 impl CreditCard {
     pub fn new(
         id: CreditCardID,
+        owner_id: UserID,
         name: String,
         brand: String,
         limit: Money,
@@ -26,6 +28,7 @@ impl CreditCard {
     ) -> Self {
         Self {
             id,
+            owner_id,
             name,
             brand,
             limit,
