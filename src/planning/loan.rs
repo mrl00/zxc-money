@@ -1,0 +1,1 @@
+// Loan simulator stub

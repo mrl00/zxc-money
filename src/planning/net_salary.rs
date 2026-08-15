@@ -1,0 +1,1 @@
+// Net salary calculator stub
