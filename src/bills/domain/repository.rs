@@ -1,5 +1,5 @@
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::BillID;
+use crate::shared::ids::{BillID, UserID};
 use async_trait::async_trait;
 
 use super::bill::Bill;
@@ -8,6 +8,7 @@ use super::bill::Bill;
 pub trait BillRepository: Send + Sync {
     async fn save(&self, bill: &Bill) -> Result<(), RepositoryError>;
     async fn find_by_id(&self, id: BillID) -> Result<Option<Bill>, RepositoryError>;
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<Bill>, RepositoryError>;
     async fn find_pending(&self) -> Result<Vec<Bill>, RepositoryError>;
     async fn find_overdue(&self) -> Result<Vec<Bill>, RepositoryError>;
     async fn delete(&self, id: BillID) -> Result<(), RepositoryError>;

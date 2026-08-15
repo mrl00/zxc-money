@@ -1,7 +1,7 @@
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::shared::ids::{BillID, CategoryID};
+use crate::shared::ids::{BillID, CategoryID, UserID};
 use crate::shared::money::Money;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -21,6 +21,7 @@ pub enum RecurrenceRule {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bill {
     pub id: BillID,
+    pub owner_id: UserID,
     pub name: String,
     pub amount: Option<Money>,
     pub due_date: NaiveDate,
@@ -33,6 +34,7 @@ pub struct Bill {
 impl Bill {
     pub fn new(
         id: BillID,
+        owner_id: UserID,
         name: String,
         amount: Option<Money>,
         due_date: NaiveDate,
@@ -41,6 +43,7 @@ impl Bill {
     ) -> Self {
         Self {
             id,
+            owner_id,
             name,
             amount,
             due_date,
