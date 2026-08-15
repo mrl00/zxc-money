@@ -2,13 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Money {
     amount: i64,
     currency: Currency,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub enum Currency {
     BRL,
     USD,
@@ -79,31 +79,31 @@ impl Money {
         }
     }
 
-    pub fn checked_add(self, other: Money) -> Result<Money, crate::shared::errors::DomainError> {
+    pub fn checked_add(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
-            return Err(crate::shared::errors::DomainError::CurrencyMismatch {
+            return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
                 expected: self.currency.code().to_string(),
                 received: other.currency.code().to_string(),
             });
         }
         Ok(Money {
             amount: self.amount.checked_add(other.amount).ok_or_else(|| {
-                crate::shared::errors::DomainError::InvalidAmount("overflow na adição".into())
+                crate::shared::errors::LedgerError::InvalidAmount("overflow on addition".into())
             })?,
             currency: self.currency,
         })
     }
 
-    pub fn checked_sub(self, other: Money) -> Result<Money, crate::shared::errors::DomainError> {
+    pub fn checked_sub(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
-            return Err(crate::shared::errors::DomainError::CurrencyMismatch {
+            return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
                 expected: self.currency.code().to_string(),
                 received: other.currency.code().to_string(),
             });
         }
         Ok(Money {
             amount: self.amount.checked_sub(other.amount).ok_or_else(|| {
-                crate::shared::errors::DomainError::InvalidAmount("overflow na subtração".into())
+                crate::shared::errors::LedgerError::InvalidAmount("overflow on subtraction".into())
             })?,
             currency: self.currency,
         })
@@ -125,6 +125,52 @@ impl Sub for Money {
     fn sub(self, rhs: Money) -> Self::Output {
         self.checked_sub(rhs)
             .expect("moeda incompatível ou overflow")
+    }
+}
+
+impl std::ops::Mul<rust_decimal::Decimal> for Money {
+    type Output = Money;
+
+    fn mul(self, rhs: rust_decimal::Decimal) -> Self::Output {
+        let result = (self.amount as f64 * rhs.to_string().parse::<f64>().unwrap()) as i64;
+        Money {
+            amount: result,
+            currency: self.currency,
+        }
+    }
+}
+
+impl std::ops::Mul<i64> for Money {
+    type Output = Money;
+
+    fn mul(self, rhs: i64) -> Self::Output {
+        Money {
+            amount: self.amount * rhs,
+            currency: self.currency,
+        }
+    }
+}
+
+impl std::ops::Div<rust_decimal::Decimal> for Money {
+    type Output = Money;
+
+    fn div(self, rhs: rust_decimal::Decimal) -> Self::Output {
+        let result = (self.amount as f64 / rhs.to_string().parse::<f64>().unwrap()) as i64;
+        Money {
+            amount: result,
+            currency: self.currency,
+        }
+    }
+}
+
+impl std::ops::Div<i64> for Money {
+    type Output = Money;
+
+    fn div(self, rhs: i64) -> Self::Output {
+        Money {
+            amount: self.amount / rhs,
+            currency: self.currency,
+        }
     }
 }
 

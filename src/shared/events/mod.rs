@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use std::any::Any;
 
+use super::errors::PublishError;
+
 pub trait DomainEvent: Any + Send + Sync {
     fn event_type(&self) -> &'static str;
     fn timestamp(&self) -> DateTime<Utc>;
@@ -9,8 +11,13 @@ pub trait DomainEvent: Any + Send + Sync {
 
 pub type EventHandlerFn = Box<dyn Fn(&dyn DomainEvent) + Send + Sync>;
 
+#[async_trait::async_trait]
 pub trait EventPublisher: Send + Sync {
-    fn publish(&self, event: &dyn DomainEvent);
+    async fn publish(&self, events: Vec<&dyn DomainEvent>) -> Result<(), PublishError>;
+}
+
+pub trait EventHandler<E: DomainEvent>: Send + Sync {
+    fn handle(&self, event: &E);
 }
 
 pub struct InMemoryEventDispatcher {
@@ -42,20 +49,25 @@ impl Default for InMemoryEventDispatcher {
     }
 }
 
+#[async_trait::async_trait]
 impl EventPublisher for InMemoryEventDispatcher {
-    fn publish(&self, event: &dyn DomainEvent) {
+    async fn publish(&self, events: Vec<&dyn DomainEvent>) -> Result<(), PublishError> {
         let handlers = self.handlers.read().unwrap();
-        if let Some(event_handlers) = handlers.get(event.event_type()) {
-            for handler in event_handlers {
-                handler(event);
+        for event in &events {
+            if let Some(event_handlers) = handlers.get(event.event_type()) {
+                for handler in event_handlers {
+                    handler(*event);
+                }
             }
         }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[derive(Debug)]
@@ -79,8 +91,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_dispatcher_calls_handler() {
+    #[tokio::test]
+    async fn test_dispatcher_calls_handler() {
         let counter = Arc::new(AtomicUsize::new(0));
         let counter_clone = counter.clone();
 
@@ -94,12 +106,12 @@ mod tests {
             value: 42,
         };
 
-        dispatcher.publish(&event);
+        dispatcher.publish(vec![&event]).await.unwrap();
         assert_eq!(counter.load(Ordering::SeqCst), 1);
     }
 
-    #[test]
-    fn test_dispatcher_multiple_handlers() {
+    #[tokio::test]
+    async fn test_dispatcher_multiple_handlers() {
         let counter = Arc::new(AtomicUsize::new(0));
         let c1 = counter.clone();
         let c2 = counter.clone();
@@ -117,19 +129,40 @@ mod tests {
             value: 1,
         };
 
-        dispatcher.publish(&event);
+        dispatcher.publish(vec![&event]).await.unwrap();
         assert_eq!(counter.load(Ordering::SeqCst), 11);
     }
 
-    #[test]
-    fn test_dispatcher_ignores_unregistered() {
+    #[tokio::test]
+    async fn test_dispatcher_ignores_unregistered() {
         let dispatcher = InMemoryEventDispatcher::new();
         let event = TestEvent {
             timestamp: Utc::now(),
             value: 1,
         };
-        dispatcher.publish(&event);
+        dispatcher.publish(vec![&event]).await.unwrap();
     }
 
-    use std::sync::Arc;
+    #[tokio::test]
+    async fn test_dispatcher_multiple_events() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let c = counter.clone();
+
+        let dispatcher = InMemoryEventDispatcher::new();
+        dispatcher.register_handler("TestEvent", move |_| {
+            c.fetch_add(1, Ordering::SeqCst);
+        });
+
+        let e1 = TestEvent {
+            timestamp: Utc::now(),
+            value: 1,
+        };
+        let e2 = TestEvent {
+            timestamp: Utc::now(),
+            value: 2,
+        };
+
+        dispatcher.publish(vec![&e1, &e2]).await.unwrap();
+        assert_eq!(counter.load(Ordering::SeqCst), 2);
+    }
 }

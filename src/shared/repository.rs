@@ -1,25 +1,18 @@
-use crate::shared::errors::DomainError;
 use async_trait::async_trait;
 
+use super::errors::RepositoryError;
+
 #[async_trait]
-pub trait Repository<T: Send, ID: Send + Sync>: Send + Sync {
-    async fn save(&self, entity: &T) -> Result<(), DomainError>;
-    async fn find_by_id(&self, id: ID) -> Result<Option<T>, DomainError>;
-    async fn delete(&self, id: ID) -> Result<(), DomainError>;
+pub trait Repository<T: Send + Sync, ID: Send + Sync>: Send + Sync {
+    async fn save(&self, entity: &T) -> Result<(), RepositoryError>;
+    async fn find_by_id(&self, id: ID) -> Result<Option<T>, RepositoryError>;
+    async fn delete(&self, id: ID) -> Result<(), RepositoryError>;
 }
 
-pub struct UnitOfWorkContext {
-    pub events: std::sync::Arc<crate::shared::events::InMemoryEventDispatcher>,
-}
-
-impl UnitOfWorkContext {
-    pub fn new(events: std::sync::Arc<crate::shared::events::InMemoryEventDispatcher>) -> Self {
-        Self { events }
-    }
-}
-
+#[async_trait]
 pub trait UnitOfWork: Send + Sync {
-    fn execute<F, R>(&self, f: F) -> Result<R, DomainError>
+    async fn execute<F, Fut, T>(&self, f: F) -> Result<T, RepositoryError>
     where
-        F: FnOnce() -> Result<R, DomainError>;
+        F: FnOnce() -> Fut + Send,
+        Fut: std::future::Future<Output = Result<T, RepositoryError>> + Send;
 }
