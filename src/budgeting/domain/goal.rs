@@ -1,8 +1,7 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::shared::ids::AccountID;
-use crate::shared::ids::GoalID;
+use crate::shared::ids::{AccountID, GoalID, UserID};
 use crate::shared::money::Money;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -15,6 +14,7 @@ pub enum GoalStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FinancialGoal {
     pub id: GoalID,
+    pub owner_id: UserID,
     pub name: String,
     pub target_amount: Money,
     pub current_amount: Money,
@@ -25,9 +25,10 @@ pub struct FinancialGoal {
 }
 
 impl FinancialGoal {
-    pub fn new(id: GoalID, name: String, target_amount: Money, target_date: NaiveDate) -> Self {
+    pub fn new(id: GoalID, owner_id: UserID, name: String, target_amount: Money, target_date: NaiveDate) -> Self {
         Self {
             id,
+            owner_id,
             name,
             target_amount,
             current_amount: Money::zero(target_amount.currency()),

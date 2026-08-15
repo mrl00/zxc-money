@@ -1,6 +1,5 @@
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::BudgetID;
-use crate::shared::ids::GoalID;
+use crate::shared::ids::{BudgetID, GoalID, UserID};
 use crate::shared::period::Period;
 use async_trait::async_trait;
 
@@ -11,6 +10,7 @@ use super::goal::FinancialGoal;
 pub trait BudgetRepository: Send + Sync {
     async fn save(&self, budget: &Budget) -> Result<(), RepositoryError>;
     async fn find_by_id(&self, id: BudgetID) -> Result<Option<Budget>, RepositoryError>;
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<Budget>, RepositoryError>;
     async fn find_by_category_and_period(
         &self,
         category_id: crate::shared::ids::CategoryID,
@@ -23,5 +23,6 @@ pub trait BudgetRepository: Send + Sync {
 pub trait GoalRepository: Send + Sync {
     async fn save(&self, goal: &FinancialGoal) -> Result<(), RepositoryError>;
     async fn find_by_id(&self, id: GoalID) -> Result<Option<FinancialGoal>, RepositoryError>;
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<FinancialGoal>, RepositoryError>;
     async fn delete(&self, id: GoalID) -> Result<(), RepositoryError>;
 }
