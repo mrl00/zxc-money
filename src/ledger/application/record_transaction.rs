@@ -51,8 +51,6 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
         &self,
         cmd: RecordTransactionCommand,
     ) -> Result<TransactionID, LedgerError> {
-        self.validate(&cmd)?;
-
         let _account = self
             .account_repository
             .find_by_id(cmd.account_id)
@@ -68,11 +66,13 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
             cmd.amount,
             cmd.description,
             cmd.date,
-        );
+        )?;
 
         if let Some(category_id) = cmd.category_id {
-            transaction = transaction.with_category(category_id);
+            transaction = transaction.with_category(category_id)?;
         }
+
+        transaction.validate()?;
 
         self.transaction_repository.save(&transaction).await?;
 
@@ -91,6 +91,12 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
     pub fn validate(&self, cmd: &RecordTransactionCommand) -> Result<(), LedgerError> {
         if !cmd.amount.is_positive() {
             return Err(LedgerError::InvalidAmount("amount must be positive".into()));
+        }
+
+        if cmd.description.is_empty() {
+            return Err(LedgerError::InvariantViolation(
+                "description must not be empty".into(),
+            ));
         }
 
         match cmd.tx_type {
@@ -138,7 +144,7 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(0, Currency::BRL),
-        );
+        ).unwrap();
         account_repo.save(&account).await.unwrap();
 
         let handler = RecordTransactionHandler::new(account_repo, tx_repo, publisher, id_gen);

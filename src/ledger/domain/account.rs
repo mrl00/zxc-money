@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::shared::errors::LedgerError;
 use crate::shared::ids::{AccountID, UserID};
 use crate::shared::money::Money;
 
@@ -31,8 +32,21 @@ impl Account {
         account_type: AccountType,
         currency: crate::shared::money::Currency,
         opening_balance: Money,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, LedgerError> {
+        if name.is_empty() {
+            return Err(LedgerError::InvariantViolation(
+                "account name must not be empty".into(),
+            ));
+        }
+
+        if opening_balance.currency() != currency {
+            return Err(LedgerError::CurrencyMismatch {
+                expected: currency.code().to_string(),
+                received: opening_balance.currency().code().to_string(),
+            });
+        }
+
+        Ok(Self {
             id,
             owner_id,
             name,
@@ -40,7 +54,7 @@ impl Account {
             currency,
             opening_balance,
             created_at: Utc::now(),
-        }
+        })
     }
 
     pub fn rename(&mut self, new_name: String) {
@@ -53,5 +67,88 @@ impl Account {
 
     pub fn currency(&self) -> crate::shared::money::Currency {
         self.currency
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::money::Currency;
+
+    #[test]
+    fn test_valid_account() {
+        let account = Account::new(
+            AccountID::new(),
+            UserID::new(),
+            "My Account".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::new(1000, Currency::BRL),
+        );
+        assert!(account.is_ok());
+    }
+
+    #[test]
+    fn test_empty_name_rejected() {
+        let result = Account::new(
+            AccountID::new(),
+            UserID::new(),
+            "".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::new(1000, Currency::BRL),
+        );
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::InvariantViolation(_)
+        ));
+    }
+
+    #[test]
+    fn test_currency_mismatch_rejected() {
+        let result = Account::new(
+            AccountID::new(),
+            UserID::new(),
+            "Account".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::new(1000, Currency::USD),
+        );
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::CurrencyMismatch { .. }
+        ));
+    }
+
+    #[test]
+    fn test_rename() {
+        let mut account = Account::new(
+            AccountID::new(),
+            UserID::new(),
+            "Old Name".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::new(0, Currency::BRL),
+        )
+        .unwrap();
+        account.rename("New Name".into());
+        assert_eq!(account.name, "New Name");
+    }
+
+    #[test]
+    fn test_change_type() {
+        let mut account = Account::new(
+            AccountID::new(),
+            UserID::new(),
+            "Account".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::new(0, Currency::BRL),
+        )
+        .unwrap();
+        account.change_type(AccountType::Savings);
+        assert_eq!(account.account_type, AccountType::Savings);
     }
 }

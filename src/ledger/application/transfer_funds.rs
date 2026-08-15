@@ -78,8 +78,8 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
             cmd.amount,
             format!("Transfer to {}", to_account.name),
             cmd.date,
-        )
-        .with_counterpart(cmd.to_account_id);
+        )?
+        .with_counterpart(cmd.to_account_id)?;
 
         let incoming = Transaction::new(
             to_id,
@@ -88,8 +88,8 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
             cmd.amount,
             format!("Transfer from {}", from_account.name),
             cmd.date,
-        )
-        .with_counterpart(cmd.from_account_id);
+        )?
+        .with_counterpart(cmd.from_account_id)?;
 
         self.transaction_repository.save(&outgoing).await?;
         self.transaction_repository.save(&incoming).await?;
@@ -146,7 +146,7 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(100000, Currency::BRL),
-        );
+        ).unwrap();
         let to_account = crate::ledger::domain::account::Account::new(
             to_id,
             UserID::new(),
@@ -154,7 +154,7 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(50000, Currency::BRL),
-        );
+        ).unwrap();
         account_repo.save(&from_account).await.unwrap();
         account_repo.save(&to_account).await.unwrap();
 

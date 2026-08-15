@@ -41,7 +41,7 @@ impl<R: AccountRepository, P: EventPublisher, I: IdGenerator> OpenAccountHandler
             cmd.account_type,
             cmd.currency,
             cmd.opening_balance,
-        );
+        )?;
 
         self.repository.save(&account).await?;
 
