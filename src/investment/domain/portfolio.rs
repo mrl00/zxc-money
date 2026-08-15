@@ -4,21 +4,22 @@ use serde::{Deserialize, Serialize};
 
 use crate::investment::domain::asset::AssetClass;
 use crate::investment::domain::position::Position;
-use crate::shared::ids::AssetID;
-use crate::shared::ids::PortfolioID;
+use crate::shared::ids::{AssetID, PortfolioID, UserID};
 use crate::shared::money::Money;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Portfolio {
     pub id: PortfolioID,
+    pub owner_id: UserID,
     pub positions: Vec<Position>,
     pub created_at: DateTime<Utc>,
 }
 
 impl Portfolio {
-    pub fn new(id: PortfolioID) -> Self {
+    pub fn new(id: PortfolioID, owner_id: UserID) -> Self {
         Self {
             id,
+            owner_id,
             positions: Vec::new(),
             created_at: Utc::now(),
         }
