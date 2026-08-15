@@ -47,6 +47,7 @@ define_id!(PurchaseID);
 define_id!(BillID);
 define_id!(AssetID);
 define_id!(PortfolioID);
+define_id!(UserID);
 
 #[cfg(test)]
 mod tests {
