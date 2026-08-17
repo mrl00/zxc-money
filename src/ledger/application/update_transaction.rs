@@ -162,7 +162,10 @@ mod tests {
         };
         let result = handler.handle(cmd).await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), LedgerError::InvariantViolation(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::InvariantViolation(_)
+        ));
     }
 
     #[tokio::test]

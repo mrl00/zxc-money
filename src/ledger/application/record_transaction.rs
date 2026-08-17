@@ -139,9 +139,9 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::Currency;
-    use crate::shared::ids::UserID;
 
     #[tokio::test]
     async fn test_record_income() {
@@ -158,7 +158,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(0, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
         account_repo.save(&account).await.unwrap();
 
         let handler = RecordTransactionHandler::new(account_repo, tx_repo, publisher, id_gen);
@@ -253,6 +254,9 @@ mod tests {
 
         let result = handler.handle(cmd).await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), LedgerError::CurrencyMismatch { .. }));
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::CurrencyMismatch { .. }
+        ));
     }
 }

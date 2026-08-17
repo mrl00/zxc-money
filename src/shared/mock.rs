@@ -6,7 +6,9 @@ use crate::shared::ids::{AccountID, TransactionID, UserID};
 use crate::shared::period::Period;
 
 use crate::ledger::domain::account::Account;
-use crate::ledger::domain::repository::{AccountRepository, TransactionRepository, TransactionFilter};
+use crate::ledger::domain::repository::{
+    AccountRepository, TransactionFilter, TransactionRepository,
+};
 use crate::ledger::domain::transaction::Transaction;
 
 pub struct MockAccountRepository {
@@ -156,7 +158,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(1000, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
 
         repo.save(&account).await.unwrap();
         let found = repo.find_by_id(account.id).await.unwrap();
@@ -181,7 +184,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(1000, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
         let account2 = Account::new(
             AccountID::new(),
             owner1,
@@ -189,7 +193,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Savings,
             Currency::BRL,
             Money::new(2000, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
         let account3 = Account::new(
             AccountID::new(),
             owner2,
@@ -197,7 +202,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(3000, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
 
         repo.save(&account1).await.unwrap();
         repo.save(&account2).await.unwrap();
@@ -221,7 +227,8 @@ mod tests {
             Money::new(500, Currency::BRL),
             "Salary".into(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
         repo.save(&transaction).await.unwrap();
         let found = repo.find_by_id(transaction.id).await.unwrap();

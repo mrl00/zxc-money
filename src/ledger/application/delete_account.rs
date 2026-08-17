@@ -90,9 +90,7 @@ mod tests {
         account_repo.save(&account).await.unwrap();
 
         let handler = DeleteAccountHandler::new(account_repo.clone(), tx_repo, publisher);
-        let result = handler
-            .handle(DeleteAccountCommand { account_id })
-            .await;
+        let result = handler.handle(DeleteAccountCommand { account_id }).await;
         assert!(result.is_ok());
         assert!(account_repo.find_by_id(account_id).await.unwrap().is_none());
     }
@@ -129,10 +127,11 @@ mod tests {
         tx_repo.save(&tx).await.unwrap();
 
         let handler = DeleteAccountHandler::new(account_repo, tx_repo, publisher);
-        let result = handler
-            .handle(DeleteAccountCommand { account_id })
-            .await;
+        let result = handler.handle(DeleteAccountCommand { account_id }).await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), LedgerError::InvariantViolation(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::InvariantViolation(_)
+        ));
     }
 }

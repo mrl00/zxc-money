@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use crate::ledger::domain::events::{
-    AccountDeleted, AccountOpened, TransactionDeleted, TransactionRecorded, TransactionReconciled,
+    AccountDeleted, AccountOpened, TransactionDeleted, TransactionReconciled, TransactionRecorded,
     TransferCompleted,
 };
 use crate::ledger::domain::transaction::TransactionType;
@@ -121,7 +121,10 @@ mod tests {
 
         let projection = store.get(account_id).unwrap();
         assert_eq!(projection.balance, Money::new(1000, Currency::BRL));
-        assert_eq!(projection.reconciled_balance, Money::new(1000, Currency::BRL));
+        assert_eq!(
+            projection.reconciled_balance,
+            Money::new(1000, Currency::BRL)
+        );
     }
 
     #[test]

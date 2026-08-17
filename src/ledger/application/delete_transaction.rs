@@ -88,7 +88,9 @@ mod tests {
 
         let handler = DeleteTransactionHandler::new(repo, publisher);
         let result = handler
-            .handle(DeleteTransactionCommand { transaction_id: tx_id })
+            .handle(DeleteTransactionCommand {
+                transaction_id: tx_id,
+            })
             .await;
         assert!(result.is_ok());
     }
@@ -104,10 +106,15 @@ mod tests {
 
         let handler = DeleteTransactionHandler::new(repo, publisher);
         let result = handler
-            .handle(DeleteTransactionCommand { transaction_id: tx_id })
+            .handle(DeleteTransactionCommand {
+                transaction_id: tx_id,
+            })
             .await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), LedgerError::InvariantViolation(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::InvariantViolation(_)
+        ));
     }
 
     #[tokio::test]
@@ -120,9 +127,14 @@ mod tests {
 
         let handler = DeleteTransactionHandler::new(repo, publisher);
         let result = handler
-            .handle(DeleteTransactionCommand { transaction_id: tx_id })
+            .handle(DeleteTransactionCommand {
+                transaction_id: tx_id,
+            })
             .await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), LedgerError::InvariantViolation(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::InvariantViolation(_)
+        ));
     }
 }

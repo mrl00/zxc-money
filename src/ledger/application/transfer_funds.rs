@@ -131,9 +131,9 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::Currency;
-    use crate::shared::ids::UserID;
 
     #[tokio::test]
     async fn test_transfer_funds() {
@@ -153,7 +153,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(100000, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
         let to_account = crate::ledger::domain::account::Account::new(
             to_id,
             owner,
@@ -161,7 +162,8 @@ mod tests {
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
             Money::new(50000, Currency::BRL),
-        ).unwrap();
+        )
+        .unwrap();
         account_repo.save(&from_account).await.unwrap();
         account_repo.save(&to_account).await.unwrap();
 

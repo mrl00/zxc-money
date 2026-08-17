@@ -25,7 +25,13 @@ pub struct FinancialGoal {
 }
 
 impl FinancialGoal {
-    pub fn new(id: GoalID, owner_id: UserID, name: String, target_amount: Money, target_date: NaiveDate) -> Self {
+    pub fn new(
+        id: GoalID,
+        owner_id: UserID,
+        name: String,
+        target_amount: Money,
+        target_date: NaiveDate,
+    ) -> Self {
         Self {
             id,
             owner_id,
