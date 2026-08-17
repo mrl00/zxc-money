@@ -9,7 +9,6 @@ use crate::ledger::domain::transaction::TransactionType;
 use crate::reporting::projections::account_balance::AccountBalanceProjection;
 use crate::shared::events::DomainEvent;
 use crate::shared::ids::AccountID;
-use crate::shared::money::Money;
 
 pub struct AccountBalanceProjectionStore {
     projections: Mutex<HashMap<AccountID, AccountBalanceProjection>>,
@@ -101,7 +100,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::events::AccountOpened;
     use crate::shared::ids::UserID;
-    use crate::shared::money::Currency;
+    use crate::shared::money::{Currency, Money};
 
     #[test]
     fn test_projection_on_account_opened() {
