@@ -59,17 +59,21 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
 
         let id = TransactionID::from_uuid(self.id_generator.new_id());
 
+        let category_id = cmd.category_id;
+        let description = cmd.description;
+        let date = cmd.date;
+
         let mut transaction = Transaction::new(
             id,
             cmd.account_id,
             cmd.tx_type,
             cmd.amount,
-            cmd.description,
-            cmd.date,
+            description.clone(),
+            date,
         )?;
 
-        if let Some(category_id) = cmd.category_id {
-            transaction = transaction.with_category(category_id)?;
+        if let Some(cid) = category_id {
+            transaction = transaction.with_category(cid)?;
         }
 
         transaction.validate()?;
@@ -81,6 +85,9 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
             account_id: cmd.account_id,
             tx_type: cmd.tx_type,
             amount: cmd.amount,
+            category_id,
+            description,
+            date,
             timestamp: chrono::Utc::now(),
         };
         self.event_publisher.publish(vec![&event]).await?;
