@@ -138,7 +138,7 @@ impl crate::shared::events::DomainEvent for TransactionDeleted {
 
 #[derive(Debug)]
 pub struct TransactionReconciled {
-    pub transaction_id: crate::shared::ids::TransactionID,
+    pub transaction_id: TransactionID,
     pub account_id: AccountID,
     pub reconciled: bool,
     pub timestamp: DateTime<Utc>,
@@ -147,6 +147,27 @@ pub struct TransactionReconciled {
 impl crate::shared::events::DomainEvent for TransactionReconciled {
     fn event_type(&self) -> &'static str {
         "TransactionReconciled"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub struct TransactionUpdated {
+    pub transaction_id: TransactionID,
+    pub account_id: AccountID,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for TransactionUpdated {
+    fn event_type(&self) -> &'static str {
+        "TransactionUpdated"
     }
 
     fn timestamp(&self) -> DateTime<Utc> {
