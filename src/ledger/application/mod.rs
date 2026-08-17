@@ -1,3 +1,4 @@
+pub mod delete_account;
 pub mod delete_transaction;
 pub mod open_account;
 pub mod reconcile_transaction;

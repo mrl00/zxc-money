@@ -40,6 +40,7 @@ pub trait TransactionRepository: Send + Sync {
         period: Period,
         filter: &TransactionFilter,
     ) -> Result<Vec<Transaction>, RepositoryError>;
+    async fn has_transactions(&self, account_id: AccountID) -> Result<bool, RepositoryError>;
     async fn delete(&self, id: crate::shared::ids::TransactionID) -> Result<(), RepositoryError>;
 }
 

@@ -128,6 +128,11 @@ impl TransactionRepository for MockTransactionRepository {
         Ok(result)
     }
 
+    async fn has_transactions(&self, account_id: AccountID) -> Result<bool, RepositoryError> {
+        let transactions = self.transactions.lock().unwrap();
+        Ok(transactions.values().any(|t| t.account_id == account_id))
+    }
+
     async fn delete(&self, id: TransactionID) -> Result<(), RepositoryError> {
         let mut transactions = self.transactions.lock().unwrap();
         transactions.remove(&id);

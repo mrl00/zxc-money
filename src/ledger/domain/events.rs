@@ -72,6 +72,7 @@ impl crate::shared::events::DomainEvent for AccountTypeChanged {
 #[derive(Debug)]
 pub struct AccountDeleted {
     pub account_id: AccountID,
+    pub owner_id: UserID,
     pub timestamp: DateTime<Utc>,
 }
 
