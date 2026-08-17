@@ -6,7 +6,7 @@ use crate::shared::ids::{AccountID, TransactionID, UserID};
 use crate::shared::period::Period;
 
 use crate::ledger::domain::account::Account;
-use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
+use crate::ledger::domain::repository::{AccountRepository, TransactionRepository, TransactionFilter};
 use crate::ledger::domain::transaction::Transaction;
 
 pub struct MockAccountRepository {
@@ -100,6 +100,37 @@ impl TransactionRepository for MockTransactionRepository {
             .cloned()
             .collect();
         Ok(result)
+    }
+
+    async fn find_by_account_filtered(
+        &self,
+        account_id: AccountID,
+        period: Period,
+        filter: &TransactionFilter,
+    ) -> Result<Vec<Transaction>, RepositoryError> {
+        let transactions = self.transactions.lock().unwrap();
+        let result: Vec<Transaction> = transactions
+            .values()
+            .filter(|t| {
+                t.account_id == account_id
+                    && period.contains(t.date)
+                    && filter.tx_type.map_or(true, |ty| t.tx_type == ty)
+                    && filter
+                        .category_id
+                        .map_or(true, |cid| t.category_id == Some(cid))
+                    && filter.reconciled.map_or(true, |r| t.reconciled == r)
+                    && filter.tags.as_ref().map_or(true, |required_tags| {
+                        required_tags.iter().any(|tag| t.tags.contains(tag))
+                    })
+            })
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn has_transactions(&self, account_id: AccountID) -> Result<bool, RepositoryError> {
+        let transactions = self.transactions.lock().unwrap();
+        Ok(transactions.values().any(|t| t.account_id == account_id))
     }
 
     async fn delete(&self, id: TransactionID) -> Result<(), RepositoryError> {

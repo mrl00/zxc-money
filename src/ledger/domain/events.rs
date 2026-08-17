@@ -1,11 +1,12 @@
 use chrono::{DateTime, Utc};
 
-use crate::shared::ids::AccountID;
+use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
 use crate::shared::money::Money;
 
 #[derive(Debug)]
 pub struct AccountOpened {
     pub account_id: AccountID,
+    pub owner_id: UserID,
     pub name: String,
     pub currency: crate::shared::money::Currency,
     pub opening_balance: Money,
@@ -71,6 +72,7 @@ impl crate::shared::events::DomainEvent for AccountTypeChanged {
 #[derive(Debug)]
 pub struct AccountDeleted {
     pub account_id: AccountID,
+    pub owner_id: UserID,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -90,10 +92,13 @@ impl crate::shared::events::DomainEvent for AccountDeleted {
 
 #[derive(Debug)]
 pub struct TransactionRecorded {
-    pub transaction_id: crate::shared::ids::TransactionID,
+    pub transaction_id: TransactionID,
     pub account_id: AccountID,
     pub tx_type: crate::ledger::domain::transaction::TransactionType,
     pub amount: Money,
+    pub category_id: Option<CategoryID>,
+    pub description: String,
+    pub date: chrono::NaiveDate,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -134,7 +139,7 @@ impl crate::shared::events::DomainEvent for TransactionDeleted {
 
 #[derive(Debug)]
 pub struct TransactionReconciled {
-    pub transaction_id: crate::shared::ids::TransactionID,
+    pub transaction_id: TransactionID,
     pub account_id: AccountID,
     pub reconciled: bool,
     pub timestamp: DateTime<Utc>,
@@ -143,6 +148,27 @@ pub struct TransactionReconciled {
 impl crate::shared::events::DomainEvent for TransactionReconciled {
     fn event_type(&self) -> &'static str {
         "TransactionReconciled"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub struct TransactionUpdated {
+    pub transaction_id: TransactionID,
+    pub account_id: AccountID,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for TransactionUpdated {
+    fn event_type(&self) -> &'static str {
+        "TransactionUpdated"
     }
 
     fn timestamp(&self) -> DateTime<Utc> {

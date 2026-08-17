@@ -1,10 +1,11 @@
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::{AccountID, UserID};
+use crate::shared::ids::{AccountID, CategoryID, TagID, UserID};
 use crate::shared::period::Period;
 use async_trait::async_trait;
 
 use super::account::Account;
 use super::category::{Category, Tag};
+use super::transaction::{Transaction, TransactionType};
 
 #[async_trait]
 pub trait AccountRepository: Send + Sync {
@@ -14,7 +15,12 @@ pub trait AccountRepository: Send + Sync {
     async fn delete(&self, id: AccountID) -> Result<(), RepositoryError>;
 }
 
-use super::transaction::Transaction;
+pub struct TransactionFilter {
+    pub tx_type: Option<TransactionType>,
+    pub category_id: Option<CategoryID>,
+    pub tags: Option<Vec<TagID>>,
+    pub reconciled: Option<bool>,
+}
 
 #[async_trait]
 pub trait TransactionRepository: Send + Sync {
@@ -28,10 +34,15 @@ pub trait TransactionRepository: Send + Sync {
         account_id: AccountID,
         period: Period,
     ) -> Result<Vec<Transaction>, RepositoryError>;
+    async fn find_by_account_filtered(
+        &self,
+        account_id: AccountID,
+        period: Period,
+        filter: &TransactionFilter,
+    ) -> Result<Vec<Transaction>, RepositoryError>;
+    async fn has_transactions(&self, account_id: AccountID) -> Result<bool, RepositoryError>;
     async fn delete(&self, id: crate::shared::ids::TransactionID) -> Result<(), RepositoryError>;
 }
-
-use crate::shared::ids::CategoryID;
 
 #[async_trait]
 pub trait CategoryRepository: Send + Sync {
@@ -39,8 +50,6 @@ pub trait CategoryRepository: Send + Sync {
     async fn find_by_id(&self, id: CategoryID) -> Result<Option<Category>, RepositoryError>;
     async fn delete(&self, id: CategoryID) -> Result<(), RepositoryError>;
 }
-
-use crate::shared::ids::TagID;
 
 #[async_trait]
 pub trait TagRepository: Send + Sync {

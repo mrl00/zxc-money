@@ -68,6 +68,12 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
             });
         }
 
+        if from_account.owner_id != to_account.owner_id {
+            return Err(LedgerError::Forbidden(
+                "transfer between accounts of different owners is not allowed".into(),
+            ));
+        }
+
         let from_id = TransactionID::from_uuid(self.id_generator.new_id());
         let to_id = TransactionID::from_uuid(self.id_generator.new_id());
 
@@ -138,10 +144,11 @@ mod tests {
 
         let from_id = AccountID::new();
         let to_id = AccountID::new();
+        let owner = UserID::new();
 
         let from_account = crate::ledger::domain::account::Account::new(
             from_id,
-            UserID::new(),
+            owner,
             "From".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
@@ -149,7 +156,7 @@ mod tests {
         ).unwrap();
         let to_account = crate::ledger::domain::account::Account::new(
             to_id,
-            UserID::new(),
+            owner,
             "To".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
@@ -192,5 +199,51 @@ mod tests {
 
         let result = handler.validate(&cmd);
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_transfer_cross_owner_blocked() {
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
+
+        let from_id = AccountID::new();
+        let to_id = AccountID::new();
+
+        let from_account = crate::ledger::domain::account::Account::new(
+            from_id,
+            UserID::new(),
+            "Owner A".into(),
+            crate::ledger::domain::account::AccountType::Checking,
+            Currency::BRL,
+            Money::new(100000, Currency::BRL),
+        )
+        .unwrap();
+        let to_account = crate::ledger::domain::account::Account::new(
+            to_id,
+            UserID::new(),
+            "Owner B".into(),
+            crate::ledger::domain::account::AccountType::Checking,
+            Currency::BRL,
+            Money::new(50000, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&from_account).await.unwrap();
+        account_repo.save(&to_account).await.unwrap();
+
+        let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
+
+        let cmd = TransferFundsCommand {
+            from_account_id: from_id,
+            to_account_id: to_id,
+            amount: Money::new(25000, Currency::BRL),
+            description: "Transfer".into(),
+            date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+        };
+
+        let result = handler.handle(cmd).await;
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), LedgerError::Forbidden(_)));
     }
 }

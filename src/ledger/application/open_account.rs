@@ -47,6 +47,7 @@ impl<R: AccountRepository, P: EventPublisher, I: IdGenerator> OpenAccountHandler
 
         let event = AccountOpened {
             account_id: id,
+            owner_id: cmd.owner_id,
             name: account.name.clone(),
             currency: account.currency,
             opening_balance: account.opening_balance,

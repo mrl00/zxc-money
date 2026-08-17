@@ -50,6 +50,9 @@ pub enum LedgerError {
     #[error("tag not found: {0}")]
     TagNotFound(String),
 
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
     #[error("repository error: {0}")]
     Repository(#[from] RepositoryError),
 
