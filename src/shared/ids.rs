@@ -48,6 +48,7 @@ define_id!(BillID);
 define_id!(AssetID);
 define_id!(PortfolioID);
 define_id!(UserID);
+define_id!(RecurringTransactionID);
 
 #[cfg(test)]
 mod tests {

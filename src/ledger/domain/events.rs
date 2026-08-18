@@ -1,6 +1,6 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 
-use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
+use crate::shared::ids::{AccountID, CategoryID, RecurringTransactionID, TransactionID, UserID};
 use crate::shared::money::Money;
 
 #[derive(Debug)]
@@ -169,6 +169,54 @@ pub struct TransactionUpdated {
 impl crate::shared::events::DomainEvent for TransactionUpdated {
     fn event_type(&self) -> &'static str {
         "TransactionUpdated"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub struct RecurringTransactionCreated {
+    pub recurring_transaction_id: RecurringTransactionID,
+    pub owner_id: UserID,
+    pub account_id: AccountID,
+    pub amount: Money,
+    pub frequency: crate::ledger::domain::recurring_transaction::Frequency,
+    pub next_date: NaiveDate,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for RecurringTransactionCreated {
+    fn event_type(&self) -> &'static str {
+        "RecurringTransactionCreated"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub struct RecurringTransactionGenerated {
+    pub recurring_transaction_id: RecurringTransactionID,
+    pub transaction_id: TransactionID,
+    pub account_id: AccountID,
+    pub next_date: NaiveDate,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for RecurringTransactionGenerated {
+    fn event_type(&self) -> &'static str {
+        "RecurringTransactionGenerated"
     }
 
     fn timestamp(&self) -> DateTime<Utc> {
