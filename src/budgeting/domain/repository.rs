@@ -34,6 +34,11 @@ pub trait GoalRepository: Send + Sync {
     async fn find_by_id(&self, id: GoalID) -> Result<Option<FinancialGoal>, RepositoryError>;
     /// Retrieves all goals belonging to a specific user.
     async fn find_by_owner(&self, owner: UserID) -> Result<Vec<FinancialGoal>, RepositoryError>;
+    /// Retrieves all in-progress goals linked to a specific account.
+    async fn find_by_linked_account(
+        &self,
+        account_id: crate::shared::ids::AccountID,
+    ) -> Result<Vec<FinancialGoal>, RepositoryError>;
     /// Deletes a goal by its unique identifier.
     async fn delete(&self, id: GoalID) -> Result<(), RepositoryError>;
 }
