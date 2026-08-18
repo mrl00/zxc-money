@@ -260,7 +260,10 @@ mod tests {
 
     #[test]
     fn test_pause_resume() {
-        let mut r = make_recurring(Frequency::Monthly, NaiveDate::from_ymd_opt(2026, 2, 1).unwrap());
+        let mut r = make_recurring(
+            Frequency::Monthly,
+            NaiveDate::from_ymd_opt(2026, 2, 1).unwrap(),
+        );
         assert!(r.active);
         r.pause();
         assert!(!r.active);
@@ -270,21 +273,30 @@ mod tests {
 
     #[test]
     fn test_cancel() {
-        let mut r = make_recurring(Frequency::Monthly, NaiveDate::from_ymd_opt(2026, 2, 1).unwrap());
+        let mut r = make_recurring(
+            Frequency::Monthly,
+            NaiveDate::from_ymd_opt(2026, 2, 1).unwrap(),
+        );
         r.cancel();
         assert!(!r.active);
     }
 
     #[test]
     fn test_advance() {
-        let mut r = make_recurring(Frequency::Monthly, NaiveDate::from_ymd_opt(2026, 1, 15).unwrap());
+        let mut r = make_recurring(
+            Frequency::Monthly,
+            NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+        );
         r.advance();
         assert_eq!(r.next_date, NaiveDate::from_ymd_opt(2026, 2, 15).unwrap());
     }
 
     #[test]
     fn test_is_due() {
-        let r = make_recurring(Frequency::Monthly, NaiveDate::from_ymd_opt(2026, 1, 15).unwrap());
+        let r = make_recurring(
+            Frequency::Monthly,
+            NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+        );
         assert!(r.is_due(NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()));
         assert!(r.is_due(NaiveDate::from_ymd_opt(2026, 1, 20).unwrap()));
         assert!(!r.is_due(NaiveDate::from_ymd_opt(2026, 1, 14).unwrap()));
@@ -292,7 +304,10 @@ mod tests {
 
     #[test]
     fn test_is_due_paused() {
-        let mut r = make_recurring(Frequency::Monthly, NaiveDate::from_ymd_opt(2026, 1, 15).unwrap());
+        let mut r = make_recurring(
+            Frequency::Monthly,
+            NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+        );
         r.pause();
         assert!(!r.is_due(NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()));
     }

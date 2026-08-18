@@ -26,12 +26,8 @@ pub struct ConfirmRecurringHandler<
     id_generator: Arc<I>,
 }
 
-impl<
-        R: RecurringTransactionRepository,
-        T: TransactionRepository,
-        P: EventPublisher,
-        I: IdGenerator,
-    > ConfirmRecurringHandler<R, T, P, I>
+impl<R: RecurringTransactionRepository, T: TransactionRepository, P: EventPublisher, I: IdGenerator>
+    ConfirmRecurringHandler<R, T, P, I>
 {
     pub fn new(
         recurring_repository: Arc<R>,
@@ -57,9 +53,7 @@ impl<
             .find_by_id(cmd.recurring_transaction_id)
             .await?
             .ok_or_else(|| {
-                LedgerError::RecurringTransactionNotFound(
-                    cmd.recurring_transaction_id.to_string(),
-                )
+                LedgerError::RecurringTransactionNotFound(cmd.recurring_transaction_id.to_string())
             })?;
 
         if !recurring.active {
@@ -152,12 +146,8 @@ mod tests {
         .unwrap();
         recurring_repo.save(&r).await.unwrap();
 
-        let handler = ConfirmRecurringHandler::new(
-            recurring_repo.clone(),
-            tx_repo,
-            publisher,
-            id_gen,
-        );
+        let handler =
+            ConfirmRecurringHandler::new(recurring_repo.clone(), tx_repo, publisher, id_gen);
 
         let tx_id = handler
             .handle(ConfirmRecurringCommand {
@@ -167,7 +157,11 @@ mod tests {
             .unwrap();
         assert!(!tx_id.as_uuid().is_nil());
 
-        let updated = recurring_repo.find_by_id(recurring_id).await.unwrap().unwrap();
+        let updated = recurring_repo
+            .find_by_id(recurring_id)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(
             updated.next_date,
             chrono::NaiveDate::from_ymd_opt(2026, 3, 1).unwrap()
@@ -197,12 +191,7 @@ mod tests {
         r.pause();
         recurring_repo.save(&r).await.unwrap();
 
-        let handler = ConfirmRecurringHandler::new(
-            recurring_repo,
-            tx_repo,
-            publisher,
-            id_gen,
-        );
+        let handler = ConfirmRecurringHandler::new(recurring_repo, tx_repo, publisher, id_gen);
 
         let result = handler
             .handle(ConfirmRecurringCommand {
@@ -210,6 +199,9 @@ mod tests {
             })
             .await;
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), LedgerError::InvariantViolation(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            LedgerError::InvariantViolation(_)
+        ));
     }
 }

@@ -49,12 +49,15 @@ impl<T: TransactionRepository, P: EventPublisher, I: IdGenerator> InvoicePaidHan
     pub async fn handle(&self, event: &InvoicePaid) -> Result<(), LedgerError> {
         let payment_account_id = {
             let accounts = self.payment_accounts.lock().unwrap();
-            accounts.get(&event.credit_card_id).cloned().ok_or_else(|| {
-                LedgerError::InvariantViolation(format!(
-                    "no payment account configured for credit card {}",
-                    event.credit_card_id
-                ))
-            })?
+            accounts
+                .get(&event.credit_card_id)
+                .cloned()
+                .ok_or_else(|| {
+                    LedgerError::InvariantViolation(format!(
+                        "no payment account configured for credit card {}",
+                        event.credit_card_id
+                    ))
+                })?
         };
 
         let tx_id = TransactionID::from_uuid(self.id_generator.new_id());
