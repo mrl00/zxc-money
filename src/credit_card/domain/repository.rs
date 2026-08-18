@@ -1,5 +1,6 @@
 use crate::shared::errors::RepositoryError;
 use crate::shared::ids::{CreditCardID, InvoiceID, UserID};
+use crate::shared::period::YearMonth;
 use async_trait::async_trait;
 
 use super::card::CreditCard;
@@ -22,5 +23,11 @@ pub trait InvoiceRepository: Send + Sync {
     async fn find_open(
         &self,
         credit_card_id: CreditCardID,
+    ) -> Result<Option<Invoice>, RepositoryError>;
+    /// Find an invoice for a specific card and reference month.
+    async fn find_by_card_and_month(
+        &self,
+        credit_card_id: CreditCardID,
+        reference_month: YearMonth,
     ) -> Result<Option<Invoice>, RepositoryError>;
 }

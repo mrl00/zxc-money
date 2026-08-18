@@ -84,6 +84,8 @@ define_id!(PortfolioID);
 define_id!(UserID);
 /// Identifier for [`crate::ledger::domain::recurring_transaction::RecurringTransaction`] aggregates.
 define_id!(RecurringTransactionID);
+/// Groups installment purchases of the same transaction across multiple invoices.
+define_id!(InstallmentGroupID);
 
 #[cfg(test)]
 mod tests {

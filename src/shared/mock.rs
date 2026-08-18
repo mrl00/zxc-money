@@ -2,6 +2,7 @@ use crate::credit_card::domain::card::CreditCard;
 use crate::credit_card::domain::invoice::Invoice;
 use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
 use crate::shared::ids::{CreditCardID, InvoiceID};
+use crate::shared::period::YearMonth;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -302,6 +303,19 @@ impl InvoiceRepository for MockInvoiceRepository {
         let result = invoices
             .values()
             .find(|i| i.credit_card_id == credit_card_id && i.is_open())
+            .cloned();
+        Ok(result)
+    }
+
+    async fn find_by_card_and_month(
+        &self,
+        credit_card_id: CreditCardID,
+        reference_month: YearMonth,
+    ) -> Result<Option<Invoice>, RepositoryError> {
+        let invoices = self.invoices.lock().unwrap();
+        let result = invoices
+            .values()
+            .find(|i| i.credit_card_id == credit_card_id && i.reference_month == reference_month)
             .cloned();
         Ok(result)
     }
