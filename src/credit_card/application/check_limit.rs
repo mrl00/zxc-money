@@ -51,7 +51,7 @@ impl<I: InvoiceRepository> CreditCardService<I> {
             None => Money::zero(card.limit.currency()),
         };
 
-        let available = card.available_limit(used.clone())?;
+        let available = card.available_limit(used)?;
         let limit_amount = card.limit.amount();
         let utilization_pct = if limit_amount > 0 {
             (used.amount() as f64 / limit_amount as f64) * 100.0

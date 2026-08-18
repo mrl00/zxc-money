@@ -8,7 +8,7 @@ use crate::shared::errors::BudgetingError;
 use crate::shared::events::EventPublisher;
 use crate::shared::ids::{BudgetID, CategoryID, UserID};
 use crate::shared::money::Money;
-use crate::shared::period::{Period, YearMonth};
+use crate::shared::period::YearMonth;
 
 /// Command to create a 12-month annual budget for a category.
 pub struct CreateAnnualBudgetCommand {

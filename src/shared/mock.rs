@@ -125,12 +125,12 @@ impl TransactionRepository for MockTransactionRepository {
             .filter(|t| {
                 t.account_id == account_id
                     && period.contains(t.date)
-                    && filter.tx_type.map_or(true, |ty| t.tx_type == ty)
+                    && filter.tx_type.is_none_or(|ty| t.tx_type == ty)
                     && filter
                         .category_id
-                        .map_or(true, |cid| t.category_id == Some(cid))
-                    && filter.reconciled.map_or(true, |r| t.reconciled == r)
-                    && filter.tags.as_ref().map_or(true, |required_tags| {
+                        .is_none_or(|cid| t.category_id == Some(cid))
+                    && filter.reconciled.is_none_or(|r| t.reconciled == r)
+                    && filter.tags.as_ref().is_none_or(|required_tags| {
                         required_tags.iter().any(|tag| t.tags.contains(tag))
                     })
             })

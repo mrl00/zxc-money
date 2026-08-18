@@ -6,8 +6,6 @@ use crate::budgeting::domain::repository::GoalRepository;
 use crate::ledger::domain::events::TransactionRecorded;
 use crate::shared::errors::BudgetingError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::AccountID;
-use crate::shared::money::Money;
 
 /// Handles [`TransactionRecorded`] events by auto-contributing to linked goals.
 ///
@@ -90,7 +88,7 @@ mod tests {
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{GoalID, TransactionID, UserID};
+    use crate::shared::ids::{AccountID, GoalID, TransactionID, UserID};
     use crate::shared::mock::MockGoalRepository;
     use crate::shared::money::{Currency, Money};
     use std::sync::Arc;

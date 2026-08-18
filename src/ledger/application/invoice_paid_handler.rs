@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 /// configured payment account.
 pub struct InvoicePaidHandler<T: TransactionRepository, P: EventPublisher, I: IdGenerator> {
     transaction_repository: Arc<T>,
+    #[allow(dead_code)]
     event_publisher: Arc<P>,
     id_generator: Arc<I>,
     /// Maps CreditCardID → AccountID for payment

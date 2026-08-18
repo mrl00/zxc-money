@@ -103,6 +103,7 @@ impl RecurringTransaction {
     /// # Errors
     /// Returns an error if `amount` is not positive, `description` is empty,
     /// the type is `Transfer`, or an income/expense has no category.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: RecurringTransactionID,
         owner_id: UserID,

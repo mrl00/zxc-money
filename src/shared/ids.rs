@@ -56,35 +56,35 @@ macro_rules! define_id {
     };
 }
 
-/// Identifier for [`crate::ledger::domain::account::Account`] aggregates.
+// Identifier for `Account` aggregates.
 define_id!(AccountID);
-/// Identifier for [`crate::ledger::domain::transaction::Transaction`] aggregates.
+// Identifier for `Transaction` aggregates.
 define_id!(TransactionID);
-/// Identifier for [`crate::ledger::domain::category::Category`] entities.
+// Identifier for `Category` entities.
 define_id!(CategoryID);
-/// Identifier for [`crate::ledger::domain::category::Tag`] entities.
+// Identifier for `Tag` entities.
 define_id!(TagID);
-/// Identifier for [`crate::budgeting::domain::budget::Budget`] aggregates.
+// Identifier for `Budget` aggregates.
 define_id!(BudgetID);
-/// Identifier for [`crate::budgeting::domain::goal::FinancialGoal`] aggregates.
+// Identifier for `FinancialGoal` aggregates.
 define_id!(GoalID);
-/// Identifier for [`crate::credit_card::domain::card::CreditCard`] aggregates.
+// Identifier for `CreditCard` aggregates.
 define_id!(CreditCardID);
-/// Identifier for [`crate::credit_card::domain::invoice::Invoice`] aggregates.
+// Identifier for `Invoice` aggregates.
 define_id!(InvoiceID);
-/// Identifier for [`crate::credit_card::domain::purchase::Purchase`] entities.
+// Identifier for `Purchase` entities.
 define_id!(PurchaseID);
-/// Identifier for [`crate::bills::domain::bill::Bill`] aggregates.
+// Identifier for `Bill` aggregates.
 define_id!(BillID);
-/// Identifier for [`crate::investment::domain::asset::Asset`] entities.
+// Identifier for `Asset` entities.
 define_id!(AssetID);
-/// Identifier for [`crate::investment::domain::portfolio::Portfolio`] aggregates.
+// Identifier for `Portfolio` aggregates.
 define_id!(PortfolioID);
-/// Identifier for the application user. Used as `owner_id` on all sensitive aggregates.
+// Identifier for the application user. Used as `owner_id` on all sensitive aggregates.
 define_id!(UserID);
-/// Identifier for [`crate::ledger::domain::recurring_transaction::RecurringTransaction`] aggregates.
+// Identifier for `RecurringTransaction` aggregates.
 define_id!(RecurringTransactionID);
-/// Groups installment purchases of the same transaction across multiple invoices.
+// Groups installment purchases of the same transaction across multiple invoices.
 define_id!(InstallmentGroupID);
 
 #[cfg(test)]

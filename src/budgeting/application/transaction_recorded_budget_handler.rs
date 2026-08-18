@@ -1,14 +1,11 @@
 use std::sync::Arc;
 
-use crate::budgeting::domain::budget::Budget;
 use crate::budgeting::domain::events::BudgetExceeded;
 use crate::budgeting::domain::repository::BudgetRepository;
 use crate::ledger::domain::events::TransactionRecorded;
 use crate::ledger::domain::transaction::TransactionType;
 use crate::shared::errors::BudgetingError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::CategoryID;
-use crate::shared::money::Money;
 use crate::shared::period::YearMonth;
 
 /// Handles [`TransactionRecorded`] events by tracking spending against budgets.
@@ -84,12 +81,13 @@ impl<B: BudgetRepository, P: EventPublisher> TransactionRecordedBudgetHandler<B,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::budgeting::domain::budget::Budget;
     use crate::budgeting::domain::repository::BudgetRepository;
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{AccountID, TransactionID, UserID};
+    use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
     use crate::shared::mock::MockBudgetRepository;
     use crate::shared::money::{Currency, Money};
     use crate::shared::period::{Period, YearMonth};

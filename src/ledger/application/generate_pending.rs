@@ -1,6 +1,5 @@
 use chrono::NaiveDate;
 
-use crate::ledger::domain::recurring_transaction::RecurringTransaction;
 use crate::ledger::domain::repository::RecurringTransactionRepository;
 use crate::shared::errors::LedgerError;
 use std::sync::Arc;

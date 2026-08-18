@@ -5,7 +5,6 @@ use crate::budgeting::domain::goal::FinancialGoal;
 use crate::budgeting::domain::repository::GoalRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::BudgetingError;
-use crate::shared::events::EventPublisher;
 use crate::shared::ids::{GoalID, UserID};
 use crate::shared::money::Money;
 
