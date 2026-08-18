@@ -14,19 +14,13 @@ pub struct PayInvoiceCommand {
 
 /// Handles [`PayInvoiceCommand`] by marking the invoice as paid and publishing
 /// an [`InvoicePaid`](crate::credit_card::domain::events::InvoicePaid) event.
-pub struct PayInvoiceHandler<
-    C: CreditCardRepository,
-    I: InvoiceRepository,
-    P: EventPublisher,
-> {
+pub struct PayInvoiceHandler<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher> {
     credit_card_repository: Arc<C>,
     invoice_repository: Arc<I>,
     event_publisher: Arc<P>,
 }
 
-impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher>
-    PayInvoiceHandler<C, I, P>
-{
+impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher> PayInvoiceHandler<C, I, P> {
     /// Creates a new [`PayInvoiceHandler`] with the given dependencies.
     pub fn new(
         credit_card_repository: Arc<C>,
@@ -50,9 +44,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher>
             .credit_card_repository
             .find_by_id(cmd.credit_card_id)
             .await?
-            .ok_or_else(|| {
-                CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string())
-            })?;
+            .ok_or_else(|| CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string()))?;
 
         if card.owner_id != cmd.owner_id {
             return Err(CreditCardError::InvariantViolation(
@@ -64,9 +56,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher>
             .invoice_repository
             .find_by_id(cmd.invoice_id)
             .await?
-            .ok_or_else(|| {
-                CreditCardError::InvoiceNotFound(cmd.invoice_id.to_string())
-            })?;
+            .ok_or_else(|| CreditCardError::InvoiceNotFound(cmd.invoice_id.to_string()))?;
 
         if invoice.credit_card_id != cmd.credit_card_id {
             return Err(CreditCardError::InvariantViolation(

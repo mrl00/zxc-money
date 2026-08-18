@@ -10,10 +10,10 @@ use crate::shared::ids::{AccountID, TransactionID, UserID};
 use crate::shared::period::Period;
 
 use crate::ledger::domain::account::Account;
+use crate::ledger::domain::recurring_transaction::RecurringTransaction;
 use crate::ledger::domain::repository::{
     AccountRepository, RecurringTransactionRepository, TransactionFilter, TransactionRepository,
 };
-use crate::ledger::domain::recurring_transaction::RecurringTransaction;
 use crate::ledger::domain::transaction::Transaction;
 use crate::shared::ids::RecurringTransactionID;
 

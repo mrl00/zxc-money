@@ -45,10 +45,7 @@ impl<I: InvoiceRepository> CreditCardService<I> {
     }
 
     /// Computes a [`CreditCardSummary`] for the given card using its open invoice total.
-    pub async fn summary(
-        &self,
-        card: &CreditCard,
-    ) -> Result<CreditCardSummary, CreditCardError> {
+    pub async fn summary(&self, card: &CreditCard) -> Result<CreditCardSummary, CreditCardError> {
         let used = match self.invoice_repository.find_open(card.id).await? {
             Some(invoice) => invoice.total(),
             None => Money::zero(card.limit.currency()),
@@ -140,11 +137,7 @@ mod tests {
         let inv_repo = Arc::new(MockInvoiceRepository::new());
         let card_id = CreditCardID::new();
 
-        let mut invoice = Invoice::new(
-            InvoiceID::new(),
-            card_id,
-            YearMonth::new(2026, 1),
-        );
+        let mut invoice = Invoice::new(InvoiceID::new(), card_id, YearMonth::new(2026, 1));
         invoice
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
@@ -190,11 +183,7 @@ mod tests {
         let inv_repo = Arc::new(MockInvoiceRepository::new());
         let card_id = CreditCardID::new();
 
-        let mut invoice = Invoice::new(
-            InvoiceID::new(),
-            card_id,
-            YearMonth::new(2026, 1),
-        );
+        let mut invoice = Invoice::new(InvoiceID::new(), card_id, YearMonth::new(2026, 1));
         invoice
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
@@ -227,11 +216,7 @@ mod tests {
         let inv_repo = Arc::new(MockInvoiceRepository::new());
         let card_id = CreditCardID::new();
 
-        let mut invoice = Invoice::new(
-            InvoiceID::new(),
-            card_id,
-            YearMonth::new(2026, 1),
-        );
+        let mut invoice = Invoice::new(InvoiceID::new(), card_id, YearMonth::new(2026, 1));
         invoice
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
@@ -264,11 +249,7 @@ mod tests {
         let inv_repo = Arc::new(MockInvoiceRepository::new());
         let card_id = CreditCardID::new();
 
-        let mut invoice = Invoice::new(
-            InvoiceID::new(),
-            card_id,
-            YearMonth::new(2026, 1),
-        );
+        let mut invoice = Invoice::new(InvoiceID::new(), card_id, YearMonth::new(2026, 1));
         invoice
             .add_purchase(Purchase::new(
                 PurchaseID::new(),

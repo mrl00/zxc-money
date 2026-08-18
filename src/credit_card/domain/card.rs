@@ -78,21 +78,27 @@ mod tests {
     #[test]
     fn test_available_limit_within_bound() {
         let card = make_card(1000000);
-        let available = card.available_limit(Money::new(300000, Currency::BRL)).unwrap();
+        let available = card
+            .available_limit(Money::new(300000, Currency::BRL))
+            .unwrap();
         assert_eq!(available, Money::new(700000, Currency::BRL));
     }
 
     #[test]
     fn test_available_limit_exact() {
         let card = make_card(1000000);
-        let available = card.available_limit(Money::new(1000000, Currency::BRL)).unwrap();
+        let available = card
+            .available_limit(Money::new(1000000, Currency::BRL))
+            .unwrap();
         assert_eq!(available, Money::new(0, Currency::BRL));
     }
 
     #[test]
     fn test_available_limit_exceeds() {
         let card = make_card(1000000);
-        let available = card.available_limit(Money::new(1500000, Currency::BRL)).unwrap();
+        let available = card
+            .available_limit(Money::new(1500000, Currency::BRL))
+            .unwrap();
         assert!(available.amount() < 0);
     }
 

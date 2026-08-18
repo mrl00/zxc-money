@@ -37,12 +37,8 @@ pub struct RegisterPurchaseHandler<
     id_generator: Arc<Id>,
 }
 
-impl<
-        C: CreditCardRepository,
-        I: InvoiceRepository,
-        P: EventPublisher,
-        Id: IdGenerator,
-    > RegisterPurchaseHandler<C, I, P, Id>
+impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGenerator>
+    RegisterPurchaseHandler<C, I, P, Id>
 {
     /// Creates a new [`RegisterPurchaseHandler`] with the given dependencies.
     pub fn new(
@@ -71,9 +67,7 @@ impl<
             .credit_card_repository
             .find_by_id(cmd.credit_card_id)
             .await?
-            .ok_or_else(|| {
-                CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string())
-            })?;
+            .ok_or_else(|| CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string()))?;
 
         if card.owner_id != cmd.owner_id {
             return Err(CreditCardError::InvariantViolation(
@@ -93,7 +87,11 @@ impl<
 
         let reference_month = YearMonth::from_date(cmd.purchased_at);
 
-        let mut invoice = match self.invoice_repository.find_open(cmd.credit_card_id).await? {
+        let mut invoice = match self
+            .invoice_repository
+            .find_open(cmd.credit_card_id)
+            .await?
+        {
             Some(inv) => inv,
             None => {
                 let new_id = InvoiceID::from_uuid(self.id_generator.new_id());
@@ -193,12 +191,7 @@ mod tests {
         );
         cc_repo.save(&card).await.unwrap();
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo.clone(),
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo.clone(), publisher, id_gen);
 
         handler
             .handle(RegisterPurchaseCommand {
@@ -285,6 +278,9 @@ mod tests {
             })
             .await;
 
-        assert!(matches!(result, Err(CreditCardError::CreditCardNotFound(_))));
+        assert!(matches!(
+            result,
+            Err(CreditCardError::CreditCardNotFound(_))
+        ));
     }
 }
