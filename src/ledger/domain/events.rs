@@ -3,6 +3,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use crate::shared::ids::{AccountID, CategoryID, RecurringTransactionID, TransactionID, UserID};
 use crate::shared::money::Money;
 
+/// Emitted when a new account is opened.
 #[derive(Debug)]
 pub struct AccountOpened {
     pub account_id: AccountID,
@@ -27,6 +28,7 @@ impl crate::shared::events::DomainEvent for AccountOpened {
     }
 }
 
+/// Emitted when an account is renamed.
 #[derive(Debug)]
 pub struct AccountRenamed {
     pub account_id: AccountID,
@@ -48,6 +50,7 @@ impl crate::shared::events::DomainEvent for AccountRenamed {
     }
 }
 
+/// Emitted when an account's type is changed.
 #[derive(Debug)]
 pub struct AccountTypeChanged {
     pub account_id: AccountID,
@@ -69,6 +72,7 @@ impl crate::shared::events::DomainEvent for AccountTypeChanged {
     }
 }
 
+/// Emitted when an account is deleted.
 #[derive(Debug)]
 pub struct AccountDeleted {
     pub account_id: AccountID,
@@ -90,6 +94,7 @@ impl crate::shared::events::DomainEvent for AccountDeleted {
     }
 }
 
+/// Emitted when a transaction is recorded.
 #[derive(Debug)]
 pub struct TransactionRecorded {
     pub transaction_id: TransactionID,
@@ -116,6 +121,7 @@ impl crate::shared::events::DomainEvent for TransactionRecorded {
     }
 }
 
+/// Emitted when a transaction is deleted.
 #[derive(Debug)]
 pub struct TransactionDeleted {
     pub transaction_id: crate::shared::ids::TransactionID,
@@ -137,6 +143,7 @@ impl crate::shared::events::DomainEvent for TransactionDeleted {
     }
 }
 
+/// Emitted when a transaction is reconciled.
 #[derive(Debug)]
 pub struct TransactionReconciled {
     pub transaction_id: TransactionID,
@@ -159,6 +166,7 @@ impl crate::shared::events::DomainEvent for TransactionReconciled {
     }
 }
 
+/// Emitted when a transaction is updated.
 #[derive(Debug)]
 pub struct TransactionUpdated {
     pub transaction_id: TransactionID,
@@ -180,6 +188,7 @@ impl crate::shared::events::DomainEvent for TransactionUpdated {
     }
 }
 
+/// Emitted when a recurring transaction is created.
 #[derive(Debug)]
 pub struct RecurringTransactionCreated {
     pub recurring_transaction_id: RecurringTransactionID,
@@ -205,6 +214,7 @@ impl crate::shared::events::DomainEvent for RecurringTransactionCreated {
     }
 }
 
+/// Emitted when a pending recurring transaction generates a concrete transaction.
 #[derive(Debug)]
 pub struct RecurringTransactionGenerated {
     pub recurring_transaction_id: RecurringTransactionID,
@@ -228,6 +238,7 @@ impl crate::shared::events::DomainEvent for RecurringTransactionGenerated {
     }
 }
 
+/// Emitted when funds are transferred between two accounts.
 #[derive(Debug)]
 pub struct TransferCompleted {
     pub from_account_id: AccountID,

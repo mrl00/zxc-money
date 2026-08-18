@@ -6,17 +6,25 @@ use crate::shared::errors::LedgerError;
 use crate::shared::ids::{AccountID, CategoryID, RecurringTransactionID, TagID, UserID};
 use crate::shared::money::Money;
 
+/// Frequency at which a recurring transaction repeats.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Frequency {
+    /// Every day.
     Daily,
+    /// Every week.
     Weekly,
+    /// Every two weeks.
     Biweekly,
+    /// Every month.
     Monthly,
+    /// Every three months.
     Quarterly,
+    /// Every year.
     Yearly,
 }
 
 impl Frequency {
+    /// Returns the next date after `current` based on this frequency.
     pub fn next_date(&self, current: NaiveDate) -> NaiveDate {
         match self {
             Frequency::Daily => current + chrono::Duration::days(1),
@@ -72,6 +80,7 @@ fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
+/// A recurring transaction that generates periodic [`Transaction`]s.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecurringTransaction {
     pub id: RecurringTransactionID,
@@ -89,6 +98,11 @@ pub struct RecurringTransaction {
 }
 
 impl RecurringTransaction {
+    /// Creates a new active recurring transaction.
+    ///
+    /// # Errors
+    /// Returns an error if `amount` is not positive, `description` is empty,
+    /// the type is `Transfer`, or an income/expense has no category.
     pub fn new(
         id: RecurringTransactionID,
         owner_id: UserID,
@@ -143,27 +157,33 @@ impl RecurringTransaction {
         })
     }
 
+    /// Sets the tags on this recurring transaction.
     pub fn with_tags(mut self, tags: Vec<TagID>) -> Self {
         self.tags = tags;
         self
     }
 
+    /// Pauses the recurring transaction so it will not be due until resumed.
     pub fn pause(&mut self) {
         self.active = false;
     }
 
+    /// Resumes a paused recurring transaction.
     pub fn resume(&mut self) {
         self.active = true;
     }
 
+    /// Permanently cancels this recurring transaction.
     pub fn cancel(&mut self) {
         self.active = false;
     }
 
+    /// Advances `next_date` by one occurrence.
     pub fn advance(&mut self) {
         self.next_date = self.frequency.next_date(self.next_date);
     }
 
+    /// Returns `true` if this transaction is active and its next date is on or before `today`.
     pub fn is_due(&self, today: NaiveDate) -> bool {
         self.active && self.next_date <= today
     }

@@ -11,6 +11,7 @@ use crate::shared::ids::{AccountID, CategoryID, RecurringTransactionID, UserID};
 use crate::shared::money::Money;
 use std::sync::Arc;
 
+/// Command to create a new recurring transaction.
 pub struct CreateRecurringTransactionCommand {
     pub owner_id: UserID,
     pub account_id: AccountID,
@@ -22,6 +23,7 @@ pub struct CreateRecurringTransactionCommand {
     pub next_date: NaiveDate,
 }
 
+/// Handler that processes [`CreateRecurringTransactionCommand`] requests.
 pub struct CreateRecurringTransactionHandler<
     R: RecurringTransactionRepository,
     P: EventPublisher,
@@ -43,6 +45,10 @@ impl<R: RecurringTransactionRepository, P: EventPublisher, I: IdGenerator>
         }
     }
 
+    /// Executes the command: creates the recurring transaction, persists it,
+    /// and publishes [`RecurringTransactionCreated`].
+    ///
+    /// Returns the new [`RecurringTransactionID`] on success.
     pub async fn handle(
         &self,
         cmd: CreateRecurringTransactionCommand,

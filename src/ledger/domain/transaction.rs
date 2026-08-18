@@ -5,13 +5,18 @@ use crate::shared::errors::LedgerError;
 use crate::shared::ids::{AccountID, CategoryID, PurchaseID, TagID, TransactionID};
 use crate::shared::money::Money;
 
+/// Type of a financial transaction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionType {
+    /// Money received into an account.
     Income,
+    /// Money spent from an account.
     Expense,
+    /// Money moved between two accounts.
     Transfer,
 }
 
+/// A single financial transaction recorded against an account.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     pub id: TransactionID,
@@ -29,6 +34,10 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Creates a new transaction with the required fields.
+    ///
+    /// # Errors
+    /// Returns an error if `amount` is not positive or `description` is empty.
     pub fn new(
         id: TransactionID,
         account_id: AccountID,
@@ -65,6 +74,10 @@ impl Transaction {
         })
     }
 
+    /// Attaches a category to an income or expense transaction.
+    ///
+    /// # Errors
+    /// Returns an error if the transaction is a transfer (transfers cannot have categories).
     pub fn with_category(mut self, category_id: CategoryID) -> Result<Self, LedgerError> {
         match self.tx_type {
             TransactionType::Transfer => Err(LedgerError::InvariantViolation(
@@ -77,6 +90,10 @@ impl Transaction {
         }
     }
 
+    /// Sets the counterpart account for a transfer transaction.
+    ///
+    /// # Errors
+    /// Returns an error if the transaction is not a transfer.
     pub fn with_counterpart(
         mut self,
         counterpart_account_id: AccountID,
@@ -90,20 +107,28 @@ impl Transaction {
         Ok(self)
     }
 
+    /// Sets the tags on this transaction.
     pub fn with_tags(mut self, tags: Vec<TagID>) -> Self {
         self.tags = tags;
         self
     }
 
+    /// Records the source credit card purchase ID.
     pub fn with_source_purchase(mut self, purchase_id: PurchaseID) -> Self {
         self.source_purchase_id = Some(purchase_id);
         self
     }
 
+    /// Marks this transaction as reconciled.
     pub fn mark_reconciled(&mut self) {
         self.reconciled = true;
     }
 
+    /// Validates all business invariants on this transaction.
+    ///
+    /// # Errors
+    /// Returns an error if any invariant is violated (e.g. transfer without counterpart,
+    /// income/expense without category).
     pub fn validate(&self) -> Result<(), LedgerError> {
         if !self.amount.is_positive() {
             return Err(LedgerError::InvalidAmount(

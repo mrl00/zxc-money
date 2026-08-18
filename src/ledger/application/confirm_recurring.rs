@@ -8,10 +8,12 @@ use crate::shared::events::EventPublisher;
 use crate::shared::ids::{RecurringTransactionID, TransactionID};
 use std::sync::Arc;
 
+/// Command to confirm a due recurring transaction and generate a concrete transaction.
 pub struct ConfirmRecurringCommand {
     pub recurring_transaction_id: RecurringTransactionID,
 }
 
+/// Handler that processes [`ConfirmRecurringCommand`] requests.
 pub struct ConfirmRecurringHandler<
     R: RecurringTransactionRepository,
     T: TransactionRepository,
@@ -45,6 +47,10 @@ impl<
         }
     }
 
+    /// Creates a [`Transaction`] from the recurring template, advances the schedule,
+    /// and publishes [`TransactionRecorded`] and [`RecurringTransactionGenerated`].
+    ///
+    /// Returns the new [`TransactionID`] on success.
     pub async fn handle(&self, cmd: ConfirmRecurringCommand) -> Result<TransactionID, LedgerError> {
         let mut recurring = self
             .recurring_repository

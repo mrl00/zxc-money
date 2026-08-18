@@ -7,6 +7,7 @@ use crate::investment::domain::position::Position;
 use crate::shared::ids::{AssetID, PortfolioID, UserID};
 use crate::shared::money::Money;
 
+/// A collection of investment positions owned by a user.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Portfolio {
     pub id: PortfolioID,
@@ -16,6 +17,7 @@ pub struct Portfolio {
 }
 
 impl Portfolio {
+    /// Creates a new empty [`Portfolio`].
     pub fn new(id: PortfolioID, owner_id: UserID) -> Self {
         Self {
             id,
@@ -25,6 +27,10 @@ impl Portfolio {
         }
     }
 
+    /// Records the purchase of an asset.
+    ///
+    /// Updates the existing position's average cost if the asset is already held,
+    /// or creates a new position.
     pub fn record_buy(
         &mut self,
         asset_id: AssetID,
@@ -56,6 +62,10 @@ impl Portfolio {
         Ok(())
     }
 
+    /// Records the sale of an asset.
+    ///
+    /// Returns the realized profit/loss (sale proceeds minus cost basis).
+    /// Removes the position entirely if the full quantity is sold.
     pub fn record_sell(
         &mut self,
         asset_id: AssetID,
@@ -92,6 +102,9 @@ impl Portfolio {
         Ok(profit)
     }
 
+    /// Calculates the total portfolio value given current market prices.
+    ///
+    /// Returns `None` if the portfolio has no positions with available prices.
     pub fn total_value(&self, prices: &std::collections::HashMap<AssetID, Money>) -> Option<Money> {
         let mut total = None;
 

@@ -5,6 +5,7 @@ use crate::shared::ids::{BudgetID, CategoryID, UserID};
 use crate::shared::money::Money;
 use crate::shared::period::Period;
 
+/// A spending limit for a specific category within a time period.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Budget {
     pub id: BudgetID,
@@ -16,6 +17,7 @@ pub struct Budget {
 }
 
 impl Budget {
+    /// Creates a new [`Budget`] with the given parameters.
     pub fn new(
         id: BudgetID,
         owner_id: UserID,

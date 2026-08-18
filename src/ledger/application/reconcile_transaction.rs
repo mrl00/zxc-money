@@ -5,11 +5,13 @@ use crate::shared::events::EventPublisher;
 use crate::shared::ids::TransactionID;
 use std::sync::Arc;
 
+/// Command to mark a transaction as reconciled or unreconciled.
 pub struct ReconcileTransactionCommand {
     pub transaction_id: TransactionID,
     pub reconciled: bool,
 }
 
+/// Handler that processes [`ReconcileTransactionCommand`] requests.
 pub struct ReconcileTransactionHandler<T: TransactionRepository, P: EventPublisher> {
     transaction_repository: Arc<T>,
     event_publisher: Arc<P>,
@@ -23,6 +25,7 @@ impl<T: TransactionRepository, P: EventPublisher> ReconcileTransactionHandler<T,
         }
     }
 
+    /// Updates the reconciliation status and publishes [`TransactionReconciled`].
     pub async fn handle(&self, cmd: ReconcileTransactionCommand) -> Result<(), LedgerError> {
         let mut transaction = self
             .transaction_repository

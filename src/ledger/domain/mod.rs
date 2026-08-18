@@ -1,3 +1,5 @@
+//! Domain layer — core entities, events, and repository traits.
+
 pub mod account;
 pub mod category;
 pub mod events;

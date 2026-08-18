@@ -4,6 +4,7 @@ use crate::shared::ids::BudgetID;
 use crate::shared::ids::GoalID;
 use crate::shared::money::Money;
 
+/// Event emitted when a new budget is defined for a category.
 #[derive(Debug)]
 pub struct BudgetDefined {
     pub budget_id: BudgetID,
@@ -26,6 +27,7 @@ impl crate::shared::events::DomainEvent for BudgetDefined {
     }
 }
 
+/// Event emitted when spending surpasses the budgeted amount.
 #[derive(Debug)]
 pub struct BudgetExceeded {
     pub budget_id: BudgetID,
@@ -49,6 +51,7 @@ impl crate::shared::events::DomainEvent for BudgetExceeded {
     }
 }
 
+/// Event emitted when a contribution is made toward a financial goal.
 #[derive(Debug)]
 pub struct GoalContributed {
     pub goal_id: GoalID,
@@ -70,6 +73,7 @@ impl crate::shared::events::DomainEvent for GoalContributed {
     }
 }
 
+/// Event emitted when a financial goal reaches its target amount.
 #[derive(Debug)]
 pub struct GoalAchieved {
     pub goal_id: GoalID,

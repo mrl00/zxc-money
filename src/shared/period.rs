@@ -1,40 +1,62 @@
+//! Date range and year-month value objects.
+//!
+//! [`Period`] represents an inclusive date range. [`YearMonth`] represents
+//! a specific month and provides utilities for first/last day, navigation,
+//! and conversion to `Period`.
+
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 
+/// An inclusive date range from `start` to `end`.
+///
+/// # Invariants
+///
+/// - `start <= end` (enforced by constructor assertion).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Period {
     start: NaiveDate,
     end: NaiveDate,
 }
 
+/// A specific year and month combination.
+///
+/// Implements `Ord` for chronological comparison (year first, then month).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct YearMonth {
+    /// The year (e.g. `2026`).
     pub year: i32,
+    /// The month (1–12).
     pub month: u32,
 }
 
 impl Period {
+    /// Create a new period. Panics if `start > end`.
     pub fn new(start: NaiveDate, end: NaiveDate) -> Self {
         assert!(start <= end, "start date must be <= end date");
         Self { start, end }
     }
 
+    /// Return the start date.
     pub fn start(&self) -> NaiveDate {
         self.start
     }
 
+    /// Return the end date.
     pub fn end(&self) -> NaiveDate {
         self.end
     }
 
+    /// Returns `true` if `date` falls within this period (inclusive).
     pub fn contains(&self, date: NaiveDate) -> bool {
         date >= self.start && date <= self.end
     }
 
+    /// Returns `true` if this period overlaps with `other`.
     pub fn overlaps(&self, other: &Period) -> bool {
         self.start <= other.end && other.start <= self.end
     }
 
+    /// Return all [`YearMonth`]s that this period spans.
     pub fn months(&self) -> Vec<YearMonth> {
         let mut result = Vec::new();
         let mut current = YearMonth::from_date(self.start);
@@ -49,11 +71,13 @@ impl Period {
 }
 
 impl YearMonth {
+    /// Create a new `YearMonth`. Panics if `month` is not in 1–12.
     pub fn new(year: i32, month: u32) -> Self {
         assert!((1..=12).contains(&month), "month must be 1-12");
         Self { year, month }
     }
 
+    /// Extract the year-month from a `NaiveDate`.
     pub fn from_date(date: NaiveDate) -> Self {
         Self {
             year: date.year(),
@@ -61,19 +85,23 @@ impl YearMonth {
         }
     }
 
+    /// Return the first day of this month.
     pub fn first_day(&self) -> NaiveDate {
         NaiveDate::from_ymd_opt(self.year, self.month, 1).expect("invalid date")
     }
 
+    /// Return the last day of this month.
     pub fn last_day(&self) -> NaiveDate {
         let next_month = self.next();
         next_month.first_day().pred_opt().expect("invalid date")
     }
 
+    /// Convert to a [`Period`] spanning the full month.
     pub fn period(&self) -> Period {
         Period::new(self.first_day(), self.last_day())
     }
 
+    /// Return the next month.
     pub fn next(&self) -> YearMonth {
         if self.month == 12 {
             YearMonth::new(self.year + 1, 1)
@@ -82,6 +110,7 @@ impl YearMonth {
         }
     }
 
+    /// Return the previous month.
     pub fn previous(&self) -> YearMonth {
         if self.month == 1 {
             YearMonth::new(self.year - 1, 12)

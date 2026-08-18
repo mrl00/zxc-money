@@ -2,12 +2,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::shared::money::Money;
 
+/// Brazilian tax regime for salary calculation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaxRegime {
+    /// Consolidação das Leis do Trabalho (employee).
     CLT,
+    /// Pessoa Jurídica (independent contractor).
     PJ,
 }
 
+/// Breakdown of gross salary into taxes and net amount.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetSalaryBreakdown {
     pub gross: Money,
@@ -17,6 +21,17 @@ pub struct NetSalaryBreakdown {
     pub net: Money,
 }
 
+/// Calculates the net salary based on gross amount, dependents, and tax regime.
+///
+/// # Example
+/// ```ignore
+/// let result = calculate_net_salary(
+///     Money::new(5000, Currency::BRL),
+///     0,
+///     TaxRegime::CLT,
+/// );
+/// assert!(result.net.amount() < result.gross.amount());
+/// ```
 pub fn calculate_net_salary(
     gross: Money,
     dependents: u32,

@@ -5,10 +5,12 @@ use crate::shared::events::EventPublisher;
 use crate::shared::ids::AccountID;
 use std::sync::Arc;
 
+/// Command to delete an existing account.
 pub struct DeleteAccountCommand {
     pub account_id: AccountID,
 }
 
+/// Handler that processes [`DeleteAccountCommand`] requests.
 pub struct DeleteAccountHandler<A: AccountRepository, T: TransactionRepository, P: EventPublisher> {
     account_repository: Arc<A>,
     transaction_repository: Arc<T>,
@@ -30,6 +32,7 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher>
         }
     }
 
+    /// Deletes the account if it has no linked transactions and publishes [`AccountDeleted`].
     pub async fn handle(&self, cmd: DeleteAccountCommand) -> Result<(), LedgerError> {
         let account = self
             .account_repository

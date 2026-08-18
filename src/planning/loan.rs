@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::shared::money::Money;
 
+/// A single month's entry in a loan amortization schedule.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoanEntry {
     pub month: u32,
@@ -11,6 +12,7 @@ pub struct LoanEntry {
     pub balance: Money,
 }
 
+/// Complete amortization schedule for a loan.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoanSchedule {
     pub entries: Vec<LoanEntry>,
@@ -18,6 +20,17 @@ pub struct LoanSchedule {
     pub total_interest: Money,
 }
 
+/// Simulates a fixed-rate loan with equal monthly payments (French amortization).
+///
+/// # Example
+/// ```ignore
+/// let schedule = simulate_loan(
+///     Money::new(50_000, Currency::BRL),
+///     12,
+///     Decimal::from(10),
+/// );
+/// assert_eq!(schedule.entries.len(), 12);
+/// ```
 pub fn simulate_loan(
     principal: Money,
     months: u32,

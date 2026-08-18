@@ -8,6 +8,7 @@ use crate::shared::ids::{AccountID, UserID};
 use crate::shared::money::{Currency, Money};
 use std::sync::Arc;
 
+/// Command to open a new account.
 pub struct OpenAccountCommand {
     pub owner_id: UserID,
     pub name: String,
@@ -16,6 +17,7 @@ pub struct OpenAccountCommand {
     pub opening_balance: Money,
 }
 
+/// Handler that processes [`OpenAccountCommand`] requests.
 pub struct OpenAccountHandler<R: AccountRepository, P: EventPublisher, I: IdGenerator> {
     repository: Arc<R>,
     event_publisher: Arc<P>,
@@ -31,6 +33,9 @@ impl<R: AccountRepository, P: EventPublisher, I: IdGenerator> OpenAccountHandler
         }
     }
 
+    /// Executes the command: creates the account, persists it, and publishes [`AccountOpened`].
+    ///
+    /// Returns the new [`AccountID`] on success.
     pub async fn handle(&self, cmd: OpenAccountCommand) -> Result<AccountID, LedgerError> {
         let id = AccountID::from_uuid(self.id_generator.new_id());
 

@@ -4,6 +4,7 @@ use rust_decimal::Decimal;
 use crate::shared::ids::AssetID;
 use crate::shared::money::Money;
 
+/// Event emitted when an asset is purchased.
 #[derive(Debug)]
 pub struct AssetBought {
     pub asset_id: AssetID,
@@ -26,6 +27,7 @@ impl crate::shared::events::DomainEvent for AssetBought {
     }
 }
 
+/// Event emitted when an asset is sold.
 #[derive(Debug)]
 pub struct AssetSold {
     pub asset_id: AssetID,
