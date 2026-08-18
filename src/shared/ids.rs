@@ -1,7 +1,28 @@
+//! Type-safe UUID wrappers for all aggregate identifiers.
+//!
+//! Each ID type is a newtype around `Uuid`, providing compile-time
+//! distinction between different identifier domains. All IDs implement
+//! `Debug`, `Clone`, `Copy`, `PartialEq`, `Eq`, `Hash`, `Serialize`,
+//! `Deserialize`, `Display`, and `Default`.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use zxc_money::shared::ids::AccountID;
+//!
+//! let id = AccountID::new();          // random UUID v4
+//! let id2 = AccountID::from_uuid(uuid); // wrap existing UUID
+//! println!("{id}");                   // displays as UUID string
+//! ```
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use uuid::Uuid;
 
+/// Generates a type-safe ID newtype wrapper around `Uuid`.
+///
+/// Each invocation creates a new struct with `new()`, `from_uuid()`,
+/// `as_uuid()`, `Default`, and `Display` implementations.
 macro_rules! define_id {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -35,19 +56,33 @@ macro_rules! define_id {
     };
 }
 
+/// Identifier for [`crate::ledger::domain::account::Account`] aggregates.
 define_id!(AccountID);
+/// Identifier for [`crate::ledger::domain::transaction::Transaction`] aggregates.
 define_id!(TransactionID);
+/// Identifier for [`crate::ledger::domain::category::Category`] entities.
 define_id!(CategoryID);
+/// Identifier for [`crate::ledger::domain::category::Tag`] entities.
 define_id!(TagID);
+/// Identifier for [`crate::budgeting::domain::budget::Budget`] aggregates.
 define_id!(BudgetID);
+/// Identifier for [`crate::budgeting::domain::goal::FinancialGoal`] aggregates.
 define_id!(GoalID);
+/// Identifier for [`crate::credit_card::domain::card::CreditCard`] aggregates.
 define_id!(CreditCardID);
+/// Identifier for [`crate::credit_card::domain::invoice::Invoice`] aggregates.
 define_id!(InvoiceID);
+/// Identifier for [`crate::credit_card::domain::purchase::Purchase`] entities.
 define_id!(PurchaseID);
+/// Identifier for [`crate::bills::domain::bill::Bill`] aggregates.
 define_id!(BillID);
+/// Identifier for [`crate::investment::domain::asset::Asset`] entities.
 define_id!(AssetID);
+/// Identifier for [`crate::investment::domain::portfolio::Portfolio`] aggregates.
 define_id!(PortfolioID);
+/// Identifier for the application user. Used as `owner_id` on all sensitive aggregates.
 define_id!(UserID);
+/// Identifier for [`crate::ledger::domain::recurring_transaction::RecurringTransaction`] aggregates.
 define_id!(RecurringTransactionID);
 
 #[cfg(test)]

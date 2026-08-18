@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::shared::ids::AccountID;
 use crate::shared::money::Money;
 
+/// Real-time balance projection for a single account.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountBalanceProjection {
     pub account_id: AccountID,
@@ -13,6 +14,7 @@ pub struct AccountBalanceProjection {
 }
 
 impl AccountBalanceProjection {
+    /// Creates a new projection with the given balance and current timestamp.
     pub fn new(account_id: AccountID, balance: Money) -> Self {
         Self {
             account_id,
@@ -23,6 +25,7 @@ impl AccountBalanceProjection {
     }
 }
 
+/// Point-in-time snapshot of total assets, liabilities, and net worth.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetWorthSnapshot {
     pub date: NaiveDate,
@@ -31,6 +34,7 @@ pub struct NetWorthSnapshot {
     pub net_worth: Money,
 }
 
+/// Spending progress for a budget within a period.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BudgetProgress {
     pub category_id: crate::shared::ids::CategoryID,
@@ -41,6 +45,7 @@ pub struct BudgetProgress {
     pub is_over: bool,
 }
 
+/// Income, expense, and net cash flow for a single day.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CashFlowEntry {
     pub date: NaiveDate,
@@ -49,6 +54,7 @@ pub struct CashFlowEntry {
     pub net: Money,
 }
 
+/// Aggregated spending report for a single category.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CategoryReport {
     pub category_id: crate::shared::ids::CategoryID,

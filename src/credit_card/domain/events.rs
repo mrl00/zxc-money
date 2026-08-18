@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use crate::shared::ids::{CreditCardID, InvoiceID, PurchaseID};
 use crate::shared::money::Money;
 
+/// Domain event emitted when a purchase is added to an invoice.
 #[derive(Debug)]
 pub struct PurchaseAdded {
     pub purchase_id: PurchaseID,
@@ -26,6 +27,7 @@ impl crate::shared::events::DomainEvent for PurchaseAdded {
     }
 }
 
+/// Domain event emitted when an invoice is closed.
 #[derive(Debug)]
 pub struct InvoiceClosed {
     pub invoice_id: InvoiceID,
@@ -48,7 +50,8 @@ impl crate::shared::events::DomainEvent for InvoiceClosed {
     }
 }
 
-#[derive(Debug)]
+/// Domain event emitted when a closed invoice is paid.
+#[derive(Debug, Clone)]
 pub struct InvoicePaid {
     pub invoice_id: InvoiceID,
     pub credit_card_id: CreditCardID,

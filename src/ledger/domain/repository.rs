@@ -8,6 +8,7 @@ use super::category::{Category, Tag};
 use super::recurring_transaction::RecurringTransaction;
 use super::transaction::{Transaction, TransactionType};
 
+/// Persistence operations for [`Account`] entities.
 #[async_trait]
 pub trait AccountRepository: Send + Sync {
     async fn save(&self, account: &Account) -> Result<(), RepositoryError>;
@@ -16,6 +17,7 @@ pub trait AccountRepository: Send + Sync {
     async fn delete(&self, id: AccountID) -> Result<(), RepositoryError>;
 }
 
+/// Filter criteria for querying transactions.
 pub struct TransactionFilter {
     pub tx_type: Option<TransactionType>,
     pub category_id: Option<CategoryID>,
@@ -23,6 +25,7 @@ pub struct TransactionFilter {
     pub reconciled: Option<bool>,
 }
 
+/// Persistence operations for [`Transaction`] entities.
 #[async_trait]
 pub trait TransactionRepository: Send + Sync {
     async fn save(&self, transaction: &Transaction) -> Result<(), RepositoryError>;
@@ -45,6 +48,7 @@ pub trait TransactionRepository: Send + Sync {
     async fn delete(&self, id: crate::shared::ids::TransactionID) -> Result<(), RepositoryError>;
 }
 
+/// Persistence operations for [`Category`] entities.
 #[async_trait]
 pub trait CategoryRepository: Send + Sync {
     async fn save(&self, category: &Category) -> Result<(), RepositoryError>;
@@ -52,6 +56,7 @@ pub trait CategoryRepository: Send + Sync {
     async fn delete(&self, id: CategoryID) -> Result<(), RepositoryError>;
 }
 
+/// Persistence operations for [`Tag`] entities.
 #[async_trait]
 pub trait TagRepository: Send + Sync {
     async fn save(&self, tag: &Tag) -> Result<(), RepositoryError>;
@@ -60,6 +65,7 @@ pub trait TagRepository: Send + Sync {
     async fn delete(&self, id: TagID) -> Result<(), RepositoryError>;
 }
 
+/// Persistence operations for [`RecurringTransaction`] entities.
 #[async_trait]
 pub trait RecurringTransactionRepository: Send + Sync {
     async fn save(&self, recurring: &RecurringTransaction) -> Result<(), RepositoryError>;

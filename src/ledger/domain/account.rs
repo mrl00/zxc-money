@@ -5,14 +5,20 @@ use crate::shared::errors::LedgerError;
 use crate::shared::ids::{AccountID, UserID};
 use crate::shared::money::Money;
 
+/// Type of financial account.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AccountType {
+    /// Standard checking (current) account.
     Checking,
+    /// Savings account with potential interest.
     Savings,
+    /// Digital wallet / cash account.
     Wallet,
+    /// Investment or brokerage account.
     Investment,
 }
 
+/// A financial account belonging to a user.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
     pub id: AccountID,
@@ -25,6 +31,12 @@ pub struct Account {
 }
 
 impl Account {
+    /// Creates a new account with the given parameters.
+    ///
+    /// # Errors
+    /// Returns [`LedgerError::InvariantViolation`] if `name` is empty, or
+    /// [`LedgerError::CurrencyMismatch`] if the opening balance currency differs
+    /// from `currency`.
     pub fn new(
         id: AccountID,
         owner_id: UserID,
@@ -57,14 +69,17 @@ impl Account {
         })
     }
 
+    /// Renames the account.
     pub fn rename(&mut self, new_name: String) {
         self.name = new_name;
     }
 
+    /// Changes the account type.
     pub fn change_type(&mut self, new_type: AccountType) {
         self.account_type = new_type;
     }
 
+    /// Returns the account's currency.
     pub fn currency(&self) -> crate::shared::money::Currency {
         self.currency
     }

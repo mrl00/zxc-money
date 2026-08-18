@@ -5,10 +5,12 @@ use crate::shared::events::EventPublisher;
 use crate::shared::ids::TransactionID;
 use std::sync::Arc;
 
+/// Command to delete a transaction.
 pub struct DeleteTransactionCommand {
     pub transaction_id: TransactionID,
 }
 
+/// Handler that processes [`DeleteTransactionCommand`] requests.
 pub struct DeleteTransactionHandler<T: TransactionRepository, P: EventPublisher> {
     transaction_repository: Arc<T>,
     event_publisher: Arc<P>,
@@ -22,6 +24,10 @@ impl<T: TransactionRepository, P: EventPublisher> DeleteTransactionHandler<T, P>
         }
     }
 
+    /// Deletes the transaction and publishes [`TransactionDeleted`].
+    ///
+    /// # Errors
+    /// Fails if the transaction is reconciled or derived from a credit card purchase.
     pub async fn handle(&self, cmd: DeleteTransactionCommand) -> Result<(), LedgerError> {
         let transaction = self
             .transaction_repository

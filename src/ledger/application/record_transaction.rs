@@ -9,6 +9,7 @@ use crate::shared::money::Money;
 use chrono::NaiveDate;
 use std::sync::Arc;
 
+/// Command to record a new transaction on an account.
 pub struct RecordTransactionCommand {
     pub account_id: AccountID,
     pub tx_type: TransactionType,
@@ -18,6 +19,7 @@ pub struct RecordTransactionCommand {
     pub category_id: Option<CategoryID>,
 }
 
+/// Handler that processes [`RecordTransactionCommand`] requests.
 pub struct RecordTransactionHandler<
     A: AccountRepository,
     T: TransactionRepository,
@@ -47,6 +49,10 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
         }
     }
 
+    /// Executes the command: validates currency, creates the transaction, persists it,
+    /// and publishes [`TransactionRecorded`].
+    ///
+    /// Returns the new [`TransactionID`] on success.
     pub async fn handle(
         &self,
         cmd: RecordTransactionCommand,
@@ -102,6 +108,7 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
         Ok(id)
     }
 
+    /// Validates the command fields without persisting.
     pub fn validate(&self, cmd: &RecordTransactionCommand) -> Result<(), LedgerError> {
         if !cmd.amount.is_positive() {
             return Err(LedgerError::InvalidAmount("amount must be positive".into()));

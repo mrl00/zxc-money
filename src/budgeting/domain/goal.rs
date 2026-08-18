@@ -4,13 +4,18 @@ use serde::{Deserialize, Serialize};
 use crate::shared::ids::{AccountID, GoalID, UserID};
 use crate::shared::money::Money;
 
+/// Status of a financial goal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum GoalStatus {
+    /// Goal is actively being funded.
     InProgress,
+    /// Goal has been reached.
     Achieved,
+    /// Goal is no longer being pursued.
     Abandoned,
 }
 
+/// A savings target with a deadline and optional linked account.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FinancialGoal {
     pub id: GoalID,
@@ -25,6 +30,7 @@ pub struct FinancialGoal {
 }
 
 impl FinancialGoal {
+    /// Creates a new [`FinancialGoal`] in [`GoalStatus::InProgress`] with zero current amount.
     pub fn new(
         id: GoalID,
         owner_id: UserID,
@@ -45,11 +51,16 @@ impl FinancialGoal {
         }
     }
 
+    /// Links an account to this goal for automatic tracking.
     pub fn with_linked_account(mut self, account_id: AccountID) -> Self {
         self.linked_account_id = Some(account_id);
         self
     }
 
+    /// Adds a contribution toward the goal.
+    ///
+    /// Automatically marks the goal as [`GoalStatus::Achieved`] when the target is reached.
+    /// Returns an error if the goal is not in progress.
     pub fn contribute(
         &mut self,
         amount: Money,
@@ -69,6 +80,7 @@ impl FinancialGoal {
         Ok(())
     }
 
+    /// Returns the goal completion percentage (0.0–100.0).
     pub fn progress(&self) -> f64 {
         if self.target_amount.is_zero() {
             return 100.0;

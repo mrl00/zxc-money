@@ -5,6 +5,7 @@ use crate::ledger::domain::repository::RecurringTransactionRepository;
 use crate::shared::errors::LedgerError;
 use std::sync::Arc;
 
+/// A recurring transaction that is due for generation.
 pub struct PendingRecurring {
     pub recurring_transaction_id: crate::shared::ids::RecurringTransactionID,
     pub account_id: crate::shared::ids::AccountID,
@@ -14,6 +15,7 @@ pub struct PendingRecurring {
     pub next_date: NaiveDate,
 }
 
+/// Query that finds all recurring transactions due on or before a given date.
 pub struct GeneratePendingRecurringQuery<R: RecurringTransactionRepository> {
     repository: Arc<R>,
 }
@@ -23,6 +25,7 @@ impl<R: RecurringTransactionRepository> GeneratePendingRecurringQuery<R> {
         Self { repository }
     }
 
+    /// Returns all due recurring transactions mapped to [`PendingRecurring`] items.
     pub async fn execute(&self, today: NaiveDate) -> Result<Vec<PendingRecurring>, LedgerError> {
         let due = self.repository.find_due(today).await?;
 

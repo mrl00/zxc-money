@@ -1,3 +1,7 @@
+use crate::credit_card::domain::card::CreditCard;
+use crate::credit_card::domain::invoice::Invoice;
+use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
+use crate::shared::ids::{CreditCardID, InvoiceID};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -208,6 +212,98 @@ impl RecurringTransactionRepository for MockRecurringTransactionRepository {
         let mut recurring = self.recurring.lock().unwrap();
         recurring.remove(&id);
         Ok(())
+    }
+}
+
+pub struct MockCreditCardRepository {
+    cards: Mutex<HashMap<CreditCardID, CreditCard>>,
+}
+
+impl MockCreditCardRepository {
+    pub fn new() -> Self {
+        Self {
+            cards: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockCreditCardRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl CreditCardRepository for MockCreditCardRepository {
+    async fn save(&self, card: &CreditCard) -> Result<(), RepositoryError> {
+        let mut cards = self.cards.lock().unwrap();
+        cards.insert(card.id, card.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: CreditCardID) -> Result<Option<CreditCard>, RepositoryError> {
+        let cards = self.cards.lock().unwrap();
+        Ok(cards.get(&id).cloned())
+    }
+
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<CreditCard>, RepositoryError> {
+        let cards = self.cards.lock().unwrap();
+        let result: Vec<CreditCard> = cards
+            .values()
+            .filter(|c| c.owner_id == owner)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn delete(&self, id: CreditCardID) -> Result<(), RepositoryError> {
+        let mut cards = self.cards.lock().unwrap();
+        cards.remove(&id);
+        Ok(())
+    }
+}
+
+pub struct MockInvoiceRepository {
+    invoices: Mutex<HashMap<InvoiceID, Invoice>>,
+}
+
+impl MockInvoiceRepository {
+    pub fn new() -> Self {
+        Self {
+            invoices: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockInvoiceRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl InvoiceRepository for MockInvoiceRepository {
+    async fn save(&self, invoice: &Invoice) -> Result<(), RepositoryError> {
+        let mut invoices = self.invoices.lock().unwrap();
+        invoices.insert(invoice.id, invoice.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: InvoiceID) -> Result<Option<Invoice>, RepositoryError> {
+        let invoices = self.invoices.lock().unwrap();
+        Ok(invoices.get(&id).cloned())
+    }
+
+    async fn find_open(
+        &self,
+        credit_card_id: CreditCardID,
+    ) -> Result<Option<Invoice>, RepositoryError> {
+        let invoices = self.invoices.lock().unwrap();
+        let result = invoices
+            .values()
+            .find(|i| i.credit_card_id == credit_card_id && i.is_open())
+            .cloned();
+        Ok(result)
     }
 }
 

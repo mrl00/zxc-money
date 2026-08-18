@@ -3,12 +3,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::shared::money::Money;
 
+/// Amortization method used for mortgage calculations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AmortizationMethod {
+    /// Sistema de Amortização Constante — constant principal, decreasing payments.
     SAC,
+    /// Tabela Price — equal payments throughout the term.
     Price,
 }
 
+/// A single month's entry in a mortgage amortization schedule.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AmortizationEntry {
     pub month: u32,
@@ -18,6 +22,7 @@ pub struct AmortizationEntry {
     pub balance: Money,
 }
 
+/// Complete amortization schedule for a mortgage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AmortizationSchedule {
     pub entries: Vec<AmortizationEntry>,
@@ -25,6 +30,18 @@ pub struct AmortizationSchedule {
     pub total_interest: Money,
 }
 
+/// Simulates a mortgage using the chosen amortization method.
+///
+/// # Example
+/// ```ignore
+/// let schedule = simulate_mortgage(
+///     Money::new(100_000, Currency::BRL),
+///     12,
+///     Decimal::from(12),
+///     AmortizationMethod::SAC,
+/// );
+/// assert_eq!(schedule.entries.len(), 12);
+/// ```
 pub fn simulate_mortgage(
     principal: Money,
     months: u32,

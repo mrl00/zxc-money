@@ -1,21 +1,46 @@
+//! Monetary value object with currency-safe arithmetic.
+//!
+//! All amounts are stored as `i64` cents to avoid floating-point precision issues.
+//! The [`Currency`] enum enforces that operations only combine matching currencies.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use zxc_money::shared::money::{Money, Currency};
+//!
+//! let price = Money::new(49_90, Currency::BRL);  // R$ 49.90
+//! let tax   = Money::new(9_98, Currency::BRL);   // R$  9.98
+//! let total = price.checked_add(tax).unwrap();    // R$ 59.88
+//! assert_eq!(format!("{total}"), "59 88");
+//! ```
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, Sub};
 
+/// A monetary value with an associated currency.
+///
+/// Amounts are stored in **cents** (minor currency units) as `i64`.
+/// This avoids floating-point rounding errors common in financial calculations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Money {
     amount: i64,
     currency: Currency,
 }
 
+/// Supported currencies (ISO 4217 subset).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub enum Currency {
+    /// Brazilian Real
     BRL,
+    /// United States Dollar
     USD,
+    /// Euro
     EUR,
 }
 
 impl Currency {
+    /// Return the currency symbol (e.g. `"R$"`, `"$"`, `"€"`).
     pub fn symbol(&self) -> &'static str {
         match self {
             Currency::BRL => "R$",
@@ -24,6 +49,7 @@ impl Currency {
         }
     }
 
+    /// Return the ISO 4217 currency code (e.g. `"BRL"`, `"USD"`, `"EUR"`).
     pub fn code(&self) -> &'static str {
         match self {
             Currency::BRL => "BRL",
@@ -34,10 +60,12 @@ impl Currency {
 }
 
 impl Money {
+    /// Create a new `Money` from an amount in cents and a currency.
     pub fn new(amount: i64, currency: Currency) -> Self {
         Self { amount, currency }
     }
 
+    /// Alias for [`Money::new`]. Creates a `Money` from cents.
     pub fn from_decimal(cents: i64, currency: Currency) -> Self {
         Self {
             amount: cents,
@@ -45,6 +73,7 @@ impl Money {
         }
     }
 
+    /// Create a zero-amount `Money` in the given currency.
     pub fn zero(currency: Currency) -> Self {
         Self {
             amount: 0,
@@ -52,26 +81,32 @@ impl Money {
         }
     }
 
+    /// Return the amount in cents.
     pub fn amount(&self) -> i64 {
         self.amount
     }
 
+    /// Return the currency.
     pub fn currency(&self) -> Currency {
         self.currency
     }
 
+    /// Returns `true` if the amount is positive.
     pub fn is_positive(&self) -> bool {
         self.amount > 0
     }
 
+    /// Returns `true` if the amount is negative.
     pub fn is_negative(&self) -> bool {
         self.amount < 0
     }
 
+    /// Returns `true` if the amount is zero.
     pub fn is_zero(&self) -> bool {
         self.amount == 0
     }
 
+    /// Return the absolute value of the amount.
     pub fn abs(&self) -> Self {
         Self {
             amount: self.amount.abs(),
@@ -79,6 +114,10 @@ impl Money {
         }
     }
 
+    /// Safely add two `Money` values.
+    ///
+    /// Returns [`LedgerError::CurrencyMismatch`] if currencies differ,
+    /// or [`LedgerError::InvalidAmount`] on integer overflow.
     pub fn checked_add(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
             return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
@@ -94,6 +133,10 @@ impl Money {
         })
     }
 
+    /// Safely subtract two `Money` values.
+    ///
+    /// Returns [`LedgerError::CurrencyMismatch`] if currencies differ,
+    /// or [`LedgerError::InvalidAmount`] on integer overflow.
     pub fn checked_sub(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
             return Err(crate::shared::errors::LedgerError::CurrencyMismatch {

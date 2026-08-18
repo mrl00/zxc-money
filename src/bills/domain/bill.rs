@@ -4,20 +4,29 @@ use serde::{Deserialize, Serialize};
 use crate::shared::ids::{BillID, CategoryID, UserID};
 use crate::shared::money::Money;
 
+/// Status of a bill in its lifecycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BillStatus {
+    /// Bill is awaiting payment.
     Pending,
+    /// Bill has been paid.
     Paid,
+    /// Bill was not paid by its due date.
     Overdue,
 }
 
+/// Recurrence pattern for a repeating bill.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecurrenceRule {
+    /// Repeats every month.
     Monthly,
+    /// Repeats every week.
     Weekly,
+    /// Repeats every year.
     Yearly,
 }
 
+/// A scheduled financial obligation (recurring or one-time).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bill {
     pub id: BillID,
@@ -32,6 +41,7 @@ pub struct Bill {
 }
 
 impl Bill {
+    /// Creates a new [`Bill`] with [`BillStatus::Pending`] and the current timestamp.
     pub fn new(
         id: BillID,
         owner_id: UserID,
@@ -54,6 +64,9 @@ impl Bill {
         }
     }
 
+    /// Marks the bill as paid.
+    ///
+    /// Returns an error if the bill is not in [`BillStatus::Pending`].
     pub fn mark_paid(&mut self) -> Result<(), crate::shared::errors::BillsError> {
         if self.status != BillStatus::Pending {
             return Err(crate::shared::errors::BillsError::InvariantViolation(
@@ -64,6 +77,9 @@ impl Bill {
         Ok(())
     }
 
+    /// Marks the bill as overdue.
+    ///
+    /// Returns an error if the bill is not in [`BillStatus::Pending`].
     pub fn mark_overdue(&mut self) -> Result<(), crate::shared::errors::BillsError> {
         if self.status != BillStatus::Pending {
             return Err(crate::shared::errors::BillsError::InvariantViolation(
@@ -74,6 +90,9 @@ impl Bill {
         Ok(())
     }
 
+    /// Returns the next due date based on the recurrence rule.
+    ///
+    /// Returns `None` if the bill has no recurrence.
     pub fn next_due_date(&self) -> Option<NaiveDate> {
         match self.recurrence? {
             RecurrenceRule::Monthly => {

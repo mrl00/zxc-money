@@ -9,6 +9,7 @@ use crate::shared::money::Money;
 use chrono::NaiveDate;
 use std::sync::Arc;
 
+/// Command to transfer funds between two accounts.
 pub struct TransferFundsCommand {
     pub from_account_id: AccountID,
     pub to_account_id: AccountID,
@@ -17,6 +18,7 @@ pub struct TransferFundsCommand {
     pub date: NaiveDate,
 }
 
+/// Handler that processes [`TransferFundsCommand`] requests.
 pub struct TransferFundsHandler<
     A: AccountRepository,
     T: TransactionRepository,
@@ -46,6 +48,11 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
         }
     }
 
+    /// Executes the transfer: creates outgoing and incoming transactions, persists them,
+    /// and publishes [`TransferCompleted`].
+    ///
+    /// # Errors
+    /// Fails if accounts have different currencies or different owners.
     pub async fn handle(&self, cmd: TransferFundsCommand) -> Result<(), LedgerError> {
         self.validate(&cmd)?;
 
@@ -111,6 +118,7 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
         Ok(())
     }
 
+    /// Validates basic command constraints (different accounts, positive amount).
     pub fn validate(&self, cmd: &TransferFundsCommand) -> Result<(), LedgerError> {
         if cmd.from_account_id == cmd.to_account_id {
             return Err(LedgerError::InvariantViolation(

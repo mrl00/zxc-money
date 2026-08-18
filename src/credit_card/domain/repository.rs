@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use super::card::CreditCard;
 use super::invoice::Invoice;
 
+/// Persistence interface for [`CreditCard`](super::card::CreditCard) aggregates.
 #[async_trait]
 pub trait CreditCardRepository: Send + Sync {
     async fn save(&self, card: &CreditCard) -> Result<(), RepositoryError>;
@@ -13,6 +14,7 @@ pub trait CreditCardRepository: Send + Sync {
     async fn delete(&self, id: CreditCardID) -> Result<(), RepositoryError>;
 }
 
+/// Persistence interface for [`Invoice`](super::invoice::Invoice) aggregates.
 #[async_trait]
 pub trait InvoiceRepository: Send + Sync {
     async fn save(&self, invoice: &Invoice) -> Result<(), RepositoryError>;

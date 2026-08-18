@@ -9,6 +9,7 @@ use crate::shared::ids::{CategoryID, TransactionID};
 use crate::shared::money::Money;
 use std::sync::Arc;
 
+/// Command to update fields of an existing transaction.
 pub struct UpdateTransactionCommand {
     pub transaction_id: TransactionID,
     pub amount: Option<Money>,
@@ -17,6 +18,7 @@ pub struct UpdateTransactionCommand {
     pub category_id: Option<Option<CategoryID>>,
 }
 
+/// Handler that processes [`UpdateTransactionCommand`] requests.
 pub struct UpdateTransactionHandler<T: TransactionRepository, P: EventPublisher> {
     transaction_repository: Arc<T>,
     event_publisher: Arc<P>,
@@ -30,6 +32,12 @@ impl<T: TransactionRepository, P: EventPublisher> UpdateTransactionHandler<T, P>
         }
     }
 
+    /// Updates the transaction fields, validates invariants, persists, and publishes
+    /// [`TransactionUpdated`].
+    ///
+    /// # Errors
+    /// Fails if the transaction is reconciled, derived from a purchase, or any
+    /// invariant is violated.
     pub async fn handle(&self, cmd: UpdateTransactionCommand) -> Result<(), LedgerError> {
         let mut transaction = self
             .transaction_repository

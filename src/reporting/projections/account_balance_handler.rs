@@ -10,27 +10,32 @@ use crate::reporting::projections::account_balance::AccountBalanceProjection;
 use crate::shared::events::DomainEvent;
 use crate::shared::ids::AccountID;
 
+/// In-memory store that maintains account balance projections by handling domain events.
 pub struct AccountBalanceProjectionStore {
     projections: Mutex<HashMap<AccountID, AccountBalanceProjection>>,
 }
 
 impl AccountBalanceProjectionStore {
+    /// Creates an empty projection store.
     pub fn new() -> Self {
         Self {
             projections: Mutex::new(HashMap::new()),
         }
     }
 
+    /// Returns the projection for a specific account, if it exists.
     pub fn get(&self, account_id: AccountID) -> Option<AccountBalanceProjection> {
         let projections = self.projections.lock().unwrap();
         projections.get(&account_id).cloned()
     }
 
+    /// Returns projections for all tracked accounts.
     pub fn get_all(&self) -> Vec<AccountBalanceProjection> {
         let projections = self.projections.lock().unwrap();
         projections.values().cloned().collect()
     }
 
+    /// Applies a domain event to update the relevant projection(s).
     pub fn handle_event(&self, event: &dyn DomainEvent) {
         if let Some(e) = event.as_any().downcast_ref::<AccountOpened>() {
             let mut projections = self.projections.lock().unwrap();

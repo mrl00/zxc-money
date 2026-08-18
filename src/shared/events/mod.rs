@@ -1,36 +1,97 @@
+//! Domain event system.
+//!
+//! Provides the core infrastructure for publishing and handling domain events:
+//!
+//! - [`DomainEvent`] — trait that all events must implement
+//! - [`EventPublisher`] — async port for publishing events
+//! - [`EventHandler`] — typed handler trait for specific event types
+//! - [`InMemoryEventDispatcher`] — synchronous in-process dispatcher for testing
+//!
+//! # Example
+//!
+//! ```ignore
+//! use zxc_money::shared::events::InMemoryEventDispatcher;
+//!
+//! let dispatcher = InMemoryEventDispatcher::new();
+//! dispatcher.register_handler("InvoicePaid", |event| {
+//!     // downcast and handle
+//! });
+//! dispatcher.publish(vec![&event]).await?;
+//! ```
+
 use chrono::{DateTime, Utc};
 use std::any::Any;
 
 use super::errors::PublishError;
 
+/// A domain event that occurred in the system.
+///
+/// All event structs must implement this trait. The `as_any()` method
+/// enables downcasting when handling events through the untyped dispatcher.
 pub trait DomainEvent: Any + Send + Sync {
+    /// Return the event type name (e.g. `"TransactionRecorded"`).
     fn event_type(&self) -> &'static str;
+
+    /// Return the UTC timestamp when the event occurred.
     fn timestamp(&self) -> DateTime<Utc>;
+
+    /// Upcast to `&dyn Any` for downcasting in handlers.
     fn as_any(&self) -> &dyn Any;
 }
 
+/// A boxed closure that handles domain events by type string.
 pub type EventHandlerFn = Box<dyn Fn(&dyn DomainEvent) + Send + Sync>;
 
+/// Port for publishing domain events asynchronously.
+///
+/// Implementations can be synchronous (in-memory dispatcher) or
+/// asynchronous (message queue, outbox pattern, etc.).
 #[async_trait::async_trait]
 pub trait EventPublisher: Send + Sync {
+    /// Publish a batch of domain events.
     async fn publish(&self, events: Vec<&dyn DomainEvent>) -> Result<(), PublishError>;
 }
 
+/// Typed handler trait for a specific event type.
+///
+/// Use with [`InMemoryEventDispatcher::register_handler`] for type-safe
+/// event handling with automatic downcasting.
 pub trait EventHandler<E: DomainEvent>: Send + Sync {
+    /// Handle the given event.
     fn handle(&self, event: &E);
 }
 
+/// In-memory event dispatcher for single-process use and testing.
+///
+/// Handlers are registered by event type string. When events are published,
+/// all matching handlers are called synchronously in registration order.
+///
+/// # Example
+///
+/// ```ignore
+/// use zxc_money::shared::events::InMemoryEventDispatcher;
+///
+/// let dispatcher = InMemoryEventDispatcher::new();
+/// dispatcher.register_handler("TransactionRecorded", |event| {
+///     println!("Transaction recorded: {:?}", event);
+/// });
+/// ```
 pub struct InMemoryEventDispatcher {
     handlers: std::sync::RwLock<std::collections::HashMap<&'static str, Vec<EventHandlerFn>>>,
 }
 
 impl InMemoryEventDispatcher {
+    /// Create a new empty dispatcher with no registered handlers.
     pub fn new() -> Self {
         Self {
             handlers: std::sync::RwLock::new(std::collections::HashMap::new()),
         }
     }
 
+    /// Register a handler for events with the given type string.
+    ///
+    /// Multiple handlers can be registered for the same event type.
+    /// They will be called in registration order when the event is published.
     pub fn register_handler<F>(&self, event_type: &'static str, handler: F)
     where
         F: Fn(&dyn DomainEvent) + Send + Sync + 'static,

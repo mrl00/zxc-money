@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::shared::money::Money;
 
+/// Yearly snapshot in a retirement projection timeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectionEntry {
     pub year: u32,
@@ -10,12 +11,25 @@ pub struct ProjectionEntry {
     pub growth: Money,
 }
 
+/// Result of a retirement savings simulation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetirementProjection {
     pub timeline: Vec<ProjectionEntry>,
     pub final_balance: Money,
 }
 
+/// Projects retirement savings growth over time.
+///
+/// # Example
+/// ```ignore
+/// let projection = simulate_retirement(
+///     Money::new(100_000, Currency::BRL),
+///     Money::new(1_000, Currency::BRL),
+///     10,
+///     Decimal::from(8),
+/// );
+/// assert_eq!(projection.timeline.len(), 10);
+/// ```
 pub fn simulate_retirement(
     current_savings: Money,
     monthly_contribution: Money,
@@ -55,6 +69,9 @@ pub fn simulate_retirement(
     }
 }
 
+/// Calculates the monthly contribution needed to reach a retirement target.
+///
+/// Returns zero if current savings already meet or exceed the target.
 pub fn required_contribution(
     target: Money,
     current_savings: Money,

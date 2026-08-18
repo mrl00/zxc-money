@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use crate::shared::ids::BillID;
 use crate::shared::money::Money;
 
+/// Event emitted when a new bill is scheduled.
 #[derive(Debug)]
 pub struct BillScheduled {
     pub bill_id: BillID,
@@ -26,6 +27,7 @@ impl crate::shared::events::DomainEvent for BillScheduled {
     }
 }
 
+/// Event emitted when a bill is marked as paid.
 #[derive(Debug)]
 pub struct BillPaid {
     pub bill_id: BillID,
@@ -47,6 +49,7 @@ impl crate::shared::events::DomainEvent for BillPaid {
     }
 }
 
+/// Event emitted when a bill becomes overdue.
 #[derive(Debug)]
 pub struct BillOverdue {
     pub bill_id: BillID,
@@ -68,6 +71,7 @@ impl crate::shared::events::DomainEvent for BillOverdue {
     }
 }
 
+/// Event emitted when a bill is approaching its due date.
 #[derive(Debug)]
 pub struct BillDueSoon {
     pub bill_id: BillID,
