@@ -7,9 +7,11 @@ use crate::shared::period::Period;
 
 use crate::ledger::domain::account::Account;
 use crate::ledger::domain::repository::{
-    AccountRepository, TransactionFilter, TransactionRepository,
+    AccountRepository, RecurringTransactionRepository, TransactionFilter, TransactionRepository,
 };
+use crate::ledger::domain::recurring_transaction::RecurringTransaction;
 use crate::ledger::domain::transaction::Transaction;
+use crate::shared::ids::RecurringTransactionID;
 
 pub struct MockAccountRepository {
     accounts: Mutex<HashMap<AccountID, Account>>,
@@ -138,6 +140,73 @@ impl TransactionRepository for MockTransactionRepository {
     async fn delete(&self, id: TransactionID) -> Result<(), RepositoryError> {
         let mut transactions = self.transactions.lock().unwrap();
         transactions.remove(&id);
+        Ok(())
+    }
+}
+
+pub struct MockRecurringTransactionRepository {
+    recurring: Mutex<HashMap<RecurringTransactionID, RecurringTransaction>>,
+}
+
+impl MockRecurringTransactionRepository {
+    pub fn new() -> Self {
+        Self {
+            recurring: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockRecurringTransactionRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl RecurringTransactionRepository for MockRecurringTransactionRepository {
+    async fn save(&self, recurring: &RecurringTransaction) -> Result<(), RepositoryError> {
+        let mut map = self.recurring.lock().unwrap();
+        map.insert(recurring.id, recurring.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(
+        &self,
+        id: RecurringTransactionID,
+    ) -> Result<Option<RecurringTransaction>, RepositoryError> {
+        let recurring = self.recurring.lock().unwrap();
+        Ok(recurring.get(&id).cloned())
+    }
+
+    async fn find_by_owner(
+        &self,
+        owner: UserID,
+    ) -> Result<Vec<RecurringTransaction>, RepositoryError> {
+        let recurring = self.recurring.lock().unwrap();
+        let result: Vec<RecurringTransaction> = recurring
+            .values()
+            .filter(|r| r.owner_id == owner)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn find_due(
+        &self,
+        today: chrono::NaiveDate,
+    ) -> Result<Vec<RecurringTransaction>, RepositoryError> {
+        let recurring = self.recurring.lock().unwrap();
+        let result: Vec<RecurringTransaction> = recurring
+            .values()
+            .filter(|r| r.is_due(today))
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn delete(&self, id: RecurringTransactionID) -> Result<(), RepositoryError> {
+        let mut recurring = self.recurring.lock().unwrap();
+        recurring.remove(&id);
         Ok(())
     }
 }

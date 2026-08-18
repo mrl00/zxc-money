@@ -1,10 +1,11 @@
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::{AccountID, CategoryID, TagID, UserID};
+use crate::shared::ids::{AccountID, CategoryID, RecurringTransactionID, TagID, UserID};
 use crate::shared::period::Period;
 use async_trait::async_trait;
 
 use super::account::Account;
 use super::category::{Category, Tag};
+use super::recurring_transaction::RecurringTransaction;
 use super::transaction::{Transaction, TransactionType};
 
 #[async_trait]
@@ -57,4 +58,22 @@ pub trait TagRepository: Send + Sync {
     async fn find_by_id(&self, id: TagID) -> Result<Option<Tag>, RepositoryError>;
     async fn find_or_create(&self, name: String) -> Result<Tag, RepositoryError>;
     async fn delete(&self, id: TagID) -> Result<(), RepositoryError>;
+}
+
+#[async_trait]
+pub trait RecurringTransactionRepository: Send + Sync {
+    async fn save(&self, recurring: &RecurringTransaction) -> Result<(), RepositoryError>;
+    async fn find_by_id(
+        &self,
+        id: RecurringTransactionID,
+    ) -> Result<Option<RecurringTransaction>, RepositoryError>;
+    async fn find_by_owner(
+        &self,
+        owner: UserID,
+    ) -> Result<Vec<RecurringTransaction>, RepositoryError>;
+    async fn find_due(
+        &self,
+        today: chrono::NaiveDate,
+    ) -> Result<Vec<RecurringTransaction>, RepositoryError>;
+    async fn delete(&self, id: RecurringTransactionID) -> Result<(), RepositoryError>;
 }

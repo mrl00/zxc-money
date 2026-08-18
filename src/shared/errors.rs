@@ -53,6 +53,9 @@ pub enum LedgerError {
     #[error("forbidden: {0}")]
     Forbidden(String),
 
+    #[error("recurring transaction not found: {0}")]
+    RecurringTransactionNotFound(String),
+
     #[error("repository error: {0}")]
     Repository(#[from] RepositoryError),
 
