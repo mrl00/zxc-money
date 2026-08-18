@@ -122,8 +122,7 @@ mod tests {
         let period = YearMonth::new(2026, 1).period();
         let (budget_repo, publisher) = setup_with_budget(category_id, period, 1000_00).await;
 
-        let handler =
-            TransactionRecordedBudgetHandler::new(budget_repo, publisher.clone());
+        let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher.clone());
 
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
@@ -146,8 +145,7 @@ mod tests {
         let period = YearMonth::new(2026, 1).period();
         let (budget_repo, publisher) = setup_with_budget(category_id, period, 500_00).await;
 
-        let handler =
-            TransactionRecordedBudgetHandler::new(budget_repo, publisher.clone());
+        let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher.clone());
 
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
@@ -170,8 +168,7 @@ mod tests {
         let period = YearMonth::new(2026, 1).period();
         let (budget_repo, publisher) = setup_with_budget(category_id, period, 500_00).await;
 
-        let handler =
-            TransactionRecordedBudgetHandler::new(budget_repo, publisher);
+        let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher);
 
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
@@ -193,8 +190,7 @@ mod tests {
         let period = YearMonth::new(2026, 1).period();
         let (budget_repo, publisher) = setup_with_budget(category_id, period, 500_00).await;
 
-        let handler =
-            TransactionRecordedBudgetHandler::new(budget_repo, publisher);
+        let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher);
 
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
@@ -216,8 +212,7 @@ mod tests {
         let budget_repo = Arc::new(MockBudgetRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
 
-        let handler =
-            TransactionRecordedBudgetHandler::new(budget_repo, publisher);
+        let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher);
 
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),

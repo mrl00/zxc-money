@@ -27,15 +27,9 @@ pub struct DefineBudgetHandler<B: BudgetRepository, P: EventPublisher, Id: IdGen
     id_generator: Arc<Id>,
 }
 
-impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator>
-    DefineBudgetHandler<B, P, Id>
-{
+impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator> DefineBudgetHandler<B, P, Id> {
     /// Creates a new [`DefineBudgetHandler`] with the given dependencies.
-    pub fn new(
-        budget_repository: Arc<B>,
-        event_publisher: Arc<P>,
-        id_generator: Arc<Id>,
-    ) -> Self {
+    pub fn new(budget_repository: Arc<B>, event_publisher: Arc<P>, id_generator: Arc<Id>) -> Self {
         Self {
             budget_repository,
             event_publisher,
@@ -62,7 +56,13 @@ impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator>
         }
 
         let id = BudgetID::from_uuid(self.id_generator.new_id());
-        let budget = Budget::new(id, cmd.owner_id, cmd.category_id, cmd.period, cmd.planned_amount)?;
+        let budget = Budget::new(
+            id,
+            cmd.owner_id,
+            cmd.category_id,
+            cmd.period,
+            cmd.planned_amount,
+        )?;
 
         let event = BudgetDefined {
             budget_id: budget.id,
@@ -122,7 +122,8 @@ mod tests {
     #[tokio::test]
     async fn test_define_budget_duplicate_category_period() {
         let (budget_repo, publisher, id_gen) = setup();
-        let handler = DefineBudgetHandler::new(budget_repo.clone(), publisher.clone(), id_gen.clone());
+        let handler =
+            DefineBudgetHandler::new(budget_repo.clone(), publisher.clone(), id_gen.clone());
 
         let owner_id = UserID::new();
         let category_id = CategoryID::new();
@@ -173,8 +174,7 @@ mod tests {
         let budget_repo = Arc::new(MockBudgetRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let id_gen = Arc::new(crate::provider::id::UuidGenerator);
-        let handler =
-            DefineBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
+        let handler = DefineBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
 
         let period = Period::new(
             chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
@@ -202,7 +202,25 @@ mod tests {
             .unwrap();
 
         assert_ne!(id1, id2);
-        assert_eq!(budget_repo.find_by_id(id1).await.unwrap().unwrap().planned_amount.amount(), 500_00);
-        assert_eq!(budget_repo.find_by_id(id2).await.unwrap().unwrap().planned_amount.amount(), 300_00);
+        assert_eq!(
+            budget_repo
+                .find_by_id(id1)
+                .await
+                .unwrap()
+                .unwrap()
+                .planned_amount
+                .amount(),
+            500_00
+        );
+        assert_eq!(
+            budget_repo
+                .find_by_id(id2)
+                .await
+                .unwrap()
+                .unwrap()
+                .planned_amount
+                .amount(),
+            300_00
+        );
     }
 }

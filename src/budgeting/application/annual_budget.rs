@@ -25,15 +25,9 @@ pub struct CreateAnnualBudgetHandler<B: BudgetRepository, P: EventPublisher, Id:
     id_generator: Arc<Id>,
 }
 
-impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator>
-    CreateAnnualBudgetHandler<B, P, Id>
-{
+impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator> CreateAnnualBudgetHandler<B, P, Id> {
     /// Creates a new [`CreateAnnualBudgetHandler`] with the given dependencies.
-    pub fn new(
-        budget_repository: Arc<B>,
-        event_publisher: Arc<P>,
-        id_generator: Arc<Id>,
-    ) -> Self {
+    pub fn new(budget_repository: Arc<B>, event_publisher: Arc<P>, id_generator: Arc<Id>) -> Self {
         Self {
             budget_repository,
             event_publisher,
@@ -125,8 +119,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_annual_budget_creates_12() {
         let (budget_repo, publisher, id_gen) = setup();
-        let handler =
-            CreateAnnualBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
+        let handler = CreateAnnualBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
 
         let cmd = CreateAnnualBudgetCommand {
             owner_id: UserID::new(),
@@ -138,10 +131,7 @@ mod tests {
         let ids = handler.handle(cmd).await.unwrap();
         assert_eq!(ids.len(), 12);
 
-        let owner_ids = budget_repo
-            .find_by_owner(UserID::new())
-            .await
-            .unwrap();
+        let owner_ids = budget_repo.find_by_owner(UserID::new()).await.unwrap();
         // MockGoalRepository uses find_by_owner with a new UserID, which won't match.
         // Let's just check the count via the repo directly.
     }
@@ -182,8 +172,7 @@ mod tests {
         let budget_repo = Arc::new(MockBudgetRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let id_gen = Arc::new(crate::provider::id::UuidGenerator);
-        let handler =
-            CreateAnnualBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
+        let handler = CreateAnnualBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
 
         let cmd = CreateAnnualBudgetCommand {
             owner_id: UserID::new(),

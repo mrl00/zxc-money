@@ -69,8 +69,7 @@ impl<G: GoalRepository, P: EventPublisher> TransactionRecordedGoalHandler<G, P> 
                 timestamp: chrono::Utc::now(),
             };
 
-            let mut events: Vec<&dyn crate::shared::events::DomainEvent> =
-                vec![&contributed];
+            let mut events: Vec<&dyn crate::shared::events::DomainEvent> = vec![&contributed];
 
             if was_in_progress && goal.status == GoalStatus::Achieved {
                 events.push(&achieved);
@@ -99,7 +98,11 @@ mod tests {
     async fn setup_with_linked_goal(
         target: i64,
         account_id: AccountID,
-    ) -> (Arc<MockGoalRepository>, Arc<InMemoryEventDispatcher>, GoalID) {
+    ) -> (
+        Arc<MockGoalRepository>,
+        Arc<InMemoryEventDispatcher>,
+        GoalID,
+    ) {
         let goal_repo = Arc::new(MockGoalRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let mut goal = FinancialGoal::new(

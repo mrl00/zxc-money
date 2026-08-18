@@ -35,7 +35,13 @@ impl<G: GoalRepository, Id: IdGenerator> CreateGoalHandler<G, Id> {
     /// Executes the create-goal use case.
     pub async fn handle(&self, cmd: CreateGoalCommand) -> Result<GoalID, BudgetingError> {
         let id = GoalID::from_uuid(self.id_generator.new_id());
-        let goal = FinancialGoal::new(id, cmd.owner_id, cmd.name, cmd.target_amount, cmd.target_date);
+        let goal = FinancialGoal::new(
+            id,
+            cmd.owner_id,
+            cmd.name,
+            cmd.target_amount,
+            cmd.target_date,
+        );
 
         let goal_id = goal.id;
         self.goal_repository.save(&goal).await?;

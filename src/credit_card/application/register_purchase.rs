@@ -240,11 +240,7 @@ mod tests {
         (cc_repo, inv_repo, publisher, id_gen)
     }
 
-    async fn make_card(
-        cc_repo: &MockCreditCardRepository,
-        owner: UserID,
-        card_id: CreditCardID,
-    ) {
+    async fn make_card(cc_repo: &MockCreditCardRepository, owner: UserID, card_id: CreditCardID) {
         let card = crate::credit_card::domain::card::CreditCard::new(
             card_id,
             owner,
@@ -264,12 +260,7 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo.clone(),
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo.clone(), publisher, id_gen);
 
         let result = handler
             .handle(RegisterPurchaseCommand {
@@ -288,7 +279,10 @@ mod tests {
 
         let invoice = inv_repo.find_open(card_id).await.unwrap().unwrap();
         assert_eq!(invoice.purchases.len(), 1);
-        assert_eq!(invoice.purchases[0].total_amount, Money::new(5000, Currency::BRL));
+        assert_eq!(
+            invoice.purchases[0].total_amount,
+            Money::new(5000, Currency::BRL)
+        );
     }
 
     #[tokio::test]
@@ -298,12 +292,7 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo.clone(),
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo.clone(), publisher, id_gen);
 
         let result = handler
             .handle(RegisterPurchaseCommand {
@@ -342,9 +331,18 @@ mod tests {
         assert_eq!(inv_mar.purchases.len(), 1);
 
         // Each installment is 3000
-        assert_eq!(inv_jan.purchases[0].total_amount, Money::new(3000, Currency::BRL));
-        assert_eq!(inv_feb.purchases[0].total_amount, Money::new(3000, Currency::BRL));
-        assert_eq!(inv_mar.purchases[0].total_amount, Money::new(3000, Currency::BRL));
+        assert_eq!(
+            inv_jan.purchases[0].total_amount,
+            Money::new(3000, Currency::BRL)
+        );
+        assert_eq!(
+            inv_feb.purchases[0].total_amount,
+            Money::new(3000, Currency::BRL)
+        );
+        assert_eq!(
+            inv_mar.purchases[0].total_amount,
+            Money::new(3000, Currency::BRL)
+        );
 
         // Same group_id
         let group = inv_jan.purchases[0].installment_group_id.unwrap();
@@ -364,12 +362,7 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo.clone(),
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo.clone(), publisher, id_gen);
 
         // 1000 / 3 = 333 * 3 = 999, remainder = 1
         let result = handler
@@ -403,9 +396,18 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert_eq!(inv_jun.purchases[0].total_amount, Money::new(333, Currency::BRL));
-        assert_eq!(inv_jul.purchases[0].total_amount, Money::new(333, Currency::BRL));
-        assert_eq!(inv_aug.purchases[0].total_amount, Money::new(334, Currency::BRL));
+        assert_eq!(
+            inv_jun.purchases[0].total_amount,
+            Money::new(333, Currency::BRL)
+        );
+        assert_eq!(
+            inv_jul.purchases[0].total_amount,
+            Money::new(333, Currency::BRL)
+        );
+        assert_eq!(
+            inv_aug.purchases[0].total_amount,
+            Money::new(334, Currency::BRL)
+        );
     }
 
     #[tokio::test]
@@ -415,12 +417,7 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo,
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo, publisher, id_gen);
 
         let result = handler
             .handle(RegisterPurchaseCommand {
@@ -447,12 +444,7 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo,
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo, publisher, id_gen);
 
         let result = handler
             .handle(RegisterPurchaseCommand {
@@ -479,12 +471,7 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(
-            cc_repo,
-            inv_repo.clone(),
-            publisher,
-            id_gen,
-        );
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo.clone(), publisher, id_gen);
 
         let result = handler
             .handle(RegisterPurchaseCommand {
@@ -517,8 +504,17 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert_eq!(inv_nov.purchases[0].total_amount, Money::new(4000, Currency::BRL));
-        assert_eq!(inv_dec.purchases[0].total_amount, Money::new(4000, Currency::BRL));
-        assert_eq!(inv_jan.purchases[0].total_amount, Money::new(4000, Currency::BRL));
+        assert_eq!(
+            inv_nov.purchases[0].total_amount,
+            Money::new(4000, Currency::BRL)
+        );
+        assert_eq!(
+            inv_dec.purchases[0].total_amount,
+            Money::new(4000, Currency::BRL)
+        );
+        assert_eq!(
+            inv_jan.purchases[0].total_amount,
+            Money::new(4000, Currency::BRL)
+        );
     }
 }

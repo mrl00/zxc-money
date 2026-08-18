@@ -133,8 +133,7 @@ mod tests {
     #[test]
     fn test_budget_update_amount() {
         let mut b = sample_budget();
-        b.update_amount(Money::new(800_00, Currency::BRL))
-            .unwrap();
+        b.update_amount(Money::new(800_00, Currency::BRL)).unwrap();
         assert_eq!(b.planned_amount.amount(), 800_00);
     }
 
