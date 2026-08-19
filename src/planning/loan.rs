@@ -93,13 +93,59 @@ fn calculate_loan_payment(principal: i64, months: u32, monthly_rate: rust_decima
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::money::Currency;
+
+    const BRL: Currency = Currency::BRL;
 
     #[test]
     fn test_loan_simulation() {
-        let principal = Money::new(50000, crate::shared::money::Currency::BRL);
+        let principal = Money::new(50000, BRL);
         let schedule = simulate_loan(principal, 12, rust_decimal::Decimal::from(10));
 
         assert_eq!(schedule.entries.len(), 12);
         assert!(schedule.total_interest.amount() > 0);
+    }
+
+    #[test]
+    fn test_loan_known_values() {
+        let principal = Money::new(50_000_00, BRL);
+        let schedule = simulate_loan(principal, 24, rust_decimal::Decimal::from(12));
+
+        assert_eq!(schedule.entries.len(), 24);
+        assert_eq!(
+            schedule.total_paid.amount(),
+            schedule
+                .entries
+                .iter()
+                .map(|e| e.payment.amount())
+                .sum::<i64>()
+        );
+        assert_eq!(
+            schedule.total_interest.amount(),
+            schedule
+                .entries
+                .iter()
+                .map(|e| e.interest.amount())
+                .sum::<i64>()
+        );
+        let last = schedule.entries.last().unwrap();
+        assert!(last.balance.amount().abs() <= 100);
+        assert!(
+            (schedule.total_paid.amount()
+                - (schedule.total_interest.amount() + principal.amount()))
+            .abs()
+                <= 100
+        );
+    }
+
+    #[test]
+    fn test_loan_all_payments_equal() {
+        let principal = Money::new(100_000_00, BRL);
+        let schedule = simulate_loan(principal, 60, rust_decimal::Decimal::from(8));
+
+        let first = schedule.entries[0].payment.amount();
+        for entry in &schedule.entries {
+            assert_eq!(entry.payment.amount(), first);
+        }
     }
 }

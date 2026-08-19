@@ -99,14 +99,75 @@ pub fn required_contribution(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::money::Currency;
+
+    const BRL: Currency = Currency::BRL;
 
     #[test]
     fn test_retirement_simulation() {
-        let current = Money::new(100000, crate::shared::money::Currency::BRL);
-        let monthly = Money::new(1000, crate::shared::money::Currency::BRL);
+        let current = Money::new(100000, BRL);
+        let monthly = Money::new(1000, BRL);
         let projection = simulate_retirement(current, monthly, 10, rust_decimal::Decimal::from(8));
 
         assert_eq!(projection.timeline.len(), 10);
         assert!(projection.final_balance.amount() > current.amount());
+    }
+
+    #[test]
+    fn test_retirement_known_values() {
+        let current = Money::new(100_000_00, BRL);
+        let monthly = Money::new(2_000_00, BRL);
+        let projection = simulate_retirement(current, monthly, 5, rust_decimal::Decimal::from(10));
+
+        assert_eq!(projection.timeline.len(), 5);
+        let total_contributions = projection
+            .timeline
+            .iter()
+            .map(|e| e.contributions.amount())
+            .sum::<i64>();
+        assert_eq!(total_contributions, monthly.amount() * 12 * 5);
+        assert!(projection.final_balance.amount() > current.amount() + total_contributions);
+    }
+
+    #[test]
+    fn test_retirement_zero_return() {
+        let current = Money::new(50_000_00, BRL);
+        let monthly = Money::new(1_000_00, BRL);
+        let projection = simulate_retirement(current, monthly, 10, rust_decimal::Decimal::ZERO);
+
+        assert_eq!(
+            projection.final_balance.amount(),
+            current.amount() + monthly.amount() * 120
+        );
+    }
+
+    #[test]
+    fn test_retirement_higher_return_gives_more() {
+        let current = Money::new(100_000_00, BRL);
+        let monthly = Money::new(2_000_00, BRL);
+        let low = simulate_retirement(current, monthly, 10, rust_decimal::Decimal::from(5));
+        let high = simulate_retirement(current, monthly, 10, rust_decimal::Decimal::from(12));
+
+        assert!(high.final_balance.amount() > low.final_balance.amount());
+    }
+
+    #[test]
+    fn test_required_contribution_known_values() {
+        let target = Money::new(1_000_000_00, BRL);
+        let current = Money::new(200_000_00, BRL);
+        let result = required_contribution(target, current, 20, rust_decimal::Decimal::from(8));
+
+        assert!(result.amount() > 0);
+        let projection = simulate_retirement(current, result, 20, rust_decimal::Decimal::from(8));
+        assert!(projection.final_balance.amount() >= target.amount() - 10_000);
+    }
+
+    #[test]
+    fn test_required_contribution_already_reached() {
+        let target = Money::new(100_000_00, BRL);
+        let current = Money::new(200_000_00, BRL);
+        let result = required_contribution(target, current, 10, rust_decimal::Decimal::from(8));
+
+        assert_eq!(result.amount(), 0);
     }
 }

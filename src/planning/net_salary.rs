@@ -112,10 +112,13 @@ fn calculate_irrf(base: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::money::Currency;
+
+    const BRL: Currency = Currency::BRL;
 
     #[test]
     fn test_net_salary_clt() {
-        let gross = Money::new(500000, crate::shared::money::Currency::BRL);
+        let gross = Money::new(500000, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
 
         assert!(result.net.amount() < gross.amount());
@@ -125,20 +128,95 @@ mod tests {
 
     #[test]
     fn test_net_salary_pj() {
-        let gross = Money::new(500000, crate::shared::money::Currency::BRL);
+        let gross = Money::new(500000, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::PJ);
 
         assert!(result.net.amount() < gross.amount());
-        assert!(result.inss.amount() == 0);
-        assert!(result.irrf.amount() == 0);
+        assert_eq!(result.inss.amount(), 0);
+        assert_eq!(result.irrf.amount(), 0);
     }
 
     #[test]
     fn test_net_salary_exempt() {
-        let gross = Money::new(150000, crate::shared::money::Currency::BRL);
+        let gross = Money::new(150000, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
 
         assert_eq!(result.irrf.amount(), 0);
         assert_eq!(result.inss.amount(), 0);
+    }
+
+    #[test]
+    fn test_net_salary_clt_known_values() {
+        let gross = Money::new(10_000_00, BRL);
+        let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
+
+        assert_eq!(result.gross.amount(), gross.amount());
+        assert!(
+            (result.total_discounts.amount() - (result.inss.amount() + result.irrf.amount())).abs()
+                <= 1
+        );
+        assert!(
+            (result.net.amount() - (gross.amount() - result.total_discounts.amount())).abs() <= 1
+        );
+        assert!(result.inss.amount() > 0);
+        assert!(result.irrf.amount() > 0);
+    }
+
+    #[test]
+    fn test_net_salary_pj_das_6pct() {
+        let gross = Money::new(15_000_00, BRL);
+        let result = calculate_net_salary(gross, 0, TaxRegime::PJ);
+
+        assert_eq!(result.total_discounts.amount(), 900_00);
+        assert_eq!(result.net.amount(), 14_100_00);
+        assert_eq!(result.inss.amount(), 0);
+        assert_eq!(result.irrf.amount(), 0);
+    }
+
+    #[test]
+    fn test_net_salary_zero_dependents() {
+        let gross = Money::new(8_000_00, BRL);
+        let r0 = calculate_net_salary(gross, 0, TaxRegime::CLT);
+        let r2 = calculate_net_salary(gross, 2, TaxRegime::CLT);
+
+        assert!(r2.net.amount() > r0.net.amount());
+    }
+
+    #[test]
+    fn test_net_salary_many_dependents() {
+        let gross = Money::new(3_000_00, BRL);
+        let result = calculate_net_salary(gross, 20, TaxRegime::CLT);
+
+        assert!(result.net.amount() > 0);
+        assert_eq!(result.irrf.amount(), 0);
+    }
+
+    #[test]
+    fn test_net_salary_max_bracket() {
+        let gross = Money::new(80_000_00, BRL);
+        let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
+
+        assert!(result.irrf.amount() > 0);
+        let irrf_rate =
+            result.irrf.amount() as f64 / (gross.amount() - result.inss.amount()) as f64;
+        assert!(irrf_rate > 0.25);
+    }
+
+    #[test]
+    fn test_net_salary_just_below_threshold() {
+        let gross = Money::new(2_259_20, BRL);
+        let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
+
+        assert_eq!(result.irrf.amount(), 0);
+    }
+
+    #[test]
+    fn test_net_salary_discounts_never_exceed_gross() {
+        for gross_amount in [1_000_00, 5_000_00, 10_000_00, 50_000_00, 100_000_00] {
+            let gross = Money::new(gross_amount, BRL);
+            let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
+            assert!(result.net.amount() > 0);
+            assert!(result.total_discounts.amount() < gross.amount());
+        }
     }
 }
