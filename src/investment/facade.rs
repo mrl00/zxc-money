@@ -23,12 +23,17 @@ use crate::shared::ids::AssetID;
 /// # Example
 ///
 /// ```ignore
-/// let facade = Facade::new(asset_repo, portfolio_repo, event_publisher, id_gen);
+/// let facade = InvestmentFacade::new(asset_repo, portfolio_repo, event_publisher, id_gen);
 ///
 /// let asset_id = facade.register_asset(RegisterAssetCommand { ... }).await?;
 /// facade.record_buy(RecordBuyCommand { ... }).await?;
 /// ```
-pub struct Facade<A: AssetRepository, P: PortfolioRepository, EP: EventPublisher, I: IdGenerator> {
+pub struct InvestmentFacade<
+    A: AssetRepository,
+    P: PortfolioRepository,
+    EP: EventPublisher,
+    I: IdGenerator,
+> {
     register_asset: RegisterAssetHandler<A, I>,
     record_buy: RecordBuyHandler<P, A, EP>,
     record_sell: RecordSellHandler<P, EP>,
@@ -37,7 +42,7 @@ pub struct Facade<A: AssetRepository, P: PortfolioRepository, EP: EventPublisher
 }
 
 impl<A: AssetRepository, P: PortfolioRepository, EP: EventPublisher, I: IdGenerator>
-    Facade<A, P, EP, I>
+    InvestmentFacade<A, P, EP, I>
 {
     /// Creates a new facade with shared dependencies.
     pub fn new(
@@ -142,7 +147,7 @@ mod tests {
         let (asset_repo, portfolio_repo, publisher) = setup().await;
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
 
-        let facade = Facade::new(
+        let facade = InvestmentFacade::new(
             asset_repo.clone(),
             portfolio_repo.clone(),
             publisher,

@@ -18,7 +18,7 @@ use crate::reporting::projections::cash_flow::CashFlowStore;
 use crate::reporting::projections::net_worth::NetWorthStore;
 
 /// Facade aggregating all reporting query use cases for front-end consumption.
-pub struct Facade {
+pub struct ReportingFacade {
     get_monthly_summary: GetMonthlySummaryHandler,
     get_category_report: GetCategoryReportHandler,
     get_net_worth: GetNetWorthHandler,
@@ -26,8 +26,8 @@ pub struct Facade {
     get_top_expenses: GetTopExpensesHandler,
 }
 
-impl Facade {
-    /// Creates a new [`Facade`] with the given stores.
+impl ReportingFacade {
+    /// Creates a new [`ReportingFacade`] with the given stores.
     pub fn new(
         cash_flow_store: Arc<CashFlowStore>,
         net_worth_store: Arc<NetWorthStore>,
