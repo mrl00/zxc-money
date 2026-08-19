@@ -179,6 +179,38 @@ pub enum BillsError {
     Ledger(#[from] LedgerError),
 }
 
+/// Errors from the Importing bounded context (statement parsing, preview, import).
+#[derive(Debug, Error)]
+pub enum ImportError {
+    /// The parser failed to parse the input data.
+    #[error("parse error: {0}")]
+    ParseError(String),
+
+    /// A raw transaction field is missing or invalid.
+    #[error("invalid raw transaction: {0}")]
+    InvalidRawTransaction(String),
+
+    /// The import session or candidate set was not found.
+    #[error("import not found: {0}")]
+    NotFound(String),
+
+    /// A domain invariant was violated.
+    #[error("invariant violated: {0}")]
+    InvariantViolation(String),
+
+    /// An error from the persistence layer.
+    #[error("repository error: {0}")]
+    Repository(#[from] RepositoryError),
+
+    /// An error from the event publishing layer.
+    #[error("publish error: {0}")]
+    Publish(#[from] PublishError),
+
+    /// An error propagated from the Ledger context.
+    #[error("ledger error: {0}")]
+    Ledger(#[from] LedgerError),
+}
+
 /// Errors from the Investment bounded context (portfolios, assets, positions).
 #[derive(Debug, Error)]
 pub enum InvestmentError {

@@ -86,6 +86,8 @@ define_id!(UserID);
 define_id!(RecurringTransactionID);
 // Groups installment purchases of the same transaction across multiple invoices.
 define_id!(InstallmentGroupID);
+// Identifier for an import session.
+define_id!(ImportSessionID);
 
 #[cfg(test)]
 mod tests {

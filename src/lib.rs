@@ -27,18 +27,20 @@
 //! ## Modules
 //!
 //! - [`shared`] — Value objects, error types, event system, ID types, mocks
-//! - [`provider`] — Port traits for ID generation and datetime
+//! - [`provider`] — Port traits for ID generation, datetime, and statement parsing
 //! - [`ledger`] — Accounts, transactions, transfers, recurring transactions
 //! - [`credit_card`] — Credit cards, invoices, purchases, installments
 //! - [`bills`] — Bills reminder (scheduled payments)
 //! - [`budgeting`] — Budgets by category, financial goals
 //! - [`investment`] — Portfolios, assets, positions
+//! - [`importing`] — Statement parsing, preview, and import pipeline
 //! - [`planning`] — Loan, mortgage, retirement, net salary simulators
 //! - [`reporting`] — Account balance projections, net worth (read side)
 
 pub mod bills;
 pub mod budgeting;
 pub mod credit_card;
+pub mod importing;
 pub mod investment;
 pub mod ledger;
 pub mod planning;
@@ -50,9 +52,12 @@ pub mod shared;
 pub use bills::facade::BillsFacade;
 pub use budgeting::facade::BudgetingFacade;
 pub use credit_card::facade::CreditCardFacade;
+pub use importing::facade::ImportingFacade;
 pub use investment::facade::InvestmentFacade;
 pub use ledger::facade::LedgerFacade;
 pub use reporting::facade::ReportingFacade;
 
 // Re-exports: Provider ports
-pub use provider::{DateTimeProvider, IdGenerator, SystemDateTime, UuidGenerator};
+pub use provider::{
+    ColumnMapping, DateTimeProvider, IdGenerator, StatementParser, SystemDateTime, UuidGenerator,
+};
