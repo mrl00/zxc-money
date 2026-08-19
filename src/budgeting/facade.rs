@@ -13,16 +13,21 @@ use crate::shared::events::EventPublisher;
 /// Facade aggregating all budgeting use cases for consumption by front-ends.
 ///
 /// Follows the Facade pattern from the DDD architecture spec (section 9.3).
-pub struct Facade<B: BudgetRepository, G: GoalRepository, P: EventPublisher, Id: IdGenerator> {
+pub struct BudgetingFacade<
+    B: BudgetRepository,
+    G: GoalRepository,
+    P: EventPublisher,
+    Id: IdGenerator,
+> {
     define_budget: DefineBudgetHandler<B, P, Id>,
     create_goal: CreateGoalHandler<G, Id>,
     contribute_to_goal: ContributeToGoalHandler<G, P>,
 }
 
 impl<B: BudgetRepository, G: GoalRepository, P: EventPublisher, Id: IdGenerator>
-    Facade<B, G, P, Id>
+    BudgetingFacade<B, G, P, Id>
 {
-    /// Creates a new [`Facade`] with the given dependency arcs.
+    /// Creates a new [`BudgetingFacade`] with the given dependency arcs.
     pub fn new(
         budget_repository: Arc<B>,
         goal_repository: Arc<G>,

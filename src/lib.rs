@@ -45,3 +45,14 @@ pub mod planning;
 pub mod provider;
 pub mod reporting;
 pub mod shared;
+
+// Re-exports: Facades
+pub use bills::facade::BillsFacade;
+pub use budgeting::facade::BudgetingFacade;
+pub use credit_card::facade::CreditCardFacade;
+pub use investment::facade::InvestmentFacade;
+pub use ledger::facade::LedgerFacade;
+pub use reporting::facade::ReportingFacade;
+
+// Re-exports: Provider ports
+pub use provider::{DateTimeProvider, IdGenerator, SystemDateTime, UuidGenerator};
