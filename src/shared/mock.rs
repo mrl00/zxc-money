@@ -1,7 +1,7 @@
 use crate::credit_card::domain::card::CreditCard;
 use crate::credit_card::domain::invoice::Invoice;
 use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
-use crate::shared::ids::{BudgetID, CreditCardID, GoalID, InvoiceID};
+use crate::shared::ids::{AssetID, BudgetID, CreditCardID, GoalID, InvoiceID, PortfolioID};
 use crate::shared::period::{Period, YearMonth};
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -11,6 +11,9 @@ use crate::bills::domain::repository::BillRepository;
 use crate::budgeting::domain::budget::Budget;
 use crate::budgeting::domain::goal::FinancialGoal;
 use crate::budgeting::domain::repository::{BudgetRepository, GoalRepository};
+use crate::investment::domain::asset::Asset;
+use crate::investment::domain::portfolio::Portfolio;
+use crate::investment::domain::repository::{AssetRepository, PortfolioRepository};
 use crate::shared::errors::RepositoryError;
 use crate::shared::ids::{AccountID, BillID, TransactionID, UserID};
 
@@ -511,6 +514,102 @@ impl BillRepository for MockBillRepository {
     async fn delete(&self, id: BillID) -> Result<(), RepositoryError> {
         let mut bills = self.bills.lock().unwrap();
         bills.remove(&id);
+        Ok(())
+    }
+}
+
+pub struct MockAssetRepository {
+    assets: Mutex<HashMap<AssetID, Asset>>,
+}
+
+impl MockAssetRepository {
+    pub fn new() -> Self {
+        Self {
+            assets: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockAssetRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl AssetRepository for MockAssetRepository {
+    async fn save(&self, asset: &Asset) -> Result<(), RepositoryError> {
+        let mut assets = self.assets.lock().unwrap();
+        assets.insert(asset.id, asset.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: AssetID) -> Result<Option<Asset>, RepositoryError> {
+        let assets = self.assets.lock().unwrap();
+        Ok(assets.get(&id).cloned())
+    }
+
+    async fn find_by_ticker(&self, ticker: &str) -> Result<Option<Asset>, RepositoryError> {
+        let assets = self.assets.lock().unwrap();
+        Ok(assets.values().find(|a| a.ticker == ticker).cloned())
+    }
+
+    async fn delete(&self, id: AssetID) -> Result<(), RepositoryError> {
+        let mut assets = self.assets.lock().unwrap();
+        assets.remove(&id);
+        Ok(())
+    }
+}
+
+pub struct MockPortfolioRepository {
+    portfolios: Mutex<HashMap<PortfolioID, Portfolio>>,
+}
+
+impl MockPortfolioRepository {
+    pub fn new() -> Self {
+        Self {
+            portfolios: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Returns all portfolios (test helper, not part of the trait).
+    pub async fn find_all(&self) -> Result<Vec<Portfolio>, RepositoryError> {
+        let portfolios = self.portfolios.lock().unwrap();
+        Ok(portfolios.values().cloned().collect())
+    }
+}
+
+impl Default for MockPortfolioRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl PortfolioRepository for MockPortfolioRepository {
+    async fn save(&self, portfolio: &Portfolio) -> Result<(), RepositoryError> {
+        let mut portfolios = self.portfolios.lock().unwrap();
+        portfolios.insert(portfolio.id, portfolio.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: PortfolioID) -> Result<Option<Portfolio>, RepositoryError> {
+        let portfolios = self.portfolios.lock().unwrap();
+        Ok(portfolios.get(&id).cloned())
+    }
+
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<Portfolio>, RepositoryError> {
+        let portfolios = self.portfolios.lock().unwrap();
+        Ok(portfolios
+            .values()
+            .filter(|p| p.owner_id == owner)
+            .cloned()
+            .collect())
+    }
+
+    async fn delete(&self, id: PortfolioID) -> Result<(), RepositoryError> {
+        let mut portfolios = self.portfolios.lock().unwrap();
+        portfolios.remove(&id);
         Ok(())
     }
 }
