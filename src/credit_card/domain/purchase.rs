@@ -45,6 +45,7 @@ impl Purchase {
     }
 
     /// Creates a purchase that is one installment of a split transaction.
+    #[allow(clippy::too_many_arguments)]
     pub fn new_installment(
         id: PurchaseID,
         description: String,

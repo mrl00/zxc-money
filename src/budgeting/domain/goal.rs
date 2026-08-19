@@ -1,6 +1,7 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::shared::errors::BudgetingError;
 use crate::shared::ids::{AccountID, GoalID, UserID};
 use crate::shared::money::Money;
 
@@ -27,6 +28,7 @@ pub struct FinancialGoal {
     pub linked_account_id: Option<AccountID>,
     pub status: GoalStatus,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl FinancialGoal {
@@ -38,6 +40,7 @@ impl FinancialGoal {
         target_amount: Money,
         target_date: NaiveDate,
     ) -> Self {
+        let now = Utc::now();
         Self {
             id,
             owner_id,
@@ -47,7 +50,8 @@ impl FinancialGoal {
             target_date,
             linked_account_id: None,
             status: GoalStatus::InProgress,
-            created_at: Utc::now(),
+            created_at: now,
+            updated_at: now,
         }
     }
 
@@ -61,12 +65,9 @@ impl FinancialGoal {
     ///
     /// Automatically marks the goal as [`GoalStatus::Achieved`] when the target is reached.
     /// Returns an error if the goal is not in progress.
-    pub fn contribute(
-        &mut self,
-        amount: Money,
-    ) -> Result<(), crate::shared::errors::BudgetingError> {
+    pub fn contribute(&mut self, amount: Money) -> Result<(), BudgetingError> {
         if self.status != GoalStatus::InProgress {
-            return Err(crate::shared::errors::BudgetingError::InvariantViolation(
+            return Err(BudgetingError::InvariantViolation(
                 "can only contribute to in-progress goals".into(),
             ));
         }
@@ -77,6 +78,23 @@ impl FinancialGoal {
             self.status = GoalStatus::Achieved;
         }
 
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// Abandons the goal. Only allowed if the goal is in progress.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BudgetingError::InvariantViolation`] if the goal is not in progress.
+    pub fn abandon(&mut self) -> Result<(), BudgetingError> {
+        if self.status != GoalStatus::InProgress {
+            return Err(BudgetingError::InvariantViolation(
+                "can only abandon in-progress goals".into(),
+            ));
+        }
+        self.status = GoalStatus::Abandoned;
+        self.updated_at = Utc::now();
         Ok(())
     }
 
@@ -86,5 +104,112 @@ impl FinancialGoal {
             return 100.0;
         }
         (self.current_amount.amount() as f64 / self.target_amount.amount() as f64) * 100.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::ids::{GoalID, UserID};
+    use crate::shared::money::{Currency, Money};
+
+    fn sample_goal() -> FinancialGoal {
+        FinancialGoal::new(
+            GoalID::new(),
+            UserID::new(),
+            "Emergency Fund".into(),
+            Money::new(10_000_00, Currency::BRL),
+            NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+        )
+    }
+
+    #[test]
+    fn test_goal_creation() {
+        let g = sample_goal();
+        assert_eq!(g.status, GoalStatus::InProgress);
+        assert!(g.current_amount.is_zero());
+        assert!(g.linked_account_id.is_none());
+    }
+
+    #[test]
+    fn test_goal_contribute_partial() {
+        let mut g = sample_goal();
+        g.contribute(Money::new(5_000_00, Currency::BRL)).unwrap();
+        assert_eq!(g.current_amount.amount(), 5_000_00);
+        assert_eq!(g.status, GoalStatus::InProgress);
+        assert!((g.progress() - 50.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_goal_contribute_exact_target() {
+        let mut g = sample_goal();
+        g.contribute(Money::new(10_000_00, Currency::BRL)).unwrap();
+        assert_eq!(g.status, GoalStatus::Achieved);
+        assert!((g.progress() - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_goal_contribute_over_target() {
+        let mut g = sample_goal();
+        g.contribute(Money::new(12_000_00, Currency::BRL)).unwrap();
+        assert_eq!(g.status, GoalStatus::Achieved);
+    }
+
+    #[test]
+    fn test_goal_contribute_when_achieved_fails() {
+        let mut g = sample_goal();
+        g.contribute(Money::new(10_000_00, Currency::BRL)).unwrap();
+        let result = g.contribute(Money::new(1_000_00, Currency::BRL));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_goal_contribute_when_abandoned_fails() {
+        let mut g = sample_goal();
+        g.abandon().unwrap();
+        let result = g.contribute(Money::new(1_000_00, Currency::BRL));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_goal_abandon() {
+        let mut g = sample_goal();
+        g.abandon().unwrap();
+        assert_eq!(g.status, GoalStatus::Abandoned);
+    }
+
+    #[test]
+    fn test_goal_abandon_when_achieved_fails() {
+        let mut g = sample_goal();
+        g.contribute(Money::new(10_000_00, Currency::BRL)).unwrap();
+        let result = g.abandon();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_goal_progress_zero_target() {
+        let mut g = FinancialGoal::new(
+            GoalID::new(),
+            UserID::new(),
+            "Zero Goal".into(),
+            Money::new(0, Currency::BRL),
+            NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+        );
+        assert!((g.progress() - 100.0).abs() < f64::EPSILON);
+        // Cannot contribute to zero-target goal (amount 0 is invalid for Money)
+        // But progress should still be 100%
+    }
+
+    #[test]
+    fn test_goal_progress_calculation() {
+        let mut g = sample_goal();
+        g.contribute(Money::new(3_000_00, Currency::BRL)).unwrap();
+        assert!((g.progress() - 30.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_goal_with_linked_account() {
+        let g = sample_goal().with_linked_account(AccountID::new());
+        assert!(g.linked_account_id.is_some());
     }
 }

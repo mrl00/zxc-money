@@ -1,7 +1,6 @@
 use crate::ledger::domain::events::{RecurringTransactionGenerated, TransactionRecorded};
-use crate::ledger::domain::recurring_transaction::RecurringTransaction;
 use crate::ledger::domain::repository::{RecurringTransactionRepository, TransactionRepository};
-use crate::ledger::domain::transaction::{Transaction, TransactionType};
+use crate::ledger::domain::transaction::Transaction;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
@@ -116,6 +115,8 @@ mod tests {
     use super::*;
     use crate::ledger::domain::events::RecurringTransactionCreated;
     use crate::ledger::domain::recurring_transaction::Frequency;
+    use crate::ledger::domain::recurring_transaction::RecurringTransaction;
+    use crate::ledger::domain::transaction::TransactionType;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::ids::{AccountID, CategoryID, UserID};

@@ -1,14 +1,16 @@
 use crate::credit_card::domain::card::CreditCard;
 use crate::credit_card::domain::invoice::Invoice;
 use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
-use crate::shared::ids::{CreditCardID, InvoiceID};
-use crate::shared::period::YearMonth;
+use crate::shared::ids::{BudgetID, CreditCardID, GoalID, InvoiceID};
+use crate::shared::period::{Period, YearMonth};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use crate::budgeting::domain::budget::Budget;
+use crate::budgeting::domain::goal::FinancialGoal;
+use crate::budgeting::domain::repository::{BudgetRepository, GoalRepository};
 use crate::shared::errors::RepositoryError;
 use crate::shared::ids::{AccountID, TransactionID, UserID};
-use crate::shared::period::Period;
 
 use crate::ledger::domain::account::Account;
 use crate::ledger::domain::recurring_transaction::RecurringTransaction;
@@ -123,12 +125,12 @@ impl TransactionRepository for MockTransactionRepository {
             .filter(|t| {
                 t.account_id == account_id
                     && period.contains(t.date)
-                    && filter.tx_type.map_or(true, |ty| t.tx_type == ty)
+                    && filter.tx_type.is_none_or(|ty| t.tx_type == ty)
                     && filter
                         .category_id
-                        .map_or(true, |cid| t.category_id == Some(cid))
-                    && filter.reconciled.map_or(true, |r| t.reconciled == r)
-                    && filter.tags.as_ref().map_or(true, |required_tags| {
+                        .is_none_or(|cid| t.category_id == Some(cid))
+                    && filter.reconciled.is_none_or(|r| t.reconciled == r)
+                    && filter.tags.as_ref().is_none_or(|required_tags| {
                         required_tags.iter().any(|tag| t.tags.contains(tag))
                     })
             })
@@ -318,6 +320,128 @@ impl InvoiceRepository for MockInvoiceRepository {
             .find(|i| i.credit_card_id == credit_card_id && i.reference_month == reference_month)
             .cloned();
         Ok(result)
+    }
+}
+
+pub struct MockBudgetRepository {
+    budgets: Mutex<HashMap<BudgetID, Budget>>,
+}
+
+impl MockBudgetRepository {
+    pub fn new() -> Self {
+        Self {
+            budgets: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockBudgetRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl BudgetRepository for MockBudgetRepository {
+    async fn save(&self, budget: &Budget) -> Result<(), RepositoryError> {
+        let mut budgets = self.budgets.lock().unwrap();
+        budgets.insert(budget.id, budget.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: BudgetID) -> Result<Option<Budget>, RepositoryError> {
+        let budgets = self.budgets.lock().unwrap();
+        Ok(budgets.get(&id).cloned())
+    }
+
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<Budget>, RepositoryError> {
+        let budgets = self.budgets.lock().unwrap();
+        let result: Vec<Budget> = budgets
+            .values()
+            .filter(|b| b.owner_id == owner)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn find_by_category_and_period(
+        &self,
+        category_id: crate::shared::ids::CategoryID,
+        period: Period,
+    ) -> Result<Option<Budget>, RepositoryError> {
+        let budgets = self.budgets.lock().unwrap();
+        let result = budgets
+            .values()
+            .find(|b| b.category_id == category_id && b.period == period)
+            .cloned();
+        Ok(result)
+    }
+
+    async fn delete(&self, id: BudgetID) -> Result<(), RepositoryError> {
+        let mut budgets = self.budgets.lock().unwrap();
+        budgets.remove(&id);
+        Ok(())
+    }
+}
+
+pub struct MockGoalRepository {
+    goals: Mutex<HashMap<GoalID, FinancialGoal>>,
+}
+
+impl MockGoalRepository {
+    pub fn new() -> Self {
+        Self {
+            goals: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockGoalRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl GoalRepository for MockGoalRepository {
+    async fn save(&self, goal: &FinancialGoal) -> Result<(), RepositoryError> {
+        let mut goals = self.goals.lock().unwrap();
+        goals.insert(goal.id, goal.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: GoalID) -> Result<Option<FinancialGoal>, RepositoryError> {
+        let goals = self.goals.lock().unwrap();
+        Ok(goals.get(&id).cloned())
+    }
+
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<FinancialGoal>, RepositoryError> {
+        let goals = self.goals.lock().unwrap();
+        let result: Vec<FinancialGoal> = goals
+            .values()
+            .filter(|g| g.owner_id == owner)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn find_by_linked_account(
+        &self,
+        account_id: crate::shared::ids::AccountID,
+    ) -> Result<Vec<FinancialGoal>, RepositoryError> {
+        let goals = self.goals.lock().unwrap();
+        let result: Vec<FinancialGoal> = goals
+            .values()
+            .filter(|g| g.linked_account_id == Some(account_id))
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn delete(&self, id: GoalID) -> Result<(), RepositoryError> {
+        let mut goals = self.goals.lock().unwrap();
+        goals.remove(&id);
+        Ok(())
     }
 }
 
