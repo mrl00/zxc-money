@@ -413,6 +413,92 @@ Run all tests:
 cargo test
 ```
 
+## Integration Guide
+
+Frontends consume `zxc-money` through **facades** (one per bounded context) and implement **provider traits** for infrastructure.
+
+### 1. Add dependency
+
+```toml
+[dependencies]
+zxc-money = { path = "../zxc-money" }
+```
+
+### 2. Implement provider traits
+
+```rust
+use zxc_money::provider::{DateTimeProvider, IdGenerator};
+
+struct MyDateTime;
+impl DateTimeProvider for MyDateTime {
+    fn now(&self) -> chrono::DateTime<chrono::Utc> { chrono::Utc::now() }
+}
+
+struct MyIdGen;
+impl IdGenerator for MyIdGen {
+    fn new_id(&self) -> uuid::Uuid { uuid::Uuid::new_v4() }
+}
+```
+
+### 3. Create a facade
+
+```rust
+use std::sync::Arc;
+use zxc_money::LedgerFacade;
+use zxc_money::shared::mock::MockAccountRepository;
+use zxc_money::shared::events::InMemoryEventDispatcher;
+
+let accounts = Arc::new(MockAccountRepository::new());
+let events = Arc::new(InMemoryEventDispatcher::new());
+let ids = Arc::new(MyIdGen);
+
+let facade = LedgerFacade::new(
+    accounts,
+    /* transaction_repo */ todo!(),
+    /* recurring_repo */ todo!(),
+    events,
+    ids,
+);
+```
+
+### 4. Use facade methods
+
+```rust
+use zxc_money::ledger::application::open_account::OpenAccountCommand;
+
+let account_id = facade.open_account(OpenAccountCommand {
+    owner_id: user_id,
+    name: "My Account".into(),
+    account_type: AccountType::Checking,
+    currency: Currency::BRL,
+    opening_balance: Money::new(0, Currency::BRL),
+}).await?;
+```
+
+### Available provider traits
+
+| Trait | Purpose | Implement with |
+|-------|---------|---------------|
+| `DateTimeProvider` | Current time | `SystemDateTime` (default) |
+| `IdGenerator` | UUID generation | `UuidGenerator` (default) |
+| `NotificationProvider` | Push/email alerts | Firebase, OneSignal, SMTP |
+| `FileStorage` | File I/O for exports | Local filesystem, S3 |
+| `BankProvider` | Open Finance APIs | Pluggy, Belvo, custom |
+
+### Available facades
+
+| Facade | Bounded Context |
+|--------|----------------|
+| `LedgerFacade` | Accounts, transactions, transfers, recurring |
+| `CreditCardFacade` | Cards, invoices, purchases |
+| `BillsFacade` | Bill reminders |
+| `BudgetingFacade` | Budgets, financial goals |
+| `InvestmentFacade` | Portfolios, assets |
+| `ImportingFacade` | Statement import pipeline |
+| `ReportingFacade` | Balance projections, net worth |
+
+---
+
 ## Dependencies
 
 | Crate | Purpose |
@@ -432,11 +518,11 @@ cargo test
 | M1 | Ledger core (accounts, transactions, transfers, reconciliation) | ✅ |
 | M2 | Recurring transactions | ✅ |
 | M3 | Credit card (cards, invoices, purchases, installments) | ✅ |
-| M4 | Bills reminder | ⬜ |
-| M5 | Budgeting & financial goals | ⬜ |
-| M6 | Investment portfolio | ⬜ |
-| M7 | Reporting projections | ⬜ |
-| M8 | Cross-module event wiring | ⬜ |
+| M4 | Bills reminder | ✅ |
+| M5 | Budgeting & financial goals | ✅ |
+| M6 | Investment portfolio | ✅ |
+| M7 | Reporting projections | ✅ |
+| M8 | Cross-module event wiring + statement import | ✅ |
 | M9 | Planning simulators | ✅ |
-| M10 | Facade / public API | ⬜ |
-| M11 | Integration tests | ⬜ |
+| M10 | Facade / public API + provider ports | ✅ |
+| M11 | Documentation, examples, integration guide | ✅ |

@@ -26,11 +26,17 @@ pub enum AssetClass {
 /// [`AssetID`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Asset {
+    /// Unique identifier.
     pub id: AssetID,
+    /// Ticker symbol (e.g. "PETR4", "BOVA11").
     pub ticker: String,
+    /// Full name of the asset.
     pub name: String,
+    /// Asset class (stock, fund, etc.).
     pub class: AssetClass,
+    /// Trading currency.
     pub currency: Currency,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

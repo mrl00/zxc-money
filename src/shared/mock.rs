@@ -25,11 +25,16 @@ use crate::ledger::domain::repository::{
 use crate::ledger::domain::transaction::Transaction;
 use crate::shared::ids::RecurringTransactionID;
 
+/// In-memory mock implementation of [`AccountRepository`].
+///
+/// Stores accounts in a `HashMap` behind a `Mutex`. Suitable for unit tests
+/// and integration tests where no persistence is needed.
 pub struct MockAccountRepository {
     accounts: Mutex<HashMap<AccountID, Account>>,
 }
 
 impl MockAccountRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             accounts: Mutex::new(HashMap::new()),
@@ -73,11 +78,13 @@ impl AccountRepository for MockAccountRepository {
     }
 }
 
+/// In-memory mock implementation of [`TransactionRepository`].
 pub struct MockTransactionRepository {
     transactions: Mutex<HashMap<TransactionID, Transaction>>,
 }
 
 impl MockTransactionRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             transactions: Mutex::new(HashMap::new()),
@@ -156,11 +163,13 @@ impl TransactionRepository for MockTransactionRepository {
     }
 }
 
+/// In-memory mock implementation of [`RecurringTransactionRepository`].
 pub struct MockRecurringTransactionRepository {
     recurring: Mutex<HashMap<RecurringTransactionID, RecurringTransaction>>,
 }
 
 impl MockRecurringTransactionRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             recurring: Mutex::new(HashMap::new()),
@@ -223,11 +232,13 @@ impl RecurringTransactionRepository for MockRecurringTransactionRepository {
     }
 }
 
+/// In-memory mock implementation of [`CreditCardRepository`].
 pub struct MockCreditCardRepository {
     cards: Mutex<HashMap<CreditCardID, CreditCard>>,
 }
 
 impl MockCreditCardRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             cards: Mutex::new(HashMap::new()),
@@ -271,11 +282,13 @@ impl CreditCardRepository for MockCreditCardRepository {
     }
 }
 
+/// In-memory mock implementation of [`InvoiceRepository`].
 pub struct MockInvoiceRepository {
     invoices: Mutex<HashMap<InvoiceID, Invoice>>,
 }
 
 impl MockInvoiceRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             invoices: Mutex::new(HashMap::new()),
@@ -328,11 +341,13 @@ impl InvoiceRepository for MockInvoiceRepository {
     }
 }
 
+/// In-memory mock implementation of [`BudgetRepository`].
 pub struct MockBudgetRepository {
     budgets: Mutex<HashMap<BudgetID, Budget>>,
 }
 
 impl MockBudgetRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             budgets: Mutex::new(HashMap::new()),
@@ -389,11 +404,13 @@ impl BudgetRepository for MockBudgetRepository {
     }
 }
 
+/// In-memory mock implementation of [`GoalRepository`].
 pub struct MockGoalRepository {
     goals: Mutex<HashMap<GoalID, FinancialGoal>>,
 }
 
 impl MockGoalRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             goals: Mutex::new(HashMap::new()),
@@ -450,11 +467,13 @@ impl GoalRepository for MockGoalRepository {
     }
 }
 
+/// In-memory mock implementation of [`BillRepository`].
 pub struct MockBillRepository {
     bills: Mutex<HashMap<BillID, Bill>>,
 }
 
 impl MockBillRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             bills: Mutex::new(HashMap::new()),
@@ -518,11 +537,13 @@ impl BillRepository for MockBillRepository {
     }
 }
 
+/// In-memory mock implementation of [`AssetRepository`].
 pub struct MockAssetRepository {
     assets: Mutex<HashMap<AssetID, Asset>>,
 }
 
 impl MockAssetRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             assets: Mutex::new(HashMap::new()),
@@ -561,11 +582,13 @@ impl AssetRepository for MockAssetRepository {
     }
 }
 
+/// In-memory mock implementation of [`PortfolioRepository`].
 pub struct MockPortfolioRepository {
     portfolios: Mutex<HashMap<PortfolioID, Portfolio>>,
 }
 
 impl MockPortfolioRepository {
+    /// Creates a new empty mock repository.
     pub fn new() -> Self {
         Self {
             portfolios: Mutex::new(HashMap::new()),

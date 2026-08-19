@@ -19,15 +19,25 @@ pub enum GoalStatus {
 /// A savings target with a deadline and optional linked account.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FinancialGoal {
+    /// Unique identifier.
     pub id: GoalID,
+    /// Owner of this goal.
     pub owner_id: UserID,
+    /// User-defined name (e.g. "Emergency Fund").
     pub name: String,
+    /// Target amount to save.
     pub target_amount: Money,
+    /// Amount saved so far.
     pub current_amount: Money,
+    /// Deadline for reaching the target.
     pub target_date: NaiveDate,
+    /// Optional account linked for automatic tracking.
     pub linked_account_id: Option<AccountID>,
+    /// Current status of the goal.
     pub status: GoalStatus,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
+    /// Last modification timestamp.
     pub updated_at: DateTime<Utc>,
 }
 

@@ -29,14 +29,23 @@ pub enum RecurrenceRule {
 /// A scheduled financial obligation (recurring or one-time).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bill {
+    /// Unique identifier.
     pub id: BillID,
+    /// Owner of this bill.
     pub owner_id: UserID,
+    /// Display name (e.g. "Internet", "Rent").
     pub name: String,
+    /// Expected amount (`None` if variable).
     pub amount: Option<Money>,
+    /// Date when payment is due.
     pub due_date: NaiveDate,
+    /// Recurrence pattern (`None` for one-time bills).
     pub recurrence: Option<RecurrenceRule>,
+    /// Category for this bill.
     pub category_id: CategoryID,
+    /// Current status.
     pub status: BillStatus,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

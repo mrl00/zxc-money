@@ -14,12 +14,19 @@ use crate::shared::period::Period;
 /// - At most one active budget per `(category_id, period)` (enforced by repository).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Budget {
+    /// Unique identifier.
     pub id: BudgetID,
+    /// Owner of this budget.
     pub owner_id: UserID,
+    /// Category this budget tracks.
     pub category_id: CategoryID,
+    /// Time period this budget covers.
     pub period: Period,
+    /// Maximum planned spending for this period.
     pub planned_amount: Money,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
+    /// Last modification timestamp.
     pub updated_at: DateTime<Utc>,
 }
 

@@ -21,12 +21,19 @@ pub enum AccountType {
 /// A financial account belonging to a user.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
+    /// Unique identifier.
     pub id: AccountID,
+    /// Owner of this account.
     pub owner_id: UserID,
+    /// User-defined display name.
     pub name: String,
+    /// Type of account (checking, savings, etc.).
     pub account_type: AccountType,
+    /// Currency of this account.
     pub currency: crate::shared::money::Currency,
+    /// Balance at account creation.
     pub opening_balance: Money,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 
