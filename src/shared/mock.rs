@@ -6,11 +6,13 @@ use crate::shared::period::{Period, YearMonth};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use crate::bills::domain::bill::Bill;
+use crate::bills::domain::repository::BillRepository;
 use crate::budgeting::domain::budget::Budget;
 use crate::budgeting::domain::goal::FinancialGoal;
 use crate::budgeting::domain::repository::{BudgetRepository, GoalRepository};
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::{AccountID, TransactionID, UserID};
+use crate::shared::ids::{AccountID, BillID, TransactionID, UserID};
 
 use crate::ledger::domain::account::Account;
 use crate::ledger::domain::recurring_transaction::RecurringTransaction;
@@ -445,9 +447,78 @@ impl GoalRepository for MockGoalRepository {
     }
 }
 
+pub struct MockBillRepository {
+    bills: Mutex<HashMap<BillID, Bill>>,
+}
+
+impl MockBillRepository {
+    pub fn new() -> Self {
+        Self {
+            bills: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockBillRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl BillRepository for MockBillRepository {
+    async fn save(&self, bill: &Bill) -> Result<(), RepositoryError> {
+        let mut bills = self.bills.lock().unwrap();
+        bills.insert(bill.id, bill.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: BillID) -> Result<Option<Bill>, RepositoryError> {
+        let bills = self.bills.lock().unwrap();
+        Ok(bills.get(&id).cloned())
+    }
+
+    async fn find_by_owner(&self, owner: UserID) -> Result<Vec<Bill>, RepositoryError> {
+        let bills = self.bills.lock().unwrap();
+        let result: Vec<Bill> = bills
+            .values()
+            .filter(|b| b.owner_id == owner)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn find_pending(&self) -> Result<Vec<Bill>, RepositoryError> {
+        let bills = self.bills.lock().unwrap();
+        let result: Vec<Bill> = bills
+            .values()
+            .filter(|b| b.status == crate::bills::domain::bill::BillStatus::Pending)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn find_overdue(&self) -> Result<Vec<Bill>, RepositoryError> {
+        let bills = self.bills.lock().unwrap();
+        let result: Vec<Bill> = bills
+            .values()
+            .filter(|b| b.status == crate::bills::domain::bill::BillStatus::Overdue)
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+
+    async fn delete(&self, id: BillID) -> Result<(), RepositoryError> {
+        let mut bills = self.bills.lock().unwrap();
+        bills.remove(&id);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::ids::CategoryID;
     use crate::shared::money::{Currency, Money};
 
     #[tokio::test]
@@ -546,6 +617,38 @@ mod tests {
 
         repo.delete(transaction.id).await.unwrap();
         let found = repo.find_by_id(transaction.id).await.unwrap();
+        assert!(found.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_mock_bill_repository() {
+        let repo = MockBillRepository::new();
+        let owner_id = UserID::new();
+        let bill = Bill::new(
+            BillID::new(),
+            owner_id,
+            "Internet".into(),
+            Some(Money::new(99_90, Currency::BRL)),
+            chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
+            Some(crate::bills::domain::bill::RecurrenceRule::Monthly),
+            CategoryID::new(),
+        );
+
+        repo.save(&bill).await.unwrap();
+        let found = repo.find_by_id(bill.id).await.unwrap();
+        assert!(found.is_some());
+
+        let owner_bills = repo.find_by_owner(owner_id).await.unwrap();
+        assert_eq!(owner_bills.len(), 1);
+
+        let pending = repo.find_pending().await.unwrap();
+        assert_eq!(pending.len(), 1);
+
+        let overdue = repo.find_overdue().await.unwrap();
+        assert_eq!(overdue.len(), 0);
+
+        repo.delete(bill.id).await.unwrap();
+        let found = repo.find_by_id(bill.id).await.unwrap();
         assert!(found.is_none());
     }
 }

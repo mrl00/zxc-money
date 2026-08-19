@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::shared::ids::BillID;
+use crate::shared::ids::{BillID, CategoryID};
 use crate::shared::money::Money;
 
 /// Event emitted when a new bill is scheduled.
@@ -32,6 +32,8 @@ impl crate::shared::events::DomainEvent for BillScheduled {
 pub struct BillPaid {
     pub bill_id: BillID,
     pub amount: Option<Money>,
+    pub account_id: crate::shared::ids::AccountID,
+    pub category_id: CategoryID,
     pub timestamp: DateTime<Utc>,
 }
 

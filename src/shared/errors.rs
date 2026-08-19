@@ -173,6 +173,10 @@ pub enum BillsError {
     /// An error from the event publishing layer.
     #[error("publish error: {0}")]
     Publish(#[from] PublishError),
+
+    /// An error propagated from the Ledger context.
+    #[error("ledger error: {0}")]
+    Ledger(#[from] LedgerError),
 }
 
 /// Errors from the Investment bounded context (portfolios, assets, positions).

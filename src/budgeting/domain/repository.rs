@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use super::budget::Budget;
 use super::goal::FinancialGoal;
 
-/// Persistence trait for [`Budget`](super::budget::Budget) entities.
+/// Persistence trait for [`Budget`] entities.
 #[async_trait]
 pub trait BudgetRepository: Send + Sync {
     /// Persists a budget.
@@ -25,7 +25,7 @@ pub trait BudgetRepository: Send + Sync {
     async fn delete(&self, id: BudgetID) -> Result<(), RepositoryError>;
 }
 
-/// Persistence trait for [`FinancialGoal`](super::goal::FinancialGoal) entities.
+/// Persistence trait for [`FinancialGoal`] entities.
 #[async_trait]
 pub trait GoalRepository: Send + Sync {
     /// Persists a financial goal.

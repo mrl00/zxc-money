@@ -3,8 +3,8 @@
 //! This module contains the building blocks used across all bounded contexts:
 //!
 //! - [`ids`] — Type-safe UUID wrappers for all aggregate identifiers
-//! - [`money`] — [`Money`] value object with currency-safe arithmetic
-//! - [`period`] — [`Period`] and [`YearMonth`] date range types
+//! - [`money`] — `Money` value object with currency-safe arithmetic
+//! - [`period`] — `Period` and `YearMonth` date range types
 //! - [`errors`] — Error enums per bounded context
 //! - [`events`] — Domain event trait, publisher, and in-memory dispatcher
 //! - [`repository`] — Generic repository and unit-of-work traits

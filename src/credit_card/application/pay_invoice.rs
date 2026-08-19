@@ -13,7 +13,7 @@ pub struct PayInvoiceCommand {
 }
 
 /// Handles [`PayInvoiceCommand`] by marking the invoice as paid and publishing
-/// an [`InvoicePaid`](crate::credit_card::domain::events::InvoicePaid) event.
+/// an [`InvoicePaid`] event.
 pub struct PayInvoiceHandler<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher> {
     credit_card_repository: Arc<C>,
     invoice_repository: Arc<I>,
@@ -38,7 +38,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher> PayInvoic
     ///
     /// Validates ownership, verifies the invoice belongs to the credit card,
     /// marks it as paid, persists it, and publishes an
-    /// [`InvoicePaid`](crate::credit_card::domain::events::InvoicePaid) event.
+    /// [`InvoicePaid`] event.
     pub async fn handle(&self, cmd: PayInvoiceCommand) -> Result<(), CreditCardError> {
         let card = self
             .credit_card_repository
