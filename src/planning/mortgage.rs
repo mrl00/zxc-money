@@ -134,23 +134,103 @@ fn calculate_price_payment(principal: i64, months: u32, monthly_rate: Decimal) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::money::Currency;
+
+    const BRL: Currency = Currency::BRL;
 
     #[test]
     fn test_mortgage_sac() {
-        let principal = Money::new(100000, crate::shared::money::Currency::BRL);
+        let principal = Money::new(100000, BRL);
         let schedule = simulate_mortgage(principal, 12, Decimal::from(12), AmortizationMethod::SAC);
 
         assert_eq!(schedule.entries.len(), 12);
         assert!(schedule.total_interest.amount() > 0);
+        assert!(schedule.total_paid.amount() > principal.amount());
+        assert_eq!(
+            schedule.total_paid.amount(),
+            schedule
+                .entries
+                .iter()
+                .map(|e| e.payment.amount())
+                .sum::<i64>()
+        );
     }
 
     #[test]
     fn test_mortgage_price() {
-        let principal = Money::new(100000, crate::shared::money::Currency::BRL);
+        let principal = Money::new(100000, BRL);
         let schedule =
             simulate_mortgage(principal, 12, Decimal::from(12), AmortizationMethod::Price);
 
         assert_eq!(schedule.entries.len(), 12);
         assert!(schedule.total_interest.amount() > 0);
+        assert_eq!(
+            schedule.total_paid.amount(),
+            schedule
+                .entries
+                .iter()
+                .map(|e| e.payment.amount())
+                .sum::<i64>()
+        );
+    }
+
+    #[test]
+    fn test_mortgage_sac_known_values() {
+        let principal = Money::new(120_000_00, BRL);
+        let schedule =
+            simulate_mortgage(principal, 240, Decimal::from(10), AmortizationMethod::SAC);
+
+        assert_eq!(schedule.entries.len(), 240);
+        let last = schedule.entries.last().unwrap();
+        assert_eq!(last.balance.amount(), 0);
+        assert_eq!(
+            schedule.total_paid.amount(),
+            schedule
+                .entries
+                .iter()
+                .map(|e| e.payment.amount())
+                .sum::<i64>()
+        );
+        assert_eq!(
+            schedule.total_interest.amount(),
+            schedule
+                .entries
+                .iter()
+                .map(|e| e.interest.amount())
+                .sum::<i64>()
+        );
+    }
+
+    #[test]
+    fn test_mortgage_price_known_values() {
+        let principal = Money::new(120_000_00, BRL);
+        let schedule =
+            simulate_mortgage(principal, 240, Decimal::from(10), AmortizationMethod::Price);
+
+        assert_eq!(schedule.entries.len(), 240);
+        let last = schedule.entries.last().unwrap();
+        assert!(last.balance.amount().abs() <= 100);
+        let first_payment = schedule.entries[0].payment.amount();
+        for entry in &schedule.entries {
+            assert_eq!(entry.payment.amount(), first_payment);
+        }
+    }
+
+    #[test]
+    fn test_sac_vs_price_same_params() {
+        let principal = Money::new(200_000_00, BRL);
+        let months = 360;
+        let rate = Decimal::from(12);
+
+        let sac = simulate_mortgage(principal, months, rate, AmortizationMethod::SAC);
+        let price = simulate_mortgage(principal, months, rate, AmortizationMethod::Price);
+
+        assert_eq!(sac.entries.len(), price.entries.len());
+        assert!(sac.total_interest.amount() < price.total_interest.amount());
+        assert!(sac.entries[0].payment.amount() > price.entries[0].payment.amount());
+        assert!(
+            sac.entries.last().unwrap().payment.amount()
+                < price.entries.last().unwrap().payment.amount()
+        );
     }
 }
