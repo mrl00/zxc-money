@@ -12,7 +12,7 @@ pub struct CloseInvoiceCommand {
 }
 
 /// Handles [`CloseInvoiceCommand`] by closing the open invoice and publishing
-/// an [`InvoiceClosed`](crate::credit_card::domain::events::InvoiceClosed) event.
+/// an [`InvoiceClosed`] event.
 pub struct CloseInvoiceHandler<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher> {
     credit_card_repository: Arc<C>,
     invoice_repository: Arc<I>,
@@ -38,7 +38,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher>
     /// Executes the close-invoice use case.
     ///
     /// Validates ownership, closes the open invoice, persists it, and publishes
-    /// an [`InvoiceClosed`](crate::credit_card::domain::events::InvoiceClosed) event.
+    /// an [`InvoiceClosed`] event.
     pub async fn handle(&self, cmd: CloseInvoiceCommand) -> Result<InvoiceID, CreditCardError> {
         let card = self
             .credit_card_repository

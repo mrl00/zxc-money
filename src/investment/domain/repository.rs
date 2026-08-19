@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use super::asset::Asset;
 use super::portfolio::Portfolio;
 
-/// Persistence trait for [`Asset`](super::asset::Asset) entities.
+/// Persistence trait for [`Asset`] entities.
 #[async_trait]
 pub trait AssetRepository: Send + Sync {
     /// Persists an asset.
@@ -18,7 +18,7 @@ pub trait AssetRepository: Send + Sync {
     async fn delete(&self, id: AssetID) -> Result<(), RepositoryError>;
 }
 
-/// Persistence trait for [`Portfolio`](super::portfolio::Portfolio) entities.
+/// Persistence trait for [`Portfolio`] entities.
 #[async_trait]
 pub trait PortfolioRepository: Send + Sync {
     /// Persists a portfolio.

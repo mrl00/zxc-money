@@ -45,7 +45,7 @@ impl CreditCard {
     ///
     /// # Errors
     ///
-    /// Returns [`CreditCardError::InvariantViolation`] if the used amount exceeds the limit.
+    /// Returns [`CreditCardError::InvariantViolation`](crate::shared::errors::CreditCardError::InvariantViolation) if the used amount exceeds the limit.
     pub fn available_limit(
         &self,
         used: Money,

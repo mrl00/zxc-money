@@ -80,7 +80,8 @@ fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
 
-/// A recurring transaction that generates periodic [`Transaction`]s.
+/// A recurring transaction that generates periodic
+/// [`Transaction`](crate::ledger::domain::transaction::Transaction)s.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecurringTransaction {
     pub id: RecurringTransactionID,

@@ -45,7 +45,7 @@ impl Invoice {
     ///
     /// # Errors
     ///
-    /// Returns [`CreditCardError::InvoiceNotOpen`] if the invoice is not in [`InvoiceStatus::Open`].
+    /// Returns [`CreditCardError::InvoiceNotOpen`](crate::shared::errors::CreditCardError::InvoiceNotOpen) if the invoice is not in `Open` status.
     pub fn add_purchase(
         &mut self,
         purchase: Purchase,
@@ -61,7 +61,7 @@ impl Invoice {
     ///
     /// # Errors
     ///
-    /// Returns [`CreditCardError::InvoiceNotOpen`] if the invoice is not open.
+    /// Returns [`CreditCardError::InvoiceNotOpen`](crate::shared::errors::CreditCardError::InvoiceNotOpen) if the invoice is not open.
     pub fn close(&mut self) -> Result<(), crate::shared::errors::CreditCardError> {
         if self.status != InvoiceStatus::Open {
             return Err(crate::shared::errors::CreditCardError::InvoiceNotOpen);
@@ -75,7 +75,7 @@ impl Invoice {
     ///
     /// # Errors
     ///
-    /// Returns [`CreditCardError::InvariantViolation`] if the invoice is not closed.
+    /// Returns [`CreditCardError::InvariantViolation`](crate::shared::errors::CreditCardError::InvariantViolation) if the invoice is not closed.
     pub fn pay(&mut self) -> Result<(), crate::shared::errors::CreditCardError> {
         if self.status != InvoiceStatus::Closed {
             return Err(crate::shared::errors::CreditCardError::InvariantViolation(

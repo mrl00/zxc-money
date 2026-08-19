@@ -116,8 +116,8 @@ impl Money {
 
     /// Safely add two `Money` values.
     ///
-    /// Returns [`LedgerError::CurrencyMismatch`] if currencies differ,
-    /// or [`LedgerError::InvalidAmount`] on integer overflow.
+    /// Returns [`LedgerError::CurrencyMismatch`](crate::shared::errors::LedgerError::CurrencyMismatch) if currencies differ,
+    /// or [`LedgerError::InvalidAmount`](crate::shared::errors::LedgerError::InvalidAmount) on integer overflow.
     pub fn checked_add(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
             return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
@@ -135,8 +135,8 @@ impl Money {
 
     /// Safely subtract two `Money` values.
     ///
-    /// Returns [`LedgerError::CurrencyMismatch`] if currencies differ,
-    /// or [`LedgerError::InvalidAmount`] on integer overflow.
+    /// Returns [`LedgerError::CurrencyMismatch`](crate::shared::errors::LedgerError::CurrencyMismatch) if currencies differ,
+    /// or [`LedgerError::InvalidAmount`](crate::shared::errors::LedgerError::InvalidAmount) on integer overflow.
     pub fn checked_sub(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
             return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
