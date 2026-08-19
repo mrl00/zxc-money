@@ -49,11 +49,14 @@ impl AccountBalanceProjectionStore {
             let mut projections = self.projections.lock().unwrap();
             if let Some(projection) = projections.get_mut(&e.account_id) {
                 match e.tx_type {
-                    TransactionType::Income | TransactionType::Transfer => {
+                    TransactionType::Income => {
                         projection.balance = projection.balance + e.amount;
                     }
                     TransactionType::Expense => {
                         projection.balance = projection.balance - e.amount;
+                    }
+                    TransactionType::Transfer => {
+                        // Transfers are handled by TransferCompleted to avoid double-counting
                     }
                 }
                 projection.last_updated = chrono::Utc::now();
