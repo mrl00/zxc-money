@@ -518,10 +518,10 @@ let account_id = facade.open_account(OpenAccountCommand {
 | M1 | Ledger core (accounts, transactions, transfers, reconciliation) | ✅ |
 | M2 | Recurring transactions | ✅ |
 | M3 | Credit card (cards, invoices, purchases, installments) | ✅ |
-| M4 | Bills reminder | ✅ |
-| M5 | Budgeting & financial goals | ✅ |
-| M6 | Investment portfolio | ✅ |
-| M7 | Reporting projections | ✅ |
+| M4 | Budgeting & financial goals | ✅ |
+| M5 | Reporting projections (6 advanced queries pending) | ⚠️ |
+| M6 | Bills reminder | ✅ |
+| M7 | Investment portfolio | ✅ |
 | M8 | Cross-module event wiring + statement import | ✅ |
 | M9 | Planning simulators | ✅ |
 | M10 | Facade / public API + provider ports | ✅ |

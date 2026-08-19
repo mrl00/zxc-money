@@ -26,8 +26,8 @@
 | 8.3.2 | Como frontend, quero conciliar com existentes | `ImportService::match_candidates()` — matching por data + valor aproximado | ✅ |
 | 8.3.3 | Como frontend, quero confirmar importação | `ImportService::confirm()` — cria Transactions | ✅ |
 
-## Épico 8.4 — Port: BankProvider (futuro)
+## Épico 8.4 — Port: BankProvider
 
 | ID | Port | Método | Status |
 |----|------|--------|--------|
-| 8.4.1 | `BankProvider` | `async fn fetch_transactions(account_id, date_range) -> Result<Vec<RawTransaction>>` | ⬜ |
+| 8.4.1 | `BankProvider` | `async fn fetch_transactions(account_id, date_range) -> Result<Vec<RawTransaction>>` | ✅ (implementado no M10) |
