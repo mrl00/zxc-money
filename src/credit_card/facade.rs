@@ -5,37 +5,33 @@ use crate::credit_card::application::check_limit::{
 };
 use crate::credit_card::application::close_invoice::{CloseInvoiceCommand, CloseInvoiceHandler};
 use crate::credit_card::application::pay_invoice::{PayInvoiceCommand, PayInvoiceHandler};
+use crate::credit_card::application::register_card::{RegisterCardCommand, RegisterCardHandler};
 use crate::credit_card::application::register_purchase::{
     RegisterPurchaseCommand, RegisterPurchaseHandler,
 };
+use crate::credit_card::domain::card::CreditCard;
+use crate::credit_card::domain::invoice::Invoice;
 use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::CreditCardError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{InvoiceID, PurchaseID};
+use crate::shared::ids::{CreditCardID, InvoiceID, PurchaseID};
 
 /// Facade for the CreditCard bounded context.
 ///
 /// Aggregates all command and query handlers behind a single entry point.
-///
-/// # Example
-///
-/// ```ignore
-/// let facade = CreditCardFacade::new(card_repo, invoice_repo, event_pub, id_gen);
-///
-/// let purchases = facade.register_purchase(RegisterPurchaseCommand { ... }).await?;
-/// facade.close_invoice(CloseInvoiceCommand { ... }).await?;
-/// ```
 pub struct CreditCardFacade<
     C: CreditCardRepository,
     I: InvoiceRepository,
     P: EventPublisher,
     Id: IdGenerator,
 > {
+    register_card: RegisterCardHandler<C, Id>,
     register_purchase: RegisterPurchaseHandler<C, I, P, Id>,
     close_invoice: CloseInvoiceHandler<C, I, P>,
     pay_invoice: PayInvoiceHandler<C, I, P>,
     check_limit: CreditCardService<I>,
+    invoice_repository: Arc<I>,
 }
 
 impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGenerator>
@@ -49,6 +45,10 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGen
         id_generator: Arc<Id>,
     ) -> Self {
         Self {
+            register_card: RegisterCardHandler::new(
+                credit_card_repository.clone(),
+                id_generator.clone(),
+            ),
             register_purchase: RegisterPurchaseHandler::new(
                 credit_card_repository.clone(),
                 invoice_repository.clone(),
@@ -65,8 +65,19 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGen
                 invoice_repository.clone(),
                 event_publisher,
             ),
-            check_limit: CreditCardService::new(invoice_repository),
+            check_limit: CreditCardService::new(invoice_repository.clone()),
+            invoice_repository,
         }
+    }
+
+    // ── Commands ──────────────────────────────────────────────
+
+    /// Registers a new credit card. See [`RegisterCardHandler`].
+    pub async fn register_card(
+        &self,
+        cmd: RegisterCardCommand,
+    ) -> Result<CreditCardID, CreditCardError> {
+        self.register_card.handle(cmd).await
     }
 
     /// Registers a purchase on a credit card. See [`RegisterPurchaseHandler`].
@@ -90,22 +101,29 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGen
         self.pay_invoice.handle(cmd).await
     }
 
+    // ── Queries ───────────────────────────────────────────────
+
     /// Computes a credit card summary (limit usage). See [`CreditCardService::summary`].
-    pub async fn summary(
-        &self,
-        card: &crate::credit_card::domain::card::CreditCard,
-    ) -> Result<CreditCardSummary, CreditCardError> {
+    pub async fn summary(&self, card: &CreditCard) -> Result<CreditCardSummary, CreditCardError> {
         self.check_limit.summary(card).await
     }
 
     /// Checks whether utilization exceeds a threshold. See [`CreditCardService::check_limit_alert`].
     pub async fn check_limit_alert(
         &self,
-        card: &crate::credit_card::domain::card::CreditCard,
+        card: &CreditCard,
         threshold_pct: f64,
     ) -> Result<Option<LimitAlert>, CreditCardError> {
         self.check_limit
             .check_limit_alert(card, threshold_pct)
             .await
+    }
+
+    /// Finds the currently open invoice for a credit card.
+    pub async fn get_open_invoice(
+        &self,
+        credit_card_id: CreditCardID,
+    ) -> Result<Option<Invoice>, CreditCardError> {
+        Ok(self.invoice_repository.find_open(credit_card_id).await?)
     }
 }

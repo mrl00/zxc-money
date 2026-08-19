@@ -9,6 +9,7 @@ use crate::bills::application::get_upcoming_bills::{
 };
 use crate::bills::application::mark_bill_paid::{MarkBillPaidCommand, MarkBillPaidHandler};
 use crate::bills::application::schedule_bill::{ScheduleBillCommand, ScheduleBillHandler};
+use crate::bills::domain::bill::Bill;
 use crate::bills::domain::repository::BillRepository;
 use crate::bills::projections::bill_calendar::DayBillTotal;
 use crate::bills::projections::bill_calendar::{BillCalendarEntry, BillCalendarStore};
@@ -35,6 +36,7 @@ pub struct BillsFacade<B: BillRepository, P: EventPublisher, I: IdGenerator> {
     get_bills_by_month: GetBillsByMonthHandler,
     get_daily_bill_totals: GetDailyBillTotalsHandler,
     get_upcoming_bills: GetUpcomingBillsHandler,
+    bill_repository: Arc<B>,
 }
 
 impl<B: BillRepository, P: EventPublisher, I: IdGenerator> BillsFacade<B, P, I> {
@@ -52,13 +54,14 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> BillsFacade<B, P, I> 
                 id_generator.clone(),
             ),
             mark_bill_paid: MarkBillPaidHandler::new(
-                bill_repository,
+                bill_repository.clone(),
                 event_publisher,
                 id_generator,
             ),
             get_bills_by_month: GetBillsByMonthHandler::new(calendar_store.clone()),
             get_daily_bill_totals: GetDailyBillTotalsHandler::new(calendar_store.clone()),
             get_upcoming_bills: GetUpcomingBillsHandler::new(calendar_store),
+            bill_repository,
         }
     }
 
@@ -85,6 +88,11 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> BillsFacade<B, P, I> 
     /// Gets upcoming pending bills. See [`GetUpcomingBillsHandler`].
     pub async fn get_upcoming_bills(&self, query: GetUpcomingBillsQuery) -> Vec<BillCalendarEntry> {
         self.get_upcoming_bills.handle(query).await
+    }
+
+    /// Lists all pending bills from the repository.
+    pub async fn get_pending_bills(&self) -> Result<Vec<Bill>, BillsError> {
+        Ok(self.bill_repository.find_pending().await?)
     }
 }
 

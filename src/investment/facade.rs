@@ -9,11 +9,13 @@ use crate::investment::application::get_profitability::{
 use crate::investment::application::record_asset_purchase::{RecordBuyCommand, RecordBuyHandler};
 use crate::investment::application::record_asset_sale::{RecordSellCommand, RecordSellHandler};
 use crate::investment::application::register_asset::{RegisterAssetCommand, RegisterAssetHandler};
+use crate::investment::domain::asset::Asset;
+use crate::investment::domain::portfolio::Portfolio;
 use crate::investment::domain::repository::{AssetRepository, PortfolioRepository};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::InvestmentError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::AssetID;
+use crate::shared::ids::{AssetID, PortfolioID};
 
 /// Facade for the Investment bounded context.
 ///
@@ -39,6 +41,8 @@ pub struct InvestmentFacade<
     record_sell: RecordSellHandler<P, EP>,
     get_profitability: GetProfitabilityHandler<P>,
     get_portfolio_summary: GetPortfolioSummaryHandler<P>,
+    asset_repository: Arc<A>,
+    portfolio_repository: Arc<P>,
 }
 
 impl<A: AssetRepository, P: PortfolioRepository, EP: EventPublisher, I: IdGenerator>
@@ -58,12 +62,14 @@ impl<A: AssetRepository, P: PortfolioRepository, EP: EventPublisher, I: IdGenera
             ),
             record_buy: RecordBuyHandler::new(
                 portfolio_repository.clone(),
-                asset_repository,
+                asset_repository.clone(),
                 event_publisher.clone(),
             ),
             record_sell: RecordSellHandler::new(portfolio_repository.clone(), event_publisher),
             get_profitability: GetProfitabilityHandler::new(portfolio_repository.clone()),
-            get_portfolio_summary: GetPortfolioSummaryHandler::new(portfolio_repository),
+            get_portfolio_summary: GetPortfolioSummaryHandler::new(portfolio_repository.clone()),
+            asset_repository,
+            portfolio_repository,
         }
     }
 
@@ -99,6 +105,22 @@ impl<A: AssetRepository, P: PortfolioRepository, EP: EventPublisher, I: IdGenera
         query: GetPortfolioSummaryQuery,
     ) -> Result<PortfolioSummary, InvestmentError> {
         self.get_portfolio_summary.handle(query).await
+    }
+
+    /// Finds an asset by its ticker symbol.
+    pub async fn find_asset_by_ticker(
+        &self,
+        ticker: &str,
+    ) -> Result<Option<Asset>, InvestmentError> {
+        Ok(self.asset_repository.find_by_ticker(ticker).await?)
+    }
+
+    /// Finds a portfolio by its ID.
+    pub async fn get_portfolio(
+        &self,
+        portfolio_id: PortfolioID,
+    ) -> Result<Option<Portfolio>, InvestmentError> {
+        Ok(self.portfolio_repository.find_by_id(portfolio_id).await?)
     }
 }
 
