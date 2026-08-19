@@ -1,10 +1,12 @@
 //! Domain layer for the investment module.
 //!
-//! Contains [`Asset`](asset::Asset), [`Position`](position::Position), [`Portfolio`](portfolio::Portfolio),
-//! domain events, and repository traits.
+//! Contains aggregates ([`Asset`](asset::Asset),
+//! [`Portfolio`](portfolio::Portfolio)), the [`Position`](position::Position)
+//! entity, domain events, and the [`QuoteProvider`](quote::QuoteProvider) port.
 
 pub mod asset;
 pub mod events;
 pub mod portfolio;
 pub mod position;
+pub mod quote;
 pub mod repository;

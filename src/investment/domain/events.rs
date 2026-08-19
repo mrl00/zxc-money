@@ -1,12 +1,14 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 
-use crate::shared::ids::AssetID;
+use crate::shared::ids::{AssetID, PortfolioID, UserID};
 use crate::shared::money::Money;
 
-/// Event emitted when an asset is purchased.
+/// Event emitted when an asset is purchased within a portfolio.
 #[derive(Debug)]
 pub struct AssetBought {
+    pub portfolio_id: PortfolioID,
+    pub owner_id: UserID,
     pub asset_id: AssetID,
     pub quantity: Decimal,
     pub price: Money,
@@ -27,9 +29,11 @@ impl crate::shared::events::DomainEvent for AssetBought {
     }
 }
 
-/// Event emitted when an asset is sold.
+/// Event emitted when an asset is sold from a portfolio.
 #[derive(Debug)]
 pub struct AssetSold {
+    pub portfolio_id: PortfolioID,
+    pub owner_id: UserID,
     pub asset_id: AssetID,
     pub quantity: Decimal,
     pub price: Money,

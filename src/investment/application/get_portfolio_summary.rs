@@ -1,0 +1,221 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use rust_decimal::Decimal;
+
+use crate::investment::domain::repository::PortfolioRepository;
+use crate::shared::errors::InvestmentError;
+use crate::shared::ids::{AssetID, PortfolioID};
+use crate::shared::money::Money;
+
+/// Query to retrieve a summary of all positions in a portfolio.
+pub struct GetPortfolioSummaryQuery {
+    /// The portfolio to summarize.
+    pub portfolio_id: PortfolioID,
+    /// Current market prices keyed by asset ID
+    /// (obtained from [`QuoteProvider`](crate::investment::domain::quote::QuoteProvider)).
+    pub prices: HashMap<AssetID, Money>,
+}
+
+/// Summary of a single position within a portfolio.
+#[derive(Debug)]
+pub struct PositionSummary {
+    pub asset_id: AssetID,
+    pub quantity: Decimal,
+    pub average_cost: Money,
+    pub invested: Money,
+    pub current_value: Money,
+    pub profit: Money,
+}
+
+/// Consolidated summary of an entire portfolio.
+#[derive(Debug)]
+pub struct PortfolioSummary {
+    pub portfolio_id: PortfolioID,
+    /// Total cost basis across all positions.
+    pub total_invested: Money,
+    /// Total current market value across all positions.
+    pub total_current_value: Money,
+    /// Per-position breakdown.
+    pub positions: Vec<PositionSummary>,
+}
+
+/// Handler that returns a consolidated summary of all positions in a portfolio.
+///
+/// Requires current market prices to be injected by the caller.
+///
+/// # Errors
+///
+/// - [`InvestmentError::PortfolioNotFound`] if the portfolio does not exist.
+pub struct GetPortfolioSummaryHandler<P: PortfolioRepository> {
+    portfolio_repository: Arc<P>,
+}
+
+impl<P: PortfolioRepository> GetPortfolioSummaryHandler<P> {
+    /// Creates a new handler with the given repository.
+    pub fn new(portfolio_repository: Arc<P>) -> Self {
+        Self {
+            portfolio_repository,
+        }
+    }
+
+    /// Executes the portfolio summary query.
+    pub async fn handle(
+        &self,
+        query: GetPortfolioSummaryQuery,
+    ) -> Result<PortfolioSummary, InvestmentError> {
+        let portfolio = self
+            .portfolio_repository
+            .find_by_id(query.portfolio_id)
+            .await?
+            .ok_or_else(|| InvestmentError::PortfolioNotFound(query.portfolio_id.to_string()))?;
+
+        let mut total_invested = Money::zero(crate::shared::money::Currency::BRL);
+        let mut total_current_value = Money::zero(crate::shared::money::Currency::BRL);
+        let mut positions = Vec::new();
+
+        for pos in &portfolio.positions {
+            let invested = pos.average_cost * pos.quantity;
+            let current_value = query
+                .prices
+                .get(&pos.asset_id)
+                .map(|price| *price * pos.quantity)
+                .unwrap_or_else(|| Money::zero(pos.average_cost.currency()));
+
+            let profit = current_value - invested;
+
+            total_invested = total_invested + invested;
+            total_current_value = total_current_value + current_value;
+
+            positions.push(PositionSummary {
+                asset_id: pos.asset_id,
+                quantity: pos.quantity,
+                average_cost: pos.average_cost,
+                invested,
+                current_value,
+                profit,
+            });
+        }
+
+        Ok(PortfolioSummary {
+            portfolio_id: query.portfolio_id,
+            total_invested,
+            total_current_value,
+            positions,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::investment::domain::asset::AssetClass;
+    use crate::investment::domain::portfolio::Portfolio;
+    use crate::shared::ids::{PortfolioID, UserID};
+    use crate::shared::mock::MockPortfolioRepository;
+    use crate::shared::money::Currency;
+
+    fn brl(amount: i64) -> Money {
+        Money::new(amount, Currency::BRL)
+    }
+
+    async fn setup_two_positions() -> (Arc<MockPortfolioRepository>, PortfolioID, AssetID, AssetID)
+    {
+        let repo = Arc::new(MockPortfolioRepository::new());
+        let mut portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let a1 = AssetID::new();
+        let a2 = AssetID::new();
+        portfolio
+            .record_buy(a1, Decimal::from(10), brl(2500), AssetClass::Stock)
+            .unwrap();
+        portfolio
+            .record_buy(a2, Decimal::from(5), brl(5000), AssetClass::Fund)
+            .unwrap();
+        let pid = portfolio.id;
+        repo.save(&portfolio).await.unwrap();
+        (repo, pid, a1, a2)
+    }
+
+    #[tokio::test]
+    async fn test_portfolio_summary_two_positions() {
+        let (repo, pid, a1, a2) = setup_two_positions().await;
+        let handler = GetPortfolioSummaryHandler::new(repo);
+
+        let mut prices = HashMap::new();
+        prices.insert(a1, brl(3000));
+        prices.insert(a2, brl(4800));
+
+        let summary = handler
+            .handle(GetPortfolioSummaryQuery {
+                portfolio_id: pid,
+                prices,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(summary.positions.len(), 2);
+        // invested: 10*2500 + 5*5000 = 50000
+        assert_eq!(summary.total_invested.amount(), 50000);
+        // current: 10*3000 + 5*4800 = 54000
+        assert_eq!(summary.total_current_value.amount(), 54000);
+    }
+
+    #[tokio::test]
+    async fn test_portfolio_summary_empty() {
+        let repo = Arc::new(MockPortfolioRepository::new());
+        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let pid = portfolio.id;
+        repo.save(&portfolio).await.unwrap();
+
+        let handler = GetPortfolioSummaryHandler::new(repo);
+
+        let summary = handler
+            .handle(GetPortfolioSummaryQuery {
+                portfolio_id: pid,
+                prices: HashMap::new(),
+            })
+            .await
+            .unwrap();
+
+        assert!(summary.positions.is_empty());
+        assert_eq!(summary.total_invested.amount(), 0);
+        assert_eq!(summary.total_current_value.amount(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_portfolio_summary_missing_prices() {
+        let (repo, pid, a1, _a2) = setup_two_positions().await;
+        let handler = GetPortfolioSummaryHandler::new(repo);
+
+        let mut prices = HashMap::new();
+        prices.insert(a1, brl(3000));
+        // a2 price missing — should default to zero
+
+        let summary = handler
+            .handle(GetPortfolioSummaryQuery {
+                portfolio_id: pid,
+                prices,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(summary.positions.len(), 2);
+        // Only a1 contributes to current_value
+        assert_eq!(summary.total_current_value.amount(), 30000);
+    }
+
+    #[tokio::test]
+    async fn test_portfolio_summary_not_found() {
+        let repo = Arc::new(MockPortfolioRepository::new());
+        let handler = GetPortfolioSummaryHandler::new(repo);
+
+        let result = handler
+            .handle(GetPortfolioSummaryQuery {
+                portfolio_id: PortfolioID::new(),
+                prices: HashMap::new(),
+            })
+            .await;
+
+        assert!(matches!(result, Err(InvestmentError::PortfolioNotFound(_))));
+    }
+}
