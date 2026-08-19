@@ -260,3 +260,66 @@ impl crate::shared::events::DomainEvent for TransferCompleted {
         self
     }
 }
+
+/// Emitted when a recurring transaction is paused.
+#[derive(Debug)]
+pub struct RecurringTransactionPaused {
+    pub recurring_transaction_id: RecurringTransactionID,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for RecurringTransactionPaused {
+    fn event_type(&self) -> &'static str {
+        "RecurringTransactionPaused"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+/// Emitted when a paused recurring transaction is resumed.
+#[derive(Debug)]
+pub struct RecurringTransactionResumed {
+    pub recurring_transaction_id: RecurringTransactionID,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for RecurringTransactionResumed {
+    fn event_type(&self) -> &'static str {
+        "RecurringTransactionResumed"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+/// Emitted when a recurring transaction is cancelled.
+#[derive(Debug)]
+pub struct RecurringTransactionCancelled {
+    pub recurring_transaction_id: RecurringTransactionID,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl crate::shared::events::DomainEvent for RecurringTransactionCancelled {
+    fn event_type(&self) -> &'static str {
+        "RecurringTransactionCancelled"
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
