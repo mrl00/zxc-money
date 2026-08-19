@@ -7,13 +7,21 @@ use crate::shared::money::Money;
 /// A credit card owned by a user, with a spending limit and billing cycle configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreditCard {
+    /// Unique identifier.
     pub id: CreditCardID,
+    /// Owner of this card.
     pub owner_id: UserID,
+    /// User-defined display name (e.g. "Nubank").
     pub name: String,
+    /// Card brand (e.g. "Visa", "Mastercard").
     pub brand: String,
+    /// Maximum credit limit.
     pub limit: Money,
+    /// Day of the month when the invoice closes.
     pub closing_day: u32,
+    /// Day of the month when payment is due.
     pub due_day: u32,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

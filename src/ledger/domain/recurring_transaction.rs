@@ -84,17 +84,29 @@ fn is_leap_year(year: i32) -> bool {
 /// [`Transaction`](crate::ledger::domain::transaction::Transaction)s.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecurringTransaction {
+    /// Unique identifier.
     pub id: RecurringTransactionID,
+    /// Owner of this recurring transaction.
     pub owner_id: UserID,
+    /// Account to debit/credit.
     pub account_id: AccountID,
+    /// Type of transaction (income or expense).
     pub tx_type: TransactionType,
+    /// Amount per occurrence.
     pub amount: Money,
+    /// Description for generated transactions.
     pub description: String,
+    /// Optional category for generated transactions.
     pub category_id: Option<CategoryID>,
+    /// Tags for generated transactions.
     pub tags: Vec<TagID>,
+    /// How often this transaction repeats.
     pub frequency: Frequency,
+    /// Next date when a transaction should be generated.
     pub next_date: NaiveDate,
+    /// Whether this recurring transaction is active.
     pub active: bool,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

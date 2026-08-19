@@ -10,14 +10,23 @@ use crate::shared::money::Money;
 /// across consecutive invoices, linked by [`InstallmentGroupID`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Purchase {
+    /// Unique identifier.
     pub id: PurchaseID,
+    /// Description of the purchase.
     pub description: String,
+    /// Total amount of the purchase (across all installments).
     pub total_amount: Money,
+    /// Total number of installments.
     pub installments_count: u32,
+    /// Current installment number (1-indexed).
     pub installment_number: u32,
+    /// Groups installments of the same purchase across invoices.
     pub installment_group_id: Option<InstallmentGroupID>,
+    /// Category of this purchase.
     pub category_id: CategoryID,
+    /// Date the purchase was made.
     pub purchased_at: NaiveDate,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

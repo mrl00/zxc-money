@@ -18,12 +18,19 @@ pub enum InvoiceStatus {
 /// A monthly invoice for a [`CreditCard`](super::card::CreditCard), holding its purchases and status.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Invoice {
+    /// Unique identifier.
     pub id: InvoiceID,
+    /// The credit card this invoice belongs to.
     pub credit_card_id: CreditCardID,
+    /// Month and year this invoice covers.
     pub reference_month: YearMonth,
+    /// Purchases recorded on this invoice.
     pub purchases: Vec<Purchase>,
+    /// Current lifecycle status.
     pub status: InvoiceStatus,
+    /// Timestamp when the invoice was closed (if closed).
     pub closed_at: Option<DateTime<Utc>>,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

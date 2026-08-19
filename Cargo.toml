@@ -14,3 +14,15 @@ rust_decimal = { version = "1", features = ["serde-with-str"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
+
+[[example]]
+name = "credit_card_flow"
+path = "examples/credit_card_flow.rs"
+
+[[example]]
+name = "planning"
+path = "examples/planning.rs"

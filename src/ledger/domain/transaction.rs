@@ -19,17 +19,29 @@ pub enum TransactionType {
 /// A single financial transaction recorded against an account.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transaction {
+    /// Unique identifier.
     pub id: TransactionID,
+    /// Account this transaction belongs to.
     pub account_id: AccountID,
+    /// Type of transaction (income, expense, transfer).
     pub tx_type: TransactionType,
+    /// Monetary amount.
     pub amount: Money,
+    /// User-provided description.
     pub description: String,
+    /// Date of the transaction.
     pub date: NaiveDate,
+    /// Optional category assignment.
     pub category_id: Option<CategoryID>,
+    /// Tags for flexible classification.
     pub tags: Vec<TagID>,
+    /// For transfers: the other account involved.
     pub counterpart_account_id: Option<AccountID>,
+    /// For credit card imports: the originating purchase.
     pub source_purchase_id: Option<PurchaseID>,
+    /// Whether this transaction has been reconciled.
     pub reconciled: bool,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 

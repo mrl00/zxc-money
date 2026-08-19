@@ -15,9 +15,13 @@ use crate::shared::money::Money;
 /// invariants on position quantities and average-cost calculations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Portfolio {
+    /// Unique identifier.
     pub id: PortfolioID,
+    /// Owner of this portfolio.
     pub owner_id: UserID,
+    /// Current positions held.
     pub positions: Vec<Position>,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
 }
 
