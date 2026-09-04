@@ -1,0 +1,29 @@
+[package]
+name = "zxc-money"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+thiserror = "2"
+async-trait = "0.1"
+rust_decimal = { version = "1", features = ["serde-with-str"] }
+csv = "1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
+
+[[example]]
+name = "credit_card_flow"
+path = "examples/credit_card_flow.rs"
+
+[[example]]
+name = "planning"
+path = "examples/planning.rs"

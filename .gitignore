@@ -1,0 +1,22 @@
+/target
+
+# Specs (documentação de projeto, não é código)
+/specs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+
+# Cargo
+cargo-build.log
