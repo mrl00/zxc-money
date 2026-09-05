@@ -11,6 +11,8 @@ use crate::bills::domain::repository::BillRepository;
 use crate::budgeting::domain::budget::Budget;
 use crate::budgeting::domain::goal::FinancialGoal;
 use crate::budgeting::domain::repository::{BudgetRepository, GoalRepository};
+use crate::identity::domain::repository::UserRepository;
+use crate::identity::domain::user::User;
 use crate::investment::domain::asset::Asset;
 use crate::investment::domain::portfolio::Portfolio;
 use crate::investment::domain::repository::{AssetRepository, PortfolioRepository};
@@ -633,6 +635,58 @@ impl PortfolioRepository for MockPortfolioRepository {
     async fn delete(&self, id: PortfolioID) -> Result<(), RepositoryError> {
         let mut portfolios = self.portfolios.lock().unwrap();
         portfolios.remove(&id);
+        Ok(())
+    }
+}
+
+/// In-memory mock implementation of [`UserRepository`].
+pub struct MockUserRepository {
+    users: Mutex<HashMap<UserID, User>>,
+    email_index: Mutex<HashMap<String, UserID>>,
+}
+
+impl MockUserRepository {
+    pub fn new() -> Self {
+        Self {
+            users: Mutex::new(HashMap::new()),
+            email_index: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockUserRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl UserRepository for MockUserRepository {
+    async fn save(&self, user: &User) -> Result<(), RepositoryError> {
+        let mut users = self.users.lock().unwrap();
+        let mut email_idx = self.email_index.lock().unwrap();
+        email_idx.insert(user.email.clone(), user.id);
+        users.insert(user.id, user.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: UserID) -> Result<Option<User>, RepositoryError> {
+        let users = self.users.lock().unwrap();
+        Ok(users.get(&id).cloned())
+    }
+
+    async fn find_by_email(&self, email: &str) -> Result<Option<User>, RepositoryError> {
+        let email_idx = self.email_index.lock().unwrap();
+        let users = self.users.lock().unwrap();
+        Ok(email_idx.get(email).and_then(|id| users.get(id).cloned()))
+    }
+
+    async fn delete(&self, id: UserID) -> Result<(), RepositoryError> {
+        let mut users = self.users.lock().unwrap();
+        let mut email_idx = self.email_index.lock().unwrap();
+        if let Some(user) = users.remove(&id) {
+            email_idx.remove(&user.email);
+        }
         Ok(())
     }
 }

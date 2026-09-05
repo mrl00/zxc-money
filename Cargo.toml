@@ -12,6 +12,9 @@ thiserror = "2"
 async-trait = "0.1"
 rust_decimal = { version = "1", features = ["serde-with-str"] }
 csv = "1"
+argon2 = "0.5"
+password-hash = "0.5"
+rand = "0.8"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -40,6 +40,7 @@
 pub mod bills;
 pub mod budgeting;
 pub mod credit_card;
+pub mod identity;
 pub mod importing;
 pub mod investment;
 pub mod ledger;
