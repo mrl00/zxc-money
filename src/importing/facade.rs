@@ -5,7 +5,7 @@ use crate::importing::application::match_candidates::{
     MatchCandidate, MatchCandidatesCommand, MatchCandidatesHandler,
 };
 use crate::importing::application::preview::{PreviewCandidate, PreviewCommand, PreviewHandler};
-use crate::ledger::domain::repository::TransactionRepository;
+use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::ImportError;
 use crate::shared::events::EventPublisher;
@@ -20,23 +20,42 @@ use crate::shared::events::EventPublisher;
 /// 2. match_candidates() → find fuzzy matches
 /// 3. confirm()      → create transactions in the ledger
 /// ```
-pub struct ImportingFacade<T: TransactionRepository, P: EventPublisher, I: IdGenerator> {
-    preview: PreviewHandler<T>,
-    match_candidates: MatchCandidatesHandler<T>,
-    confirm: ConfirmHandler<T, P, I>,
+pub struct ImportingFacade<
+    A: AccountRepository,
+    T: TransactionRepository,
+    P: EventPublisher,
+    I: IdGenerator,
+> {
+    preview: PreviewHandler<A, T>,
+    match_candidates: MatchCandidatesHandler<A, T>,
+    confirm: ConfirmHandler<A, T, P, I>,
 }
 
-impl<T: TransactionRepository, P: EventPublisher, I: IdGenerator> ImportingFacade<T, P, I> {
+impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGenerator>
+    ImportingFacade<A, T, P, I>
+{
     /// Creates a new facade with shared dependencies.
     pub fn new(
+        account_repository: Arc<A>,
         transaction_repository: Arc<T>,
         event_publisher: Arc<P>,
         id_generator: Arc<I>,
     ) -> Self {
         Self {
-            preview: PreviewHandler::new(transaction_repository.clone()),
-            match_candidates: MatchCandidatesHandler::new(transaction_repository.clone()),
-            confirm: ConfirmHandler::new(transaction_repository, event_publisher, id_generator),
+            preview: PreviewHandler::new(
+                account_repository.clone(),
+                transaction_repository.clone(),
+            ),
+            match_candidates: MatchCandidatesHandler::new(
+                account_repository.clone(),
+                transaction_repository.clone(),
+            ),
+            confirm: ConfirmHandler::new(
+                account_repository,
+                transaction_repository,
+                event_publisher,
+                id_generator,
+            ),
         }
     }
 
@@ -63,10 +82,11 @@ impl<T: TransactionRepository, P: EventPublisher, I: IdGenerator> ImportingFacad
 mod tests {
     use super::*;
     use crate::importing::domain::raw_transaction::RawTransaction;
+    use crate::ledger::domain::account::{Account, AccountType};
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::ids::{AccountID, Principal, UserID};
-    use crate::shared::mock::MockTransactionRepository;
+    use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::{Currency, Money};
 
     fn sample_raw(date: &str, amount_cents: i64) -> RawTransaction {
@@ -78,21 +98,44 @@ mod tests {
         }
     }
 
-    fn setup_facade()
-    -> ImportingFacade<MockTransactionRepository, InMemoryEventDispatcher, MockIdGenerator> {
-        let repo = Arc::new(MockTransactionRepository::new());
+    fn setup_facade() -> ImportingFacade<
+        MockAccountRepository,
+        MockTransactionRepository,
+        InMemoryEventDispatcher,
+        MockIdGenerator,
+    > {
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
-        ImportingFacade::new(repo, publisher, id_gen)
+        ImportingFacade::new(account_repo, tx_repo, publisher, id_gen)
     }
 
     #[tokio::test]
     async fn test_facade_preview_empty() {
-        let facade = setup_facade();
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
+        let owner = UserID::new();
+        let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            owner,
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let facade = ImportingFacade::new(account_repo, tx_repo, publisher, id_gen);
         let result = facade
             .preview(PreviewCommand {
-                principal: Principal::new(UserID::new()),
-                account_id: AccountID::new(),
+                principal: Principal::new(owner),
+                account_id,
                 transactions: Vec::new(),
             })
             .await
@@ -102,8 +145,25 @@ mod tests {
 
     #[tokio::test]
     async fn test_facade_full_flow() {
-        let facade = setup_facade();
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
+        let owner = UserID::new();
         let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            owner,
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let facade = ImportingFacade::new(account_repo, tx_repo, publisher, id_gen);
         let txs = vec![
             sample_raw("2026-03-15", -2500),
             sample_raw("2026-03-16", 50000),
@@ -112,7 +172,7 @@ mod tests {
         // 1. Preview
         let preview = facade
             .preview(PreviewCommand {
-                principal: Principal::new(UserID::new()),
+                principal: Principal::new(owner),
                 account_id,
                 transactions: txs.clone(),
             })
@@ -125,7 +185,7 @@ mod tests {
         // 2. Match candidates
         let matches = facade
             .match_candidates(MatchCandidatesCommand {
-                principal: Principal::new(UserID::new()),
+                principal: Principal::new(owner),
                 account_id,
                 transactions: txs.clone(),
                 date_tolerance_days: 3,
@@ -138,7 +198,7 @@ mod tests {
         // 3. Confirm
         let count = facade
             .confirm(ConfirmCommand {
-                principal: Principal::new(UserID::new()),
+                principal: Principal::new(owner),
                 account_id,
                 transactions: txs,
             })

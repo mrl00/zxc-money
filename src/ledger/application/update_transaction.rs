@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 
 use crate::ledger::domain::events::TransactionUpdated;
-use crate::ledger::domain::repository::TransactionRepository;
+use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
 use crate::ledger::domain::transaction::TransactionType;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
@@ -20,14 +20,26 @@ pub struct UpdateTransactionCommand {
 }
 
 /// Handler that processes [`UpdateTransactionCommand`] requests.
-pub struct UpdateTransactionHandler<T: TransactionRepository, P: EventPublisher> {
+pub struct UpdateTransactionHandler<
+    A: AccountRepository,
+    T: TransactionRepository,
+    P: EventPublisher,
+> {
+    account_repository: Arc<A>,
     transaction_repository: Arc<T>,
     event_publisher: Arc<P>,
 }
 
-impl<T: TransactionRepository, P: EventPublisher> UpdateTransactionHandler<T, P> {
-    pub fn new(transaction_repository: Arc<T>, event_publisher: Arc<P>) -> Self {
+impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher>
+    UpdateTransactionHandler<A, T, P>
+{
+    pub fn new(
+        account_repository: Arc<A>,
+        transaction_repository: Arc<T>,
+        event_publisher: Arc<P>,
+    ) -> Self {
         Self {
+            account_repository,
             transaction_repository,
             event_publisher,
         }
@@ -37,14 +49,26 @@ impl<T: TransactionRepository, P: EventPublisher> UpdateTransactionHandler<T, P>
     /// [`TransactionUpdated`].
     ///
     /// # Errors
-    /// Fails if the transaction is reconciled, derived from a purchase, or any
-    /// invariant is violated.
+    /// Fails if the transaction is reconciled, derived from a purchase, does not
+    /// belong to the authenticated user, or any invariant is violated.
     pub async fn handle(&self, cmd: UpdateTransactionCommand) -> Result<(), LedgerError> {
         let mut transaction = self
             .transaction_repository
             .find_by_id(cmd.transaction_id)
             .await?
             .ok_or_else(|| LedgerError::TransactionNotFound(cmd.transaction_id.to_string()))?;
+
+        let account = self
+            .account_repository
+            .find_by_id(transaction.account_id)
+            .await?
+            .ok_or_else(|| LedgerError::AccountNotFound(transaction.account_id.to_string()))?;
+
+        if account.owner_id != cmd.principal.user_id {
+            return Err(LedgerError::Forbidden(
+                "not the owner of this account".into(),
+            ));
+        }
 
         if transaction.reconciled {
             return Err(LedgerError::InvariantViolation(
@@ -114,16 +138,17 @@ impl<T: TransactionRepository, P: EventPublisher> UpdateTransactionHandler<T, P>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ledger::domain::account::Account;
     use crate::ledger::domain::transaction::Transaction;
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::ids::{AccountID, Principal, PurchaseID, UserID};
-    use crate::shared::mock::MockTransactionRepository;
+    use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::Currency;
 
-    fn make_tx(id: TransactionID) -> Transaction {
+    fn make_tx(id: TransactionID, account_id: AccountID) -> Transaction {
         Transaction::new(
             id,
-            AccountID::new(),
+            account_id,
             TransactionType::Income,
             Money::from_cents(100, Currency::BRL),
             "Salary".into(),
@@ -134,16 +159,36 @@ mod tests {
         .unwrap()
     }
 
+    fn make_account(id: AccountID, owner: UserID) -> Account {
+        Account::new(
+            id,
+            owner,
+            "Test".into(),
+            crate::ledger::domain::account::AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap()
+    }
+
     #[tokio::test]
     async fn test_update_description() {
-        let repo = Arc::new(MockTransactionRepository::new());
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
         let tx_id = TransactionID::new();
-        repo.save(&make_tx(tx_id)).await.unwrap();
 
-        let handler = UpdateTransactionHandler::new(repo, publisher);
+        account_repo
+            .save(&make_account(account_id, owner))
+            .await
+            .unwrap();
+        tx_repo.save(&make_tx(tx_id, account_id)).await.unwrap();
+
+        let handler = UpdateTransactionHandler::new(account_repo, tx_repo, publisher);
         let cmd = UpdateTransactionCommand {
-            principal: Principal::new(UserID::new()),
+            principal: Principal::new(owner),
             transaction_id: tx_id,
             amount: None,
             description: Some("Updated salary".into()),
@@ -154,17 +199,53 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_reconciled_blocked() {
-        let repo = Arc::new(MockTransactionRepository::new());
+    async fn test_update_wrong_owner_blocked() {
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let account_id = AccountID::new();
         let tx_id = TransactionID::new();
-        let mut tx = make_tx(tx_id);
-        tx.mark_reconciled();
-        repo.save(&tx).await.unwrap();
 
-        let handler = UpdateTransactionHandler::new(repo, publisher);
+        account_repo
+            .save(&make_account(account_id, UserID::new()))
+            .await
+            .unwrap();
+        tx_repo.save(&make_tx(tx_id, account_id)).await.unwrap();
+
+        let handler = UpdateTransactionHandler::new(account_repo, tx_repo, publisher);
         let cmd = UpdateTransactionCommand {
             principal: Principal::new(UserID::new()),
+            transaction_id: tx_id,
+            amount: None,
+            description: Some("Hack".into()),
+            date: None,
+            category_id: None,
+        };
+        let result = handler.handle(cmd).await;
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), LedgerError::Forbidden(_)));
+    }
+
+    #[tokio::test]
+    async fn test_update_reconciled_blocked() {
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
+        let tx_id = TransactionID::new();
+
+        account_repo
+            .save(&make_account(account_id, owner))
+            .await
+            .unwrap();
+        let mut tx = make_tx(tx_id, account_id);
+        tx.mark_reconciled();
+        tx_repo.save(&tx).await.unwrap();
+
+        let handler = UpdateTransactionHandler::new(account_repo, tx_repo, publisher);
+        let cmd = UpdateTransactionCommand {
+            principal: Principal::new(owner),
             transaction_id: tx_id,
             amount: Some(Money::from_cents(200, Currency::BRL)),
             description: None,
@@ -181,15 +262,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_derived_blocked() {
-        let repo = Arc::new(MockTransactionRepository::new());
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
         let tx_id = TransactionID::new();
-        let tx = make_tx(tx_id).with_source_purchase(PurchaseID::new());
-        repo.save(&tx).await.unwrap();
 
-        let handler = UpdateTransactionHandler::new(repo, publisher);
+        account_repo
+            .save(&make_account(account_id, owner))
+            .await
+            .unwrap();
+        let tx = make_tx(tx_id, account_id).with_source_purchase(PurchaseID::new());
+        tx_repo.save(&tx).await.unwrap();
+
+        let handler = UpdateTransactionHandler::new(account_repo, tx_repo, publisher);
         let cmd = UpdateTransactionCommand {
-            principal: Principal::new(UserID::new()),
+            principal: Principal::new(owner),
             transaction_id: tx_id,
             amount: None,
             description: Some("Hack".into()),
@@ -202,14 +291,22 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_empty_description_rejected() {
-        let repo = Arc::new(MockTransactionRepository::new());
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
         let tx_id = TransactionID::new();
-        repo.save(&make_tx(tx_id)).await.unwrap();
 
-        let handler = UpdateTransactionHandler::new(repo, publisher);
+        account_repo
+            .save(&make_account(account_id, owner))
+            .await
+            .unwrap();
+        tx_repo.save(&make_tx(tx_id, account_id)).await.unwrap();
+
+        let handler = UpdateTransactionHandler::new(account_repo, tx_repo, publisher);
         let cmd = UpdateTransactionCommand {
-            principal: Principal::new(UserID::new()),
+            principal: Principal::new(owner),
             transaction_id: tx_id,
             amount: None,
             description: Some("".into()),
