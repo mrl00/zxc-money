@@ -43,7 +43,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: Money::from_cents(10000_00, Currency::BRL),
+            opening_balance: Money::from_cents(1000000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 

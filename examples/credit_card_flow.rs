@@ -20,9 +20,9 @@ async fn main() {
         owner,
         "Nubank".into(),
         "Mastercard".into(),
-        Money::from_cents(10_000_00, Currency::BRL), // R$ 10.000,00 limit
-        20,                                          // closing day
-        27,                                          // due day
+        Money::from_cents(1000000, Currency::BRL), // R$ 10.000,00 limit
+        20,                                        // closing day
+        27,                                        // due day
     );
 
     println!("Registered card: {} ({})", card.name, card.brand);
@@ -47,7 +47,7 @@ async fn main() {
     let supermarket = Purchase::new(
         PurchaseID::new(),
         "Supermarket".into(),
-        Money::from_cents(350_00, Currency::BRL),
+        Money::from_cents(35000, Currency::BRL),
         1,
         CategoryID::new(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -56,7 +56,7 @@ async fn main() {
     let tv = Purchase::new(
         PurchaseID::new(),
         "Smart TV".into(),
-        Money::from_cents(3_000_00, Currency::BRL),
+        Money::from_cents(300000, Currency::BRL),
         3, // 3 installments
         CategoryID::new(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -85,7 +85,7 @@ async fn main() {
     println!("Invoice paid! Status: {:?}", invoice.status);
 
     // Check available limit
-    let used = Money::from_cents(3_389_90, Currency::BRL);
+    let used = Money::from_cents(338990, Currency::BRL);
     let available = card.available_limit(used).unwrap();
     println!(
         "\nAvailable limit: R$ {:.2}",

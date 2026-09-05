@@ -126,7 +126,7 @@ mod tests {
             owner_id: UserID::new(),
             category_id: CategoryID::new(),
             year: 2026,
-            monthly_amount: Money::from_cents(500_00, Currency::BRL),
+            monthly_amount: Money::from_cents(50000, Currency::BRL),
         };
 
         let ids = handler.handle(cmd).await.unwrap();
@@ -152,7 +152,7 @@ mod tests {
             owner_id,
             category_id,
             YearMonth::new(2026, 1).period(),
-            Money::from_cents(500_00, Currency::BRL),
+            Money::from_cents(50000, Currency::BRL),
         )
         .unwrap();
         budget_repo.save(&jan_budget).await.unwrap();
@@ -161,7 +161,7 @@ mod tests {
             owner_id,
             category_id,
             year: 2026,
-            monthly_amount: Money::from_cents(500_00, Currency::BRL),
+            monthly_amount: Money::from_cents(50000, Currency::BRL),
         };
 
         let ids = handler.handle(cmd).await.unwrap();
@@ -179,7 +179,7 @@ mod tests {
             owner_id: UserID::new(),
             category_id: CategoryID::new(),
             year: 2026,
-            monthly_amount: Money::from_cents(1000_00, Currency::BRL),
+            monthly_amount: Money::from_cents(100000, Currency::BRL),
         };
 
         let ids = handler.handle(cmd).await.unwrap();

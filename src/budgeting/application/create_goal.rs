@@ -72,14 +72,14 @@ mod tests {
         let cmd = CreateGoalCommand {
             owner_id: UserID::new(),
             name: "Emergency Fund".into(),
-            target_amount: Money::from_cents(10_000_00, Currency::BRL),
+            target_amount: Money::from_cents(1000000, Currency::BRL),
             target_date: NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         };
 
         let goal_id = handler.handle(cmd).await.unwrap();
         let goal = goal_repo.find_by_id(goal_id).await.unwrap().unwrap();
         assert_eq!(goal.name, "Emergency Fund");
-        assert_eq!(goal.target_amount.amount(), Decimal::from(10_000));
+        assert_eq!(goal.target_amount.amount(), Decimal::from(10000));
     }
 
     #[tokio::test]
@@ -90,7 +90,7 @@ mod tests {
         let cmd = CreateGoalCommand {
             owner_id: UserID::new(),
             name: "Vacation".into(),
-            target_amount: Money::from_cents(5_000_00, Currency::BRL),
+            target_amount: Money::from_cents(500000, Currency::BRL),
             target_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
         };
 

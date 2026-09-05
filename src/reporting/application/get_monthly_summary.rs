@@ -76,7 +76,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(5000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date,
@@ -90,7 +90,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(1500_00, Currency::BRL),
+                amount: Money::from_cents(150000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Rent".into(),
                 date,
@@ -105,15 +105,15 @@ mod tests {
         });
         assert_eq!(
             summary.total_income.amount(),
-            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(500000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             summary.total_expense.amount(),
-            rust_decimal::Decimal::from(1500_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(150000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             summary.balance.amount(),
-            rust_decimal::Decimal::from(3500_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(350000) / rust_decimal::Decimal::from(100)
         );
     }
 

@@ -69,7 +69,7 @@ mod tests {
                 owner_id: UserID::new(),
                 name: "Nubank".into(),
                 brand: "Mastercard".into(),
-                limit: Money::from_cents(5000_00, Currency::BRL),
+                limit: Money::from_cents(500000, Currency::BRL),
                 closing_day: 20,
                 due_day: 27,
             })

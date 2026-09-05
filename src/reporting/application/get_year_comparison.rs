@@ -82,7 +82,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(50000_00, Currency::BRL),
+                amount: Money::from_cents(5000000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "2025 Salary".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2025, 6, 15).unwrap(),
@@ -97,7 +97,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(60000_00, Currency::BRL),
+                amount: Money::from_cents(6000000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "2026 Salary".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
@@ -112,7 +112,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(40000_00, Currency::BRL),
+                amount: Money::from_cents(4000000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "2026 Rent".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 3, 10).unwrap(),
@@ -129,22 +129,22 @@ mod tests {
         assert_eq!(summaries[0].year, 2025);
         assert_eq!(
             summaries[0].total_income.amount(),
-            rust_decimal::Decimal::from(50000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(5000000) / rust_decimal::Decimal::from(100)
         );
         assert!(summaries[0].total_expense.is_zero());
 
         assert_eq!(summaries[1].year, 2026);
         assert_eq!(
             summaries[1].total_income.amount(),
-            rust_decimal::Decimal::from(60000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(6000000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             summaries[1].total_expense.amount(),
-            rust_decimal::Decimal::from(40000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(4000000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             summaries[1].balance.amount(),
-            rust_decimal::Decimal::from(20000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(2000000) / rust_decimal::Decimal::from(100)
         );
     }
 

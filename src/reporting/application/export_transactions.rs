@@ -120,7 +120,7 @@ mod tests {
             TransactionID::new(),
             account_id,
             TransactionType::Income,
-            Money::from_cents(5000_00, Currency::BRL),
+            Money::from_cents(500000, Currency::BRL),
             "Salary".into(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )

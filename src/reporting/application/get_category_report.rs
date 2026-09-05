@@ -98,12 +98,12 @@ mod tests {
         let events: Vec<Box<dyn DomainEvent + Send + Sync>> = vec![
             expense_event(
                 cat1,
-                100_00,
+                10000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
             ),
             expense_event(
                 cat1,
-                200_00,
+                20000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
             ),
             expense_event(
@@ -122,12 +122,12 @@ mod tests {
         assert_eq!(reports.len(), 2);
         assert_eq!(
             reports[0].total.amount(),
-            rust_decimal::Decimal::from(300_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(30000) / rust_decimal::Decimal::from(100)
         ); // cat1 first (highest)
         assert_eq!(reports[0].transaction_count, 2);
         assert_eq!(
             reports[1].total.amount(),
-            rust_decimal::Decimal::from(50_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(5000) / rust_decimal::Decimal::from(100)
         ); // cat2 second
     }
 
@@ -138,12 +138,12 @@ mod tests {
         let events: Vec<Box<dyn DomainEvent + Send + Sync>> = vec![
             expense_event(
                 cat,
-                100_00,
+                10000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
             ),
             expense_event(
                 cat,
-                200_00,
+                20000,
                 chrono::NaiveDate::from_ymd_opt(2026, 2, 5).unwrap(),
             ),
         ];
@@ -157,7 +157,7 @@ mod tests {
         assert_eq!(reports.len(), 1);
         assert_eq!(
             reports[0].total.amount(),
-            rust_decimal::Decimal::from(100_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(10000) / rust_decimal::Decimal::from(100)
         );
     }
 
@@ -169,7 +169,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(5000_00, Currency::BRL),
+            amount: Money::from_cents(500000, Currency::BRL),
             category_id: Some(cat),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

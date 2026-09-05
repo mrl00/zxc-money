@@ -110,7 +110,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(5000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date,
@@ -122,12 +122,12 @@ mod tests {
         let entry = store.get(date).unwrap();
         assert_eq!(
             entry.income.amount(),
-            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(500000) / rust_decimal::Decimal::from(100)
         );
         assert!(entry.expense.is_zero());
         assert_eq!(
             entry.net.amount(),
-            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(500000) / rust_decimal::Decimal::from(100)
         );
     }
 
@@ -141,7 +141,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(150_00, Currency::BRL),
+                amount: Money::from_cents(15000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Groceries".into(),
                 date,
@@ -154,11 +154,11 @@ mod tests {
         assert!(entry.income.is_zero());
         assert_eq!(
             entry.expense.amount(),
-            rust_decimal::Decimal::from(150_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(15000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             entry.net.amount(),
-            rust_decimal::Decimal::from(-150_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(-15000) / rust_decimal::Decimal::from(100)
         );
     }
 
@@ -172,7 +172,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(5000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
                 category_id: None,
                 description: "Salary".into(),
                 date,
@@ -186,7 +186,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(200_00, Currency::BRL),
+                amount: Money::from_cents(20000, Currency::BRL),
                 category_id: None,
                 description: "Food".into(),
                 date,
@@ -198,15 +198,15 @@ mod tests {
         let entry = store.get(date).unwrap();
         assert_eq!(
             entry.income.amount(),
-            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(500000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             entry.expense.amount(),
-            rust_decimal::Decimal::from(200_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(20000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             entry.net.amount(),
-            rust_decimal::Decimal::from(4800_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(480000) / rust_decimal::Decimal::from(100)
         );
     }
 
@@ -219,7 +219,7 @@ mod tests {
             &TransferCompleted {
                 from_account_id: AccountID::new(),
                 to_account_id: AccountID::new(),
-                amount: Money::from_cents(300_00, Currency::BRL),
+                amount: Money::from_cents(30000, Currency::BRL),
                 timestamp: chrono::Utc::now(),
             },
             &Mutex::new(HashMap::new()),
@@ -238,7 +238,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(100_00, Currency::BRL),
+                amount: Money::from_cents(10000, Currency::BRL),
                 category_id: None,
                 description: "Day 1".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
@@ -252,7 +252,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(200_00, Currency::BRL),
+                amount: Money::from_cents(20000, Currency::BRL),
                 category_id: None,
                 description: "Day 15".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

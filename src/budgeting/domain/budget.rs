@@ -97,7 +97,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            Money::from_cents(500_00, Currency::BRL),
+            Money::from_cents(50000, Currency::BRL),
         )
         .unwrap()
     }
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn test_budget_update_amount() {
         let mut b = sample_budget();
-        b.update_amount(Money::from_cents(800_00, Currency::BRL))
+        b.update_amount(Money::from_cents(80000, Currency::BRL))
             .unwrap();
         assert_eq!(b.planned_amount.amount(), Decimal::from(800));
     }

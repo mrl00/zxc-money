@@ -133,12 +133,12 @@ mod tests {
         let cat = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
 
-        define_budget(&store, cat, 1000_00);
+        define_budget(&store, cat, 100000);
 
         let progress = store.get(cat, period).unwrap();
         assert_eq!(
             progress.planned.amount(),
-            rust_decimal::Decimal::from(1000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(100000) / rust_decimal::Decimal::from(100)
         );
         assert!(progress.spent.is_zero());
     }
@@ -149,13 +149,13 @@ mod tests {
         let cat = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
 
-        define_budget(&store, cat, 1000_00);
+        define_budget(&store, cat, 100000);
 
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(300_00, Currency::BRL),
+            amount: Money::from_cents(30000, Currency::BRL),
             category_id: Some(cat),
             description: "Food".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -165,11 +165,11 @@ mod tests {
         let progress = store.get(cat, period).unwrap();
         assert_eq!(
             progress.spent.amount(),
-            rust_decimal::Decimal::from(300_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(30000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             progress.remaining.amount(),
-            rust_decimal::Decimal::from(700_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(70000) / rust_decimal::Decimal::from(100)
         );
         assert!(!progress.is_over);
         assert!((progress.pct_used - 30.0).abs() < f64::EPSILON);
@@ -181,13 +181,13 @@ mod tests {
         let cat = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
 
-        define_budget(&store, cat, 500_00);
+        define_budget(&store, cat, 50000);
 
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(600_00, Currency::BRL),
+            amount: Money::from_cents(60000, Currency::BRL),
             category_id: Some(cat),
             description: "Big purchase".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
@@ -198,7 +198,7 @@ mod tests {
         assert!(progress.is_over);
         assert_eq!(
             progress.spent.amount(),
-            rust_decimal::Decimal::from(600_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(60000) / rust_decimal::Decimal::from(100)
         );
     }
 
@@ -208,13 +208,13 @@ mod tests {
         let cat = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
 
-        define_budget(&store, cat, 1000_00);
+        define_budget(&store, cat, 100000);
 
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(5000_00, Currency::BRL),
+            amount: Money::from_cents(500000, Currency::BRL),
             category_id: Some(cat),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -230,13 +230,13 @@ mod tests {
         let store = BudgetProgressStore::new();
         let cat = CategoryID::new();
 
-        define_budget(&store, cat, 1000_00);
+        define_budget(&store, cat, 100000);
 
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(100_00, Currency::BRL),
+            amount: Money::from_cents(10000, Currency::BRL),
             category_id: None,
             description: "Uncategorized".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

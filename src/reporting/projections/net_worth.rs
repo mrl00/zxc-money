@@ -182,11 +182,11 @@ mod tests {
     fn test_net_worth_single_account() {
         let store = NetWorthStore::new();
         let id = AccountID::new();
-        open_account(&store, id, 1000_00);
+        open_account(&store, id, 100000);
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
-        assert_eq!(snapshot.total_assets.amount(), cents(1000_00));
-        assert_eq!(snapshot.net_worth.amount(), cents(1000_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(100000));
+        assert_eq!(snapshot.net_worth.amount(), cents(100000));
     }
 
     #[test]
@@ -194,24 +194,24 @@ mod tests {
         let store = NetWorthStore::new();
         let id1 = AccountID::new();
         let id2 = AccountID::new();
-        open_account(&store, id1, 5000_00);
-        open_account(&store, id2, 3000_00);
+        open_account(&store, id1, 500000);
+        open_account(&store, id2, 300000);
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
-        assert_eq!(snapshot.total_assets.amount(), cents(8000_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(800000));
     }
 
     #[test]
     fn test_net_worth_after_income() {
         let store = NetWorthStore::new();
         let id = AccountID::new();
-        open_account(&store, id, 1000_00);
+        open_account(&store, id, 100000);
 
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: id,
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(500_00, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             category_id: Some(CategoryID::new()),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -219,20 +219,20 @@ mod tests {
         });
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap());
-        assert_eq!(snapshot.total_assets.amount(), cents(1500_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(150000));
     }
 
     #[test]
     fn test_net_worth_after_expense() {
         let store = NetWorthStore::new();
         let id = AccountID::new();
-        open_account(&store, id, 1000_00);
+        open_account(&store, id, 100000);
 
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: id,
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(200_00, Currency::BRL),
+            amount: Money::from_cents(20000, Currency::BRL),
             category_id: Some(CategoryID::new()),
             description: "Food".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -240,7 +240,7 @@ mod tests {
         });
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap());
-        assert_eq!(snapshot.total_assets.amount(), cents(800_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(80000));
     }
 
     #[test]
@@ -248,26 +248,26 @@ mod tests {
         let store = NetWorthStore::new();
         let from_id = AccountID::new();
         let to_id = AccountID::new();
-        open_account(&store, from_id, 1000_00);
-        open_account(&store, to_id, 500_00);
+        open_account(&store, from_id, 100000);
+        open_account(&store, to_id, 50000);
 
         store.handle_event(&TransferCompleted {
             from_account_id: from_id,
             to_account_id: to_id,
-            amount: Money::from_cents(300_00, Currency::BRL),
+            amount: Money::from_cents(30000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
-        assert_eq!(snapshot.total_assets.amount(), cents(1500_00));
-        assert_eq!(snapshot.net_worth.amount(), cents(1500_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(150000));
+        assert_eq!(snapshot.net_worth.amount(), cents(150000));
     }
 
     #[test]
     fn test_net_worth_account_deleted() {
         let store = NetWorthStore::new();
         let id = AccountID::new();
-        open_account(&store, id, 1000_00);
+        open_account(&store, id, 100000);
 
         store.handle_event(&AccountDeleted {
             account_id: id,
@@ -296,7 +296,7 @@ mod tests {
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
         // 10 × R$25.00 = R$250.00
-        assert_eq!(snapshot.total_assets.amount(), cents(250_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(25000));
     }
 
     #[test]
@@ -329,7 +329,7 @@ mod tests {
         // 250 - 150 = 100 (remaining: 5 × R$25.00 = R$125.00 cost basis at buy price)
         // Actually: buy adds 250, sell subtracts 5*3000=15000 cents = 150
         // So: 25000 - 15000 = 10000 cents = R$100.00
-        assert_eq!(snapshot.total_assets.amount(), cents(100_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(10000));
     }
 
     #[test]
@@ -339,7 +339,7 @@ mod tests {
         let pid = PortfolioID::new();
         let aid = crate::shared::ids::AssetID::new();
 
-        open_account(&store, account_id, 1000_00);
+        open_account(&store, account_id, 100000);
 
         store.handle_event(&AssetBought {
             portfolio_id: pid,
@@ -352,7 +352,7 @@ mod tests {
 
         let snapshot = store.snapshot(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
         // Accounts: R$1000.00 + Investments: R$250.00 = R$1250.00
-        assert_eq!(snapshot.total_assets.amount(), cents(1250_00));
-        assert_eq!(snapshot.net_worth.amount(), cents(1250_00));
+        assert_eq!(snapshot.total_assets.amount(), cents(125000));
+        assert_eq!(snapshot.net_worth.amount(), cents(125000));
     }
 }

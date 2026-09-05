@@ -66,7 +66,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: brl(1000_00),
+            opening_balance: brl(100000),
             timestamp: chrono::Utc::now(),
         });
 
@@ -89,7 +89,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: brl(5000_00),
+            opening_balance: brl(500000),
             timestamp: chrono::Utc::now(),
         });
 

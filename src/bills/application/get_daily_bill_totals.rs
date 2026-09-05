@@ -45,7 +45,7 @@ mod tests {
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
             name: "Bill A".into(),
-            amount: Some(Money::from_cents(100_00, Currency::BRL)),
+            amount: Some(Money::from_cents(10000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
             timestamp: chrono::Utc::now(),
         });
@@ -53,7 +53,7 @@ mod tests {
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
             name: "Bill B".into(),
-            amount: Some(Money::from_cents(200_00, Currency::BRL)),
+            amount: Some(Money::from_cents(20000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
             timestamp: chrono::Utc::now(),
         });
@@ -65,7 +65,7 @@ mod tests {
             })
             .await;
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].total, Money::from_cents(300_00, Currency::BRL));
+        assert_eq!(result[0].total, Money::from_cents(30000, Currency::BRL));
     }
 
     #[tokio::test]

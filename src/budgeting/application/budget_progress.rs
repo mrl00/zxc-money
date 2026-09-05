@@ -94,8 +94,8 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::from_cents(1000_00, Currency::BRL),
-            Money::from_cents(500_00, Currency::BRL),
+            Money::from_cents(100000, Currency::BRL),
+            Money::from_cents(50000, Currency::BRL),
         );
         assert!(!bp.is_over());
         assert_eq!(bp.remaining().amount().to_i64().unwrap(), 500);
@@ -108,8 +108,8 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::from_cents(1000_00, Currency::BRL),
-            Money::from_cents(1000_00, Currency::BRL),
+            Money::from_cents(100000, Currency::BRL),
+            Money::from_cents(100000, Currency::BRL),
         );
         assert!(!bp.is_over());
         assert_eq!(bp.remaining().amount().to_i64().unwrap(), 0);
@@ -122,8 +122,8 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::from_cents(1000_00, Currency::BRL),
-            Money::from_cents(1200_00, Currency::BRL),
+            Money::from_cents(100000, Currency::BRL),
+            Money::from_cents(120000, Currency::BRL),
         );
         assert!(bp.is_over());
         assert!((bp.pct_used() - 120.0).abs() < f64::EPSILON);

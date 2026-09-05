@@ -80,7 +80,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: brl(5000_00),
+            opening_balance: brl(500000),
             timestamp: chrono::Utc::now(),
         });
 
@@ -89,7 +89,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Savings".into(),
             currency: Currency::BRL,
-            opening_balance: brl(10000_00),
+            opening_balance: brl(1000000),
             timestamp: chrono::Utc::now(),
         });
 
@@ -97,7 +97,7 @@ mod tests {
         assert_eq!(breakdown.accounts.len(), 2);
         assert_eq!(
             breakdown.total_accounts.amount(),
-            rust_decimal::Decimal::from(15000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(1500000) / rust_decimal::Decimal::from(100)
         );
         assert!(breakdown.investments.is_empty());
     }
@@ -122,7 +122,7 @@ mod tests {
         assert_eq!(breakdown.investments.len(), 1);
         assert_eq!(
             breakdown.total_investments.amount(),
-            rust_decimal::Decimal::from(250_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(25000) / rust_decimal::Decimal::from(100)
         );
     }
 

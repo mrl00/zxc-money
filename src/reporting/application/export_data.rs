@@ -100,7 +100,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: Money::from_cents(10000_00, Currency::BRL),
+            opening_balance: Money::from_cents(1000000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
@@ -109,7 +109,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id,
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(5000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

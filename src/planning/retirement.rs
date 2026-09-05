@@ -24,8 +24,8 @@ pub struct RetirementProjection {
 /// # Example
 /// ```ignore
 /// let projection = simulate_retirement(
-///     Money::from_cents(100_000, Currency::BRL),
-///     Money::from_cents(1_000, Currency::BRL),
+///     Money::from_cents(100000, Currency::BRL),
+///     Money::from_cents(1000, Currency::BRL),
 ///     10,
 ///     Decimal::from(8),
 /// );
@@ -120,8 +120,8 @@ mod tests {
 
     #[test]
     fn test_retirement_known_values() {
-        let current = Money::from_cents(100_000_00, BRL);
-        let monthly = Money::from_cents(2_000_00, BRL);
+        let current = Money::from_cents(10000000, BRL);
+        let monthly = Money::from_cents(200000, BRL);
         let projection = simulate_retirement(current, monthly, 5, Decimal::from(10));
 
         assert_eq!(projection.timeline.len(), 5);
@@ -139,8 +139,8 @@ mod tests {
 
     #[test]
     fn test_retirement_zero_return() {
-        let current = Money::from_cents(50_000_00, BRL);
-        let monthly = Money::from_cents(1_000_00, BRL);
+        let current = Money::from_cents(5000000, BRL);
+        let monthly = Money::from_cents(100000, BRL);
         let projection = simulate_retirement(current, monthly, 10, rust_decimal::Decimal::ZERO);
 
         assert_eq!(
@@ -151,8 +151,8 @@ mod tests {
 
     #[test]
     fn test_retirement_higher_return_gives_more() {
-        let current = Money::from_cents(100_000_00, BRL);
-        let monthly = Money::from_cents(2_000_00, BRL);
+        let current = Money::from_cents(10000000, BRL);
+        let monthly = Money::from_cents(200000, BRL);
         let low = simulate_retirement(current, monthly, 10, Decimal::from(5));
         let high = simulate_retirement(current, monthly, 10, Decimal::from(12));
 
@@ -161,8 +161,8 @@ mod tests {
 
     #[test]
     fn test_required_contribution_known_values() {
-        let target = Money::from_cents(1_000_000_00, BRL);
-        let current = Money::from_cents(200_000_00, BRL);
+        let target = Money::from_cents(100000000, BRL);
+        let current = Money::from_cents(20000000, BRL);
         let result = required_contribution(target, current, 20, Decimal::from(8));
 
         assert!(result.amount() > Decimal::ZERO);
@@ -172,8 +172,8 @@ mod tests {
 
     #[test]
     fn test_required_contribution_already_reached() {
-        let target = Money::from_cents(100_000_00, BRL);
-        let current = Money::from_cents(200_000_00, BRL);
+        let target = Money::from_cents(10000000, BRL);
+        let current = Money::from_cents(20000000, BRL);
         let result = required_contribution(target, current, 10, Decimal::from(8));
 
         assert_eq!(result.amount(), Decimal::ZERO);

@@ -118,7 +118,7 @@ mod tests {
     async fn test_expense_within_budget() {
         let category_id = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
-        let (budget_repo, publisher) = setup_with_budget(category_id, period, 1000_00).await;
+        let (budget_repo, publisher) = setup_with_budget(category_id, period, 100000).await;
 
         let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher.clone());
 
@@ -126,7 +126,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(500_00, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             category_id: Some(category_id),
             description: "Groceries".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -141,7 +141,7 @@ mod tests {
     async fn test_expense_over_budget() {
         let category_id = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
-        let (budget_repo, publisher) = setup_with_budget(category_id, period, 500_00).await;
+        let (budget_repo, publisher) = setup_with_budget(category_id, period, 50000).await;
 
         let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher.clone());
 
@@ -149,7 +149,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(600_00, Currency::BRL),
+            amount: Money::from_cents(60000, Currency::BRL),
             category_id: Some(category_id),
             description: "Big purchase".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
@@ -164,7 +164,7 @@ mod tests {
     async fn test_income_ignored() {
         let category_id = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
-        let (budget_repo, publisher) = setup_with_budget(category_id, period, 500_00).await;
+        let (budget_repo, publisher) = setup_with_budget(category_id, period, 50000).await;
 
         let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher);
 
@@ -172,7 +172,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(5000_00, Currency::BRL),
+            amount: Money::from_cents(500000, Currency::BRL),
             category_id: Some(category_id),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -186,7 +186,7 @@ mod tests {
     async fn test_no_category_ignored() {
         let category_id = CategoryID::new();
         let period = YearMonth::new(2026, 1).period();
-        let (budget_repo, publisher) = setup_with_budget(category_id, period, 500_00).await;
+        let (budget_repo, publisher) = setup_with_budget(category_id, period, 50000).await;
 
         let handler = TransactionRecordedBudgetHandler::new(budget_repo, publisher);
 
@@ -194,7 +194,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(600_00, Currency::BRL),
+            amount: Money::from_cents(60000, Currency::BRL),
             category_id: None,
             description: "Uncategorized".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -216,7 +216,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(500_00, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             category_id: Some(category_id),
             description: "Something".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
