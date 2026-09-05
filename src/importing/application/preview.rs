@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::importing::domain::raw_transaction::RawTransaction;
-use crate::ledger::domain::repository::TransactionRepository;
+use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
 use crate::shared::errors::ImportError;
 use crate::shared::ids::{AccountID, Principal};
 use crate::shared::period::Period;
@@ -31,19 +31,38 @@ pub struct PreviewCandidate {
 ///
 /// Queries the target account for transactions in the date range covered by the
 /// raw batch and flags exact date+amount matches as duplicates.
-pub struct PreviewHandler<T: TransactionRepository> {
+pub struct PreviewHandler<A: AccountRepository, T: TransactionRepository> {
+    account_repository: Arc<A>,
     transaction_repository: Arc<T>,
 }
 
-impl<T: TransactionRepository> PreviewHandler<T> {
-    pub fn new(transaction_repository: Arc<T>) -> Self {
+impl<A: AccountRepository, T: TransactionRepository> PreviewHandler<A, T> {
+    pub fn new(account_repository: Arc<A>, transaction_repository: Arc<T>) -> Self {
         Self {
+            account_repository,
             transaction_repository,
         }
     }
 
     /// Runs the preview: scans for duplicates and returns candidates with flags.
+    ///
+    /// # Errors
+    /// Fails if the account does not belong to the authenticated user.
     pub async fn handle(&self, cmd: PreviewCommand) -> Result<Vec<PreviewCandidate>, ImportError> {
+        let account = self
+            .account_repository
+            .find_by_id(cmd.account_id)
+            .await?
+            .ok_or_else(|| {
+                ImportError::NotFound(format!("account not found: {}", cmd.account_id))
+            })?;
+
+        if account.owner_id != cmd.principal.user_id {
+            return Err(ImportError::Forbidden(
+                "not the owner of this account".into(),
+            ));
+        }
+
         if cmd.transactions.is_empty() {
             return Ok(Vec::new());
         }
@@ -85,8 +104,9 @@ impl<T: TransactionRepository> PreviewHandler<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ledger::domain::account::{Account, AccountType};
     use crate::shared::ids::{AccountID, Principal, UserID};
-    use crate::shared::mock::MockTransactionRepository;
+    use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::{Currency, Money};
 
     fn sample_raw(date: &str, amount_cents: i64) -> RawTransaction {
@@ -100,12 +120,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_preview_empty() {
-        let repo = Arc::new(MockTransactionRepository::new());
-        let handler = PreviewHandler::new(repo);
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            owner,
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let handler = PreviewHandler::new(account_repo, tx_repo);
         let result = handler
             .handle(PreviewCommand {
-                principal: Principal::new(UserID::new()),
-                account_id: AccountID::new(),
+                principal: Principal::new(owner),
+                account_id,
                 transactions: Vec::new(),
             })
             .await
@@ -115,18 +150,62 @@ mod tests {
 
     #[tokio::test]
     async fn test_preview_no_duplicates() {
-        let repo = Arc::new(MockTransactionRepository::new());
-        let handler = PreviewHandler::new(repo);
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            owner,
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let handler = PreviewHandler::new(account_repo, tx_repo);
         let txs = vec![sample_raw("2026-03-15", 1000)];
         let result = handler
             .handle(PreviewCommand {
-                principal: Principal::new(UserID::new()),
-                account_id: AccountID::new(),
+                principal: Principal::new(owner),
+                account_id,
                 transactions: txs,
             })
             .await
             .unwrap();
         assert_eq!(result.len(), 1);
         assert!(!result[0].is_duplicate);
+    }
+
+    #[tokio::test]
+    async fn test_preview_wrong_owner_blocked() {
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            UserID::new(),
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let handler = PreviewHandler::new(account_repo, tx_repo);
+        let result = handler
+            .handle(PreviewCommand {
+                principal: Principal::new(UserID::new()),
+                account_id,
+                transactions: vec![sample_raw("2026-03-15", 1000)],
+            })
+            .await;
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), ImportError::Forbidden(_)));
     }
 }

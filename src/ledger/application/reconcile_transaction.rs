@@ -1,5 +1,5 @@
 use crate::ledger::domain::events::TransactionReconciled;
-use crate::ledger::domain::repository::TransactionRepository;
+use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
 use crate::shared::ids::{Principal, TransactionID};
@@ -13,26 +13,53 @@ pub struct ReconcileTransactionCommand {
 }
 
 /// Handler that processes [`ReconcileTransactionCommand`] requests.
-pub struct ReconcileTransactionHandler<T: TransactionRepository, P: EventPublisher> {
+pub struct ReconcileTransactionHandler<
+    A: AccountRepository,
+    T: TransactionRepository,
+    P: EventPublisher,
+> {
+    account_repository: Arc<A>,
     transaction_repository: Arc<T>,
     event_publisher: Arc<P>,
 }
 
-impl<T: TransactionRepository, P: EventPublisher> ReconcileTransactionHandler<T, P> {
-    pub fn new(transaction_repository: Arc<T>, event_publisher: Arc<P>) -> Self {
+impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher>
+    ReconcileTransactionHandler<A, T, P>
+{
+    pub fn new(
+        account_repository: Arc<A>,
+        transaction_repository: Arc<T>,
+        event_publisher: Arc<P>,
+    ) -> Self {
         Self {
+            account_repository,
             transaction_repository,
             event_publisher,
         }
     }
 
     /// Updates the reconciliation status and publishes [`TransactionReconciled`].
+    ///
+    /// # Errors
+    /// Fails if the transaction does not belong to the authenticated user.
     pub async fn handle(&self, cmd: ReconcileTransactionCommand) -> Result<(), LedgerError> {
         let mut transaction = self
             .transaction_repository
             .find_by_id(cmd.transaction_id)
             .await?
             .ok_or_else(|| LedgerError::TransactionNotFound(cmd.transaction_id.to_string()))?;
+
+        let account = self
+            .account_repository
+            .find_by_id(transaction.account_id)
+            .await?
+            .ok_or_else(|| LedgerError::AccountNotFound(transaction.account_id.to_string()))?;
+
+        if account.owner_id != cmd.principal.user_id {
+            return Err(LedgerError::Forbidden(
+                "not the owner of this account".into(),
+            ));
+        }
 
         if cmd.reconciled {
             transaction.mark_reconciled();

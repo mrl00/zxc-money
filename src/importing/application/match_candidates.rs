@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Days;
 
 use crate::importing::domain::raw_transaction::RawTransaction;
-use crate::ledger::domain::repository::TransactionRepository;
+use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
 use crate::shared::errors::ImportError;
 use crate::shared::ids::{AccountID, Principal, TransactionID};
 use crate::shared::money::Money;
@@ -53,22 +53,41 @@ pub struct ExistingMatch {
 ///
 /// For each raw transaction, queries the target account within a date window
 /// and returns any matching existing transactions.
-pub struct MatchCandidatesHandler<T: TransactionRepository> {
+pub struct MatchCandidatesHandler<A: AccountRepository, T: TransactionRepository> {
+    account_repository: Arc<A>,
     transaction_repository: Arc<T>,
 }
 
-impl<T: TransactionRepository> MatchCandidatesHandler<T> {
-    pub fn new(transaction_repository: Arc<T>) -> Self {
+impl<A: AccountRepository, T: TransactionRepository> MatchCandidatesHandler<A, T> {
+    pub fn new(account_repository: Arc<A>, transaction_repository: Arc<T>) -> Self {
         Self {
+            account_repository,
             transaction_repository,
         }
     }
 
     /// Finds candidate matches for each raw transaction.
+    ///
+    /// # Errors
+    /// Fails if the account does not belong to the authenticated user.
     pub async fn handle(
         &self,
         cmd: MatchCandidatesCommand,
     ) -> Result<Vec<MatchCandidate>, ImportError> {
+        let account = self
+            .account_repository
+            .find_by_id(cmd.account_id)
+            .await?
+            .ok_or_else(|| {
+                ImportError::NotFound(format!("account not found: {}", cmd.account_id))
+            })?;
+
+        if account.owner_id != cmd.principal.user_id {
+            return Err(ImportError::Forbidden(
+                "not the owner of this account".into(),
+            ));
+        }
+
         if cmd.transactions.is_empty() {
             return Ok(Vec::new());
         }
@@ -149,7 +168,9 @@ mod tests {
     use super::*;
     use crate::shared::money::Currency;
 
+    use crate::ledger::domain::account::{Account, AccountType};
     use crate::shared::ids::{Principal, UserID};
+    use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
 
     #[test]
     fn test_amounts_close_exact() {
@@ -174,12 +195,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_match_candidates_empty() {
-        let repo = Arc::new(crate::shared::mock::MockTransactionRepository::new());
-        let handler = MatchCandidatesHandler::new(repo);
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let owner = UserID::new();
+        let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            owner,
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let handler = MatchCandidatesHandler::new(account_repo, tx_repo);
         let result = handler
             .handle(MatchCandidatesCommand {
-                principal: Principal::new(UserID::new()),
-                account_id: AccountID::new(),
+                principal: Principal::new(owner),
+                account_id,
                 transactions: Vec::new(),
                 date_tolerance_days: 3,
                 exact_amount: true,
@@ -187,5 +223,36 @@ mod tests {
             .await
             .unwrap();
         assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_match_candidates_wrong_owner_blocked() {
+        let account_repo = Arc::new(MockAccountRepository::new());
+        let tx_repo = Arc::new(MockTransactionRepository::new());
+        let account_id = AccountID::new();
+
+        let account = Account::new(
+            account_id,
+            UserID::new(),
+            "Test".into(),
+            AccountType::Checking,
+            Currency::BRL,
+            Money::from_cents(0, Currency::BRL),
+        )
+        .unwrap();
+        account_repo.save(&account).await.unwrap();
+
+        let handler = MatchCandidatesHandler::new(account_repo, tx_repo);
+        let result = handler
+            .handle(MatchCandidatesCommand {
+                principal: Principal::new(UserID::new()),
+                account_id,
+                transactions: Vec::new(),
+                date_tolerance_days: 3,
+                exact_amount: true,
+            })
+            .await;
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), ImportError::Forbidden(_)));
     }
 }

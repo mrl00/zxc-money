@@ -230,6 +230,14 @@ pub enum ImportError {
     #[error("invariant violated: {0}")]
     InvariantViolation(String),
 
+    /// The caller is not authorized to perform this operation.
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    /// The caller is not authenticated.
+    #[error("unauthenticated")]
+    Unauthenticated,
+
     /// An error from the persistence layer.
     #[error("repository error: {0}")]
     Repository(#[from] RepositoryError),
