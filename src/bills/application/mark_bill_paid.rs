@@ -7,10 +7,11 @@ use crate::bills::domain::repository::BillRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::BillsError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, BillID};
+use crate::shared::ids::{AccountID, BillID, Principal};
 
 /// Command to mark a bill as paid.
 pub struct MarkBillPaidCommand {
+    pub principal: Principal,
     /// The bill to mark as paid.
     pub bill_id: BillID,
     /// The account from which the bill was paid (used by the Ledger integration
@@ -51,6 +52,12 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> MarkBillPaidHandler<B
             .find_by_id(cmd.bill_id)
             .await?
             .ok_or_else(|| BillsError::BillNotFound(cmd.bill_id.to_string()))?;
+
+        if bill.owner_id != cmd.principal.user_id {
+            return Err(BillsError::InvariantViolation(
+                "bill does not belong to owner".into(),
+            ));
+        }
 
         bill.mark_paid()?;
 
@@ -99,7 +106,7 @@ mod tests {
     use crate::bills::domain::bill::{BillStatus, RecurrenceRule};
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{AccountID, CategoryID, UserID};
+    use crate::shared::ids::{AccountID, CategoryID, Principal, UserID};
     use crate::shared::mock::MockBillRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -118,10 +125,11 @@ mod tests {
     async fn schedule_bill(
         repo: &MockBillRepository,
         recurrence: Option<RecurrenceRule>,
-    ) -> BillID {
+    ) -> (BillID, UserID) {
+        let owner = UserID::new();
         let bill = Bill::new(
             BillID::new(),
-            UserID::new(),
+            owner,
             "Internet".into(),
             Some(Money::from_cents(99_90, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
@@ -130,17 +138,18 @@ mod tests {
         );
         let id = bill.id;
         repo.save(&bill).await.unwrap();
-        id
+        (id, owner)
     }
 
     #[tokio::test]
     async fn test_mark_bill_paid_one_time() {
         let (repo, publisher, id_gen) = setup();
-        let bill_id = schedule_bill(&repo, None).await;
+        let (bill_id, owner) = schedule_bill(&repo, None).await;
         let handler = MarkBillPaidHandler::new(repo.clone(), publisher, id_gen);
 
         handler
             .handle(MarkBillPaidCommand {
+                principal: Principal::new(owner),
                 bill_id,
                 account_id: AccountID::new(),
             })
@@ -154,11 +163,12 @@ mod tests {
     #[tokio::test]
     async fn test_mark_bill_paid_recurring_creates_next() {
         let (repo, publisher, id_gen) = setup();
-        let bill_id = schedule_bill(&repo, Some(RecurrenceRule::Monthly)).await;
+        let (bill_id, owner) = schedule_bill(&repo, Some(RecurrenceRule::Monthly)).await;
         let handler = MarkBillPaidHandler::new(repo.clone(), publisher, id_gen);
 
         handler
             .handle(MarkBillPaidCommand {
+                principal: Principal::new(owner),
                 bill_id,
                 account_id: AccountID::new(),
             })
@@ -186,6 +196,7 @@ mod tests {
 
         let result = handler
             .handle(MarkBillPaidCommand {
+                principal: Principal::new(UserID::new()),
                 bill_id: BillID::new(),
                 account_id: AccountID::new(),
             })
@@ -197,11 +208,12 @@ mod tests {
     #[tokio::test]
     async fn test_mark_bill_paid_already_paid() {
         let (repo, publisher, id_gen) = setup();
-        let bill_id = schedule_bill(&repo, None).await;
+        let (bill_id, owner) = schedule_bill(&repo, None).await;
         let handler = MarkBillPaidHandler::new(repo.clone(), publisher.clone(), id_gen.clone());
 
         handler
             .handle(MarkBillPaidCommand {
+                principal: Principal::new(owner),
                 bill_id,
                 account_id: AccountID::new(),
             })
@@ -211,6 +223,7 @@ mod tests {
         let handler2 = MarkBillPaidHandler::new(repo, publisher, id_gen);
         let result = handler2
             .handle(MarkBillPaidCommand {
+                principal: Principal::new(owner),
                 bill_id,
                 account_id: AccountID::new(),
             })
@@ -238,6 +251,7 @@ mod tests {
         let handler = MarkBillPaidHandler::new(repo.clone(), publisher, id_gen);
         handler
             .handle(MarkBillPaidCommand {
+                principal: Principal::new(owner),
                 bill_id: id,
                 account_id: AccountID::new(),
             })

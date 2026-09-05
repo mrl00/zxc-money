@@ -5,12 +5,13 @@ use crate::ledger::domain::repository::TransactionRepository;
 use crate::ledger::domain::transaction::TransactionType;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{CategoryID, TransactionID};
+use crate::shared::ids::{CategoryID, Principal, TransactionID};
 use crate::shared::money::Money;
 use std::sync::Arc;
 
 /// Command to update fields of an existing transaction.
 pub struct UpdateTransactionCommand {
+    pub principal: Principal,
     pub transaction_id: TransactionID,
     pub amount: Option<Money>,
     pub description: Option<String>,
@@ -115,7 +116,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::transaction::Transaction;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{AccountID, PurchaseID};
+    use crate::shared::ids::{AccountID, Principal, PurchaseID, UserID};
     use crate::shared::mock::MockTransactionRepository;
     use crate::shared::money::Currency;
 
@@ -142,6 +143,7 @@ mod tests {
 
         let handler = UpdateTransactionHandler::new(repo, publisher);
         let cmd = UpdateTransactionCommand {
+            principal: Principal::new(UserID::new()),
             transaction_id: tx_id,
             amount: None,
             description: Some("Updated salary".into()),
@@ -162,6 +164,7 @@ mod tests {
 
         let handler = UpdateTransactionHandler::new(repo, publisher);
         let cmd = UpdateTransactionCommand {
+            principal: Principal::new(UserID::new()),
             transaction_id: tx_id,
             amount: Some(Money::from_cents(200, Currency::BRL)),
             description: None,
@@ -186,6 +189,7 @@ mod tests {
 
         let handler = UpdateTransactionHandler::new(repo, publisher);
         let cmd = UpdateTransactionCommand {
+            principal: Principal::new(UserID::new()),
             transaction_id: tx_id,
             amount: None,
             description: Some("Hack".into()),
@@ -205,6 +209,7 @@ mod tests {
 
         let handler = UpdateTransactionHandler::new(repo, publisher);
         let cmd = UpdateTransactionCommand {
+            principal: Principal::new(UserID::new()),
             transaction_id: tx_id,
             amount: None,
             description: Some("".into()),

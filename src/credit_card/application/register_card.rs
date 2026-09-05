@@ -4,12 +4,12 @@ use crate::credit_card::domain::card::CreditCard;
 use crate::credit_card::domain::repository::CreditCardRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::CreditCardError;
-use crate::shared::ids::{CreditCardID, UserID};
+use crate::shared::ids::{CreditCardID, Principal};
 use crate::shared::money::Money;
 
 /// Command to register a new credit card.
 pub struct RegisterCardCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub name: String,
     pub brand: String,
     pub limit: Money,
@@ -37,7 +37,7 @@ impl<C: CreditCardRepository, I: IdGenerator> RegisterCardHandler<C, I> {
 
         let card = CreditCard::new(
             id,
-            cmd.owner_id,
+            cmd.principal.user_id,
             cmd.name,
             cmd.brand,
             cmd.limit,
@@ -53,6 +53,7 @@ impl<C: CreditCardRepository, I: IdGenerator> RegisterCardHandler<C, I> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::MockCreditCardRepository;
     use crate::shared::money::Currency;
 
@@ -66,7 +67,7 @@ mod tests {
 
         let id = handler
             .handle(RegisterCardCommand {
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
                 name: "Nubank".into(),
                 brand: "Mastercard".into(),
                 limit: Money::from_cents(500000, Currency::BRL),

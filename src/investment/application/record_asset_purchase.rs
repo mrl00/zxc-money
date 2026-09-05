@@ -7,11 +7,12 @@ use crate::investment::domain::events::AssetBought;
 use crate::investment::domain::repository::{AssetRepository, PortfolioRepository};
 use crate::shared::errors::InvestmentError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AssetID, PortfolioID};
+use crate::shared::ids::{AssetID, PortfolioID, Principal};
 use crate::shared::money::Money;
 
 /// Command to record the purchase of an asset within a portfolio.
 pub struct RecordBuyCommand {
+    pub principal: Principal,
     /// The portfolio to add the position to.
     pub portfolio_id: PortfolioID,
     /// The asset being purchased.
@@ -67,6 +68,13 @@ impl<P: PortfolioRepository, A: AssetRepository, EP: EventPublisher> RecordBuyHa
             .await?
             .ok_or_else(|| InvestmentError::PortfolioNotFound(cmd.portfolio_id.to_string()))?;
 
+        if portfolio.owner_id != cmd.principal.user_id {
+            return Err(InvestmentError::InvariantViolation(format!(
+                "portfolio {} does not belong to user {}",
+                cmd.portfolio_id, cmd.principal.user_id,
+            )));
+        }
+
         let asset = self
             .asset_repository
             .find_by_id(cmd.asset_id)
@@ -113,13 +121,14 @@ mod tests {
         Arc<MockPortfolioRepository>,
         Arc<MockAssetRepository>,
         Arc<InMemoryEventDispatcher>,
+        UserID,
     ) {
         let portfolio_repo = Arc::new(MockPortfolioRepository::new());
         let asset_repo = Arc::new(MockAssetRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
 
-        // Create a portfolio
-        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let owner = UserID::new();
+        let portfolio = Portfolio::new(PortfolioID::new(), owner);
         portfolio_repo.save(&portfolio).await.unwrap();
 
         // Register an asset
@@ -133,12 +142,12 @@ mod tests {
         .unwrap();
         asset_repo.save(&asset).await.unwrap();
 
-        (portfolio_repo, asset_repo, publisher)
+        (portfolio_repo, asset_repo, publisher, owner)
     }
 
     #[tokio::test]
     async fn test_record_buy_success() {
-        let (portfolio_repo, asset_repo, publisher) = setup().await;
+        let (portfolio_repo, asset_repo, publisher, owner) = setup().await;
 
         let portfolio = portfolio_repo
             .find_all()
@@ -152,6 +161,7 @@ mod tests {
         let handler = RecordBuyHandler::new(portfolio_repo, asset_repo, publisher);
 
         let cmd = RecordBuyCommand {
+            principal: Principal::new(owner),
             portfolio_id: portfolio.id,
             asset_id: asset.id,
             quantity: Decimal::from(10),
@@ -181,6 +191,7 @@ mod tests {
         );
 
         let cmd = RecordBuyCommand {
+            principal: Principal::new(UserID::new()),
             portfolio_id: PortfolioID::new(),
             asset_id: asset.id,
             quantity: Decimal::from(10),
@@ -194,7 +205,8 @@ mod tests {
     #[tokio::test]
     async fn test_record_buy_asset_not_found() {
         let portfolio_repo = Arc::new(MockPortfolioRepository::new());
-        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let owner = UserID::new();
+        let portfolio = Portfolio::new(PortfolioID::new(), owner);
         portfolio_repo.save(&portfolio).await.unwrap();
 
         let handler = RecordBuyHandler::new(
@@ -204,6 +216,7 @@ mod tests {
         );
 
         let cmd = RecordBuyCommand {
+            principal: Principal::new(owner),
             portfolio_id: portfolio.id,
             asset_id: AssetID::new(),
             quantity: Decimal::from(10),

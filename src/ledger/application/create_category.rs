@@ -4,11 +4,11 @@ use crate::ledger::domain::category::Category;
 use crate::ledger::domain::repository::CategoryRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
-use crate::shared::ids::{CategoryID, UserID};
+use crate::shared::ids::{CategoryID, Principal};
 
 /// Command to create a new category.
 pub struct CreateCategoryCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub name: String,
     pub parent_id: Option<CategoryID>,
     pub icon: Option<String>,

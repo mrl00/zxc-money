@@ -4,11 +4,12 @@ use crate::investment::domain::asset::{Asset, AssetClass};
 use crate::investment::domain::repository::AssetRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::InvestmentError;
-use crate::shared::ids::AssetID;
+use crate::shared::ids::{AssetID, Principal};
 use crate::shared::money::Currency;
 
 /// Command to register a new asset in the shared catalog.
 pub struct RegisterAssetCommand {
+    pub principal: Principal,
     /// Ticker symbol (e.g. `"PETR4"`, `"AAPL"`, `"BTC"`).
     pub ticker: String,
     /// Human-readable name (e.g. `"Petrobras"`, `"Apple Inc."`).
@@ -70,6 +71,7 @@ impl<A: AssetRepository, I: IdGenerator> RegisterAssetHandler<A, I> {
 mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::MockAssetRepository;
 
     fn setup() -> (Arc<MockAssetRepository>, Arc<MockIdGenerator>) {
@@ -85,6 +87,7 @@ mod tests {
         let handler = RegisterAssetHandler::new(repo.clone(), id_gen);
 
         let cmd = RegisterAssetCommand {
+            principal: Principal::new(UserID::new()),
             ticker: "PETR4".into(),
             name: "Petrobras".into(),
             class: AssetClass::Stock,
@@ -103,6 +106,7 @@ mod tests {
         let handler = RegisterAssetHandler::new(repo.clone(), id_gen);
 
         let cmd1 = RegisterAssetCommand {
+            principal: Principal::new(UserID::new()),
             ticker: "PETR4".into(),
             name: "Petrobras".into(),
             class: AssetClass::Stock,
@@ -111,6 +115,7 @@ mod tests {
         handler.handle(cmd1).await.unwrap();
 
         let cmd2 = RegisterAssetCommand {
+            principal: Principal::new(UserID::new()),
             ticker: "PETR4".into(),
             name: "Petrobras ON".into(),
             class: AssetClass::Stock,

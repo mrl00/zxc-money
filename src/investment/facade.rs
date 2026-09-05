@@ -131,7 +131,7 @@ mod tests {
     use crate::investment::domain::portfolio::Portfolio;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{PortfolioID, UserID};
+    use crate::shared::ids::{PortfolioID, Principal, UserID};
     use crate::shared::mock::{MockAssetRepository, MockPortfolioRepository};
     use crate::shared::money::{Currency, Money};
     use rust_decimal::Decimal;
@@ -144,6 +144,7 @@ mod tests {
         Arc<MockAssetRepository>,
         Arc<MockPortfolioRepository>,
         Arc<InMemoryEventDispatcher>,
+        UserID,
     ) {
         let asset_repo = Arc::new(MockAssetRepository::new());
         let portfolio_repo = Arc::new(MockPortfolioRepository::new());
@@ -159,15 +160,16 @@ mod tests {
         .unwrap();
         asset_repo.save(&asset).await.unwrap();
 
-        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let owner = UserID::new();
+        let portfolio = Portfolio::new(PortfolioID::new(), owner);
         portfolio_repo.save(&portfolio).await.unwrap();
 
-        (asset_repo, portfolio_repo, publisher)
+        (asset_repo, portfolio_repo, publisher, owner)
     }
 
     #[tokio::test]
     async fn test_facade_register_then_buy() {
-        let (asset_repo, portfolio_repo, publisher) = setup().await;
+        let (asset_repo, portfolio_repo, publisher, owner) = setup().await;
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
 
         let facade = InvestmentFacade::new(
@@ -180,6 +182,7 @@ mod tests {
         // Register a new asset
         let asset_id = facade
             .register_asset(RegisterAssetCommand {
+                principal: Principal::new(owner),
                 ticker: "VALE3".into(),
                 name: "Vale".into(),
                 class: AssetClass::Stock,
@@ -199,6 +202,7 @@ mod tests {
         // Record a buy
         facade
             .record_buy(RecordBuyCommand {
+                principal: Principal::new(owner),
                 portfolio_id: portfolio.id,
                 asset_id,
                 quantity: rust_decimal::Decimal::from(10),

@@ -2,11 +2,12 @@ use crate::ledger::domain::events::AccountDeleted;
 use crate::ledger::domain::repository::{AccountRepository, TransactionRepository};
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::AccountID;
+use crate::shared::ids::{AccountID, Principal};
 use std::sync::Arc;
 
 /// Command to delete an existing account.
 pub struct DeleteAccountCommand {
+    pub principal: Principal,
     pub account_id: AccountID,
 }
 
@@ -40,6 +41,12 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher>
             .await?
             .ok_or_else(|| LedgerError::AccountNotFound(cmd.account_id.to_string()))?;
 
+        if account.owner_id != cmd.principal.user_id {
+            return Err(LedgerError::Forbidden(
+                "not the owner of this account".into(),
+            ));
+        }
+
         let has_txns = self
             .transaction_repository
             .has_transactions(cmd.account_id)
@@ -70,7 +77,7 @@ mod tests {
     use crate::ledger::domain::account::{Account, AccountType};
     use crate::ledger::domain::transaction::{Transaction, TransactionType};
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::UserID;
+    use crate::shared::ids::Principal;
     use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::{Currency, Money};
 
@@ -81,9 +88,10 @@ mod tests {
         let publisher = Arc::new(InMemoryEventDispatcher::new());
 
         let account_id = AccountID::new();
+        let principal = Principal::new(crate::shared::ids::UserID::new());
         let account = Account::new(
             account_id,
-            UserID::new(),
+            principal.user_id,
             "To Delete".into(),
             AccountType::Checking,
             Currency::BRL,
@@ -93,7 +101,12 @@ mod tests {
         account_repo.save(&account).await.unwrap();
 
         let handler = DeleteAccountHandler::new(account_repo.clone(), tx_repo, publisher);
-        let result = handler.handle(DeleteAccountCommand { account_id }).await;
+        let result = handler
+            .handle(DeleteAccountCommand {
+                principal,
+                account_id,
+            })
+            .await;
         assert!(result.is_ok());
         assert!(account_repo.find_by_id(account_id).await.unwrap().is_none());
     }
@@ -105,9 +118,10 @@ mod tests {
         let publisher = Arc::new(InMemoryEventDispatcher::new());
 
         let account_id = AccountID::new();
+        let principal = Principal::new(crate::shared::ids::UserID::new());
         let account = Account::new(
             account_id,
-            UserID::new(),
+            principal.user_id,
             "Has Transactions".into(),
             AccountType::Checking,
             Currency::BRL,
@@ -130,7 +144,12 @@ mod tests {
         tx_repo.save(&tx).await.unwrap();
 
         let handler = DeleteAccountHandler::new(account_repo, tx_repo, publisher);
-        let result = handler.handle(DeleteAccountCommand { account_id }).await;
+        let result = handler
+            .handle(DeleteAccountCommand {
+                principal,
+                account_id,
+            })
+            .await;
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),

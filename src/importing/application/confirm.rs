@@ -9,13 +9,14 @@ use crate::ledger::domain::transaction::{Transaction, TransactionType};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::ImportError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, TransactionID};
+use crate::shared::ids::{AccountID, Principal, TransactionID};
 
 /// Command to confirm and import a batch of raw transactions into the ledger.
 ///
 /// Creates a [`Transaction`] record for each raw transaction and publishes
 /// a [`TransactionsImported`] event.
 pub struct ConfirmCommand {
+    pub principal: Principal,
     /// Target account to import into.
     pub account_id: AccountID,
     /// Raw transactions to import (must have been previewed/matched first).
@@ -99,7 +100,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::AccountID;
+    use crate::shared::ids::{AccountID, Principal, UserID};
     use crate::shared::mock::MockTransactionRepository;
     use crate::shared::money::{Currency, Money};
     use crate::shared::period::Period;
@@ -122,6 +123,7 @@ mod tests {
 
         let count = handler
             .handle(ConfirmCommand {
+                principal: Principal::new(UserID::new()),
                 account_id: AccountID::new(),
                 transactions: Vec::new(),
             })
@@ -144,6 +146,7 @@ mod tests {
 
         let count = handler
             .handle(ConfirmCommand {
+                principal: Principal::new(UserID::new()),
                 account_id: AccountID::new(),
                 transactions: txs,
             })
@@ -164,6 +167,7 @@ mod tests {
 
         handler
             .handle(ConfirmCommand {
+                principal: Principal::new(UserID::new()),
                 account_id,
                 transactions: txs,
             })

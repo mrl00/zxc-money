@@ -6,13 +6,13 @@ use crate::budgeting::domain::repository::BudgetRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::BudgetingError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{BudgetID, CategoryID, UserID};
+use crate::shared::ids::{BudgetID, CategoryID, Principal};
 use crate::shared::money::Money;
 use crate::shared::period::YearMonth;
 
 /// Command to create a 12-month annual budget for a category.
 pub struct CreateAnnualBudgetCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub category_id: CategoryID,
     pub year: i32,
     pub monthly_amount: Money,
@@ -65,7 +65,7 @@ impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator> CreateAnnualBudget
             let id = BudgetID::from_uuid(self.id_generator.new_id());
             let budget = Budget::new(
                 id,
-                cmd.owner_id,
+                cmd.principal.user_id,
                 cmd.category_id,
                 period,
                 cmd.monthly_amount,
@@ -101,6 +101,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::MockBudgetRepository;
     use crate::shared::money::{Currency, Money};
     use rust_decimal::Decimal;
@@ -123,7 +124,7 @@ mod tests {
         let handler = CreateAnnualBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
 
         let cmd = CreateAnnualBudgetCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             category_id: CategoryID::new(),
             year: 2026,
             monthly_amount: Money::from_cents(50000, Currency::BRL),
@@ -158,7 +159,7 @@ mod tests {
         budget_repo.save(&jan_budget).await.unwrap();
 
         let cmd = CreateAnnualBudgetCommand {
-            owner_id,
+            principal: Principal::new(owner_id),
             category_id,
             year: 2026,
             monthly_amount: Money::from_cents(50000, Currency::BRL),
@@ -176,7 +177,7 @@ mod tests {
         let handler = CreateAnnualBudgetHandler::new(budget_repo.clone(), publisher, id_gen);
 
         let cmd = CreateAnnualBudgetCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             category_id: CategoryID::new(),
             year: 2026,
             monthly_amount: Money::from_cents(100000, Currency::BRL),

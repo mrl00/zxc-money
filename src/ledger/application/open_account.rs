@@ -4,13 +4,13 @@ use crate::ledger::domain::repository::AccountRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, UserID};
+use crate::shared::ids::{AccountID, Principal};
 use crate::shared::money::{Currency, Money};
 use std::sync::Arc;
 
 /// Command to open a new account.
 pub struct OpenAccountCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub name: String,
     pub account_type: AccountType,
     pub currency: Currency,
@@ -41,7 +41,7 @@ impl<R: AccountRepository, P: EventPublisher, I: IdGenerator> OpenAccountHandler
 
         let account = Account::new(
             id,
-            cmd.owner_id,
+            cmd.principal.user_id,
             cmd.name,
             cmd.account_type,
             cmd.currency,
@@ -52,7 +52,7 @@ impl<R: AccountRepository, P: EventPublisher, I: IdGenerator> OpenAccountHandler
 
         let event = AccountOpened {
             account_id: id,
-            owner_id: cmd.owner_id,
+            owner_id: cmd.principal.user_id,
             name: account.name.clone(),
             currency: account.currency,
             opening_balance: account.opening_balance,
@@ -69,6 +69,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::MockAccountRepository;
 
     #[tokio::test]
@@ -80,7 +81,7 @@ mod tests {
         let handler = OpenAccountHandler::new(repo.clone(), publisher, id_gen);
 
         let cmd = OpenAccountCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "My Account".into(),
             account_type: AccountType::Checking,
             currency: Currency::BRL,

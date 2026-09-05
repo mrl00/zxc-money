@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::importing::domain::raw_transaction::RawTransaction;
 use crate::ledger::domain::repository::TransactionRepository;
 use crate::shared::errors::ImportError;
-use crate::shared::ids::AccountID;
+use crate::shared::ids::{AccountID, Principal};
 use crate::shared::period::Period;
 
 /// Command to preview a batch of raw transactions before import.
@@ -11,6 +11,7 @@ use crate::shared::period::Period;
 /// Scans the target account for exact date+amount matches and flags them
 /// as duplicates. The frontend uses this to let the user review before confirming.
 pub struct PreviewCommand {
+    pub principal: Principal,
     /// Target account to import into.
     pub account_id: AccountID,
     /// Parsed raw transactions to preview.
@@ -84,7 +85,7 @@ impl<T: TransactionRepository> PreviewHandler<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::ids::AccountID;
+    use crate::shared::ids::{AccountID, Principal, UserID};
     use crate::shared::mock::MockTransactionRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -103,6 +104,7 @@ mod tests {
         let handler = PreviewHandler::new(repo);
         let result = handler
             .handle(PreviewCommand {
+                principal: Principal::new(UserID::new()),
                 account_id: AccountID::new(),
                 transactions: Vec::new(),
             })
@@ -118,6 +120,7 @@ mod tests {
         let txs = vec![sample_raw("2026-03-15", 1000)];
         let result = handler
             .handle(PreviewCommand {
+                principal: Principal::new(UserID::new()),
                 account_id: AccountID::new(),
                 transactions: txs,
             })

@@ -4,13 +4,14 @@ use crate::ledger::domain::transaction::{Transaction, TransactionType};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, TransactionID};
+use crate::shared::ids::{AccountID, Principal, TransactionID};
 use crate::shared::money::Money;
 use chrono::NaiveDate;
 use std::sync::Arc;
 
 /// Command to transfer funds between two accounts.
 pub struct TransferFundsCommand {
+    pub principal: Principal,
     pub from_account_id: AccountID,
     pub to_account_id: AccountID,
     pub amount: Money,
@@ -73,6 +74,12 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
                 expected: from_account.currency().code().to_string(),
                 received: to_account.currency().code().to_string(),
             });
+        }
+
+        if cmd.principal.user_id != from_account.owner_id {
+            return Err(LedgerError::Forbidden(
+                "not the owner of the source account".into(),
+            ));
         }
 
         if from_account.owner_id != to_account.owner_id {
@@ -139,7 +146,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::UserID;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::Currency;
 
@@ -153,6 +160,7 @@ mod tests {
         let from_id = AccountID::new();
         let to_id = AccountID::new();
         let owner = UserID::new();
+        let principal = Principal::new(owner);
 
         let from_account = crate::ledger::domain::account::Account::new(
             from_id,
@@ -178,6 +186,7 @@ mod tests {
         let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
 
         let cmd = TransferFundsCommand {
+            principal,
             from_account_id: from_id,
             to_account_id: to_id,
             amount: Money::from_cents(25000, Currency::BRL),
@@ -200,6 +209,7 @@ mod tests {
 
         let same_id = AccountID::new();
         let cmd = TransferFundsCommand {
+            principal: Principal::new(UserID::new()),
             from_account_id: same_id,
             to_account_id: same_id,
             amount: Money::from_cents(25000, Currency::BRL),
@@ -245,6 +255,7 @@ mod tests {
         let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
 
         let cmd = TransferFundsCommand {
+            principal: Principal::new(UserID::new()),
             from_account_id: from_id,
             to_account_id: to_id,
             amount: Money::from_cents(25000, Currency::BRL),

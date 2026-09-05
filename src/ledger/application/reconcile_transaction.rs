@@ -2,11 +2,12 @@ use crate::ledger::domain::events::TransactionReconciled;
 use crate::ledger::domain::repository::TransactionRepository;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::TransactionID;
+use crate::shared::ids::{Principal, TransactionID};
 use std::sync::Arc;
 
 /// Command to mark a transaction as reconciled or unreconciled.
 pub struct ReconcileTransactionCommand {
+    pub principal: Principal,
     pub transaction_id: TransactionID,
     pub reconciled: bool,
 }
