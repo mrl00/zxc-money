@@ -82,7 +82,7 @@ struct CsvTransactionRow {
     id: String,
     date: String,
     tx_type: String,
-    amount_cents: i64,
+    amount: rust_decimal::Decimal,
     description: String,
     category_id: String,
     reconciled: bool,
@@ -94,7 +94,7 @@ impl From<&Transaction> for CsvTransactionRow {
             id: tx.id.to_string(),
             date: tx.date.to_string(),
             tx_type: format!("{:?}", tx.tx_type),
-            amount_cents: tx.amount.amount(),
+            amount: tx.amount.amount(),
             description: tx.description.clone(),
             category_id: tx.category_id.map(|c| c.to_string()).unwrap_or_default(),
             reconciled: tx.reconciled,
@@ -120,7 +120,7 @@ mod tests {
             TransactionID::new(),
             account_id,
             TransactionType::Income,
-            Money::new(5000_00, Currency::BRL),
+            Money::from_cents(5000_00, Currency::BRL),
             "Salary".into(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -138,7 +138,7 @@ mod tests {
         let csv = handler.export_account(account_id, period).await.unwrap();
         assert!(csv.contains("Salary"));
         assert!(csv.contains("Income"));
-        assert!(csv.contains("500000"));
+        assert!(csv.contains("5000"));
     }
 
     #[tokio::test]

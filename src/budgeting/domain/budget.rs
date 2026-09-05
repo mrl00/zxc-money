@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::shared::errors::BudgetingError;
@@ -43,7 +44,7 @@ impl Budget {
         period: Period,
         planned_amount: Money,
     ) -> Result<Self, BudgetingError> {
-        if planned_amount.amount() <= 0 {
+        if planned_amount.amount() <= Decimal::ZERO {
             return Err(BudgetingError::InvalidAmount(
                 "planned amount must be positive".into(),
             ));
@@ -67,7 +68,7 @@ impl Budget {
     ///
     /// Returns [`BudgetingError::InvalidAmount`] if `new_amount` is zero or negative.
     pub fn update_amount(&mut self, new_amount: Money) -> Result<(), BudgetingError> {
-        if new_amount.amount() <= 0 {
+        if new_amount.amount() <= Decimal::ZERO {
             return Err(BudgetingError::InvalidAmount(
                 "planned amount must be positive".into(),
             ));
@@ -85,6 +86,7 @@ mod tests {
     use crate::shared::money::{Currency, Money};
     use crate::shared::period::Period;
     use chrono::NaiveDate;
+    use rust_decimal::Decimal;
 
     fn sample_budget() -> Budget {
         Budget::new(
@@ -95,7 +97,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            Money::new(500_00, Currency::BRL),
+            Money::from_cents(500_00, Currency::BRL),
         )
         .unwrap()
     }
@@ -103,7 +105,7 @@ mod tests {
     #[test]
     fn test_budget_creation() {
         let b = sample_budget();
-        assert_eq!(b.planned_amount.amount(), 500_00);
+        assert_eq!(b.planned_amount.amount(), Decimal::from(500));
         assert!(b.updated_at >= b.created_at);
     }
 
@@ -117,7 +119,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            Money::new(0, Currency::BRL),
+            Money::zero(Currency::BRL),
         );
         assert!(result.is_err());
     }
@@ -132,7 +134,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            Money::new(-100, Currency::BRL),
+            Money::new(Decimal::from(-100), Currency::BRL),
         );
         assert!(result.is_err());
     }
@@ -140,14 +142,15 @@ mod tests {
     #[test]
     fn test_budget_update_amount() {
         let mut b = sample_budget();
-        b.update_amount(Money::new(800_00, Currency::BRL)).unwrap();
-        assert_eq!(b.planned_amount.amount(), 800_00);
+        b.update_amount(Money::from_cents(800_00, Currency::BRL))
+            .unwrap();
+        assert_eq!(b.planned_amount.amount(), Decimal::from(800));
     }
 
     #[test]
     fn test_budget_update_zero_fails() {
         let mut b = sample_budget();
-        let result = b.update_amount(Money::new(0, Currency::BRL));
+        let result = b.update_amount(Money::zero(Currency::BRL));
         assert!(result.is_err());
     }
 }

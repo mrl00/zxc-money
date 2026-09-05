@@ -53,7 +53,6 @@ impl<C: CategoryRepository, I: IdGenerator> CreateCategoryHandler<C, I> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::mock::MockTransactionRepository;
 
     #[tokio::test]
     async fn test_create_category() {

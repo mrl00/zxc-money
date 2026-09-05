@@ -102,7 +102,7 @@ impl Invoice {
                 .unwrap_or(crate::shared::money::Currency::BRL),
         );
         for purchase in &self.purchases {
-            total = total + purchase.total_amount;
+            total = total.checked_add(purchase.total_amount).unwrap();
         }
         total
     }
@@ -124,7 +124,7 @@ mod tests {
         Purchase::new(
             PurchaseID::new(),
             "Netflix".into(),
-            Money::new(cents, Currency::BRL),
+            Money::from_cents(cents, Currency::BRL),
             1,
             CategoryID::new(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn test_total_empty_invoice() {
         let invoice = make_invoice();
-        assert_eq!(invoice.total(), Money::new(0, Currency::BRL));
+        assert_eq!(invoice.total(), Money::zero(Currency::BRL));
     }
 
     #[test]
@@ -210,6 +210,6 @@ mod tests {
         invoice.add_purchase(make_purchase(5000)).unwrap();
         invoice.add_purchase(make_purchase(3000)).unwrap();
         invoice.add_purchase(make_purchase(2000)).unwrap();
-        assert_eq!(invoice.total(), Money::new(10000, Currency::BRL));
+        assert_eq!(invoice.total(), Money::from_cents(10000, Currency::BRL));
     }
 }

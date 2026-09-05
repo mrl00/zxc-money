@@ -31,6 +31,7 @@ mod tests {
     use crate::ledger::domain::events::AccountOpened;
     use crate::shared::ids::UserID;
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
 
     #[test]
     fn test_net_worth_handler() {
@@ -42,15 +43,15 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(10000_00, Currency::BRL),
+            opening_balance: Money::from_cents(10000_00, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
         let snapshot = handler.handle(GetNetWorthQuery {
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         });
-        assert_eq!(snapshot.total_assets.amount(), 10000_00);
-        assert_eq!(snapshot.net_worth.amount(), 10000_00);
+        assert_eq!(snapshot.total_assets.amount(), Decimal::from(10000));
+        assert_eq!(snapshot.net_worth.amount(), Decimal::from(10000));
     }
 
     #[test]

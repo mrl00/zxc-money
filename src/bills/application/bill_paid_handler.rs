@@ -118,7 +118,7 @@ mod tests {
             "Checking".into(),
             AccountType::Checking,
             currency,
-            Money::new(5000_00, currency),
+            Money::from_cents(5000_00, currency),
         )
         .unwrap();
         repo.save(&account).await.unwrap();
@@ -134,7 +134,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::new(99_90, Currency::BRL)),
+            amount: Some(Money::from_cents(99_90, Currency::BRL)),
             account_id,
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -149,7 +149,7 @@ mod tests {
         let txns = tx_repo.find_by_account(account_id, period).await.unwrap();
         assert_eq!(txns.len(), 1);
         assert_eq!(txns[0].tx_type, TransactionType::Expense);
-        assert_eq!(txns[0].amount, Money::new(99_90, Currency::BRL));
+        assert_eq!(txns[0].amount, Money::from_cents(99_90, Currency::BRL));
         assert_eq!(txns[0].id, tx_id);
     }
 
@@ -180,7 +180,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::new(50_00, Currency::BRL)),
+            amount: Some(Money::from_cents(50_00, Currency::BRL)),
             account_id: AccountID::new(),
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -199,7 +199,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::new(50_00, Currency::USD)),
+            amount: Some(Money::from_cents(50_00, Currency::USD)),
             account_id,
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -219,7 +219,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::new(200_00, Currency::BRL)),
+            amount: Some(Money::from_cents(200_00, Currency::BRL)),
             account_id,
             category_id: category,
             timestamp: chrono::Utc::now(),

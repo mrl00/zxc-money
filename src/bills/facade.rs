@@ -128,7 +128,7 @@ mod tests {
         let cmd = ScheduleBillCommand {
             owner_id: UserID::new(),
             name: "Electricity".into(),
-            amount: Some(Money::new(250_00, Currency::BRL)),
+            amount: Some(Money::from_cents(250_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
             recurrence: Some(RecurrenceRule::Monthly),
             category_id: CategoryID::new(),
@@ -148,7 +148,7 @@ mod tests {
         let schedule_cmd = ScheduleBillCommand {
             owner_id: UserID::new(),
             name: "Water".into(),
-            amount: Some(Money::new(80_00, Currency::BRL)),
+            amount: Some(Money::from_cents(80_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 10).unwrap(),
             recurrence: None,
             category_id: CategoryID::new(),
@@ -181,7 +181,7 @@ mod tests {
         calendar.handle_bill_scheduled(&crate::bills::domain::events::BillScheduled {
             bill_id: crate::shared::ids::BillID::new(),
             name: "Rent".into(),
-            amount: Some(Money::new(1500_00, Currency::BRL)),
+            amount: Some(Money::from_cents(1500_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
             timestamp: chrono::Utc::now(),
         });

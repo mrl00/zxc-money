@@ -1,3 +1,4 @@
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde::{Deserialize, Serialize};
 
 use crate::shared::money::Money;
@@ -25,19 +26,14 @@ pub struct LoanSchedule {
 /// # Example
 /// ```ignore
 /// let schedule = simulate_loan(
-///     Money::new(50_000, Currency::BRL),
+///     Money::from_cents(50_000, Currency::BRL),
 ///     12,
 ///     Decimal::from(10),
 /// );
 /// assert_eq!(schedule.entries.len(), 12);
 /// ```
-pub fn simulate_loan(
-    principal: Money,
-    months: u32,
-    annual_rate: rust_decimal::Decimal,
-) -> LoanSchedule {
-    let monthly_rate =
-        annual_rate / rust_decimal::Decimal::from(12) / rust_decimal::Decimal::from(100);
+pub fn simulate_loan(principal: Money, months: u32, annual_rate: Decimal) -> LoanSchedule {
+    let monthly_rate = annual_rate / Decimal::from(12) / Decimal::from(100);
     let mut entries = Vec::new();
     let mut balance = principal;
 
@@ -45,8 +41,7 @@ pub fn simulate_loan(
     let monthly_payment = Money::new(monthly_payment_amount, principal.currency());
 
     for month in 1..=months {
-        let interest_amount =
-            (balance.amount() as f64 * monthly_rate.to_string().parse::<f64>().unwrap()) as i64;
+        let interest_amount = balance.amount() * monthly_rate;
         let interest = Money::new(interest_amount, principal.currency());
         let principal_part = Money::new(
             monthly_payment.amount() - interest.amount(),
@@ -82,12 +77,12 @@ pub fn simulate_loan(
     }
 }
 
-fn calculate_loan_payment(principal: i64, months: u32, monthly_rate: rust_decimal::Decimal) -> i64 {
-    let r = monthly_rate.to_string().parse::<f64>().unwrap();
+fn calculate_loan_payment(principal: Decimal, months: u32, monthly_rate: Decimal) -> Decimal {
+    let r = monthly_rate.to_f64().unwrap();
     let n = months as f64;
-    let p = principal as f64;
+    let p = principal.to_f64().unwrap();
     let payment = p * (r * (1.0 + r).powf(n)) / ((1.0 + r).powf(n) - 1.0);
-    payment as i64
+    Decimal::try_from(payment).unwrap()
 }
 
 #[cfg(test)]
@@ -99,17 +94,17 @@ mod tests {
 
     #[test]
     fn test_loan_simulation() {
-        let principal = Money::new(50000, BRL);
-        let schedule = simulate_loan(principal, 12, rust_decimal::Decimal::from(10));
+        let principal = Money::from_cents(50000, BRL);
+        let schedule = simulate_loan(principal, 12, Decimal::from(10));
 
         assert_eq!(schedule.entries.len(), 12);
-        assert!(schedule.total_interest.amount() > 0);
+        assert!(schedule.total_interest.amount() > Decimal::ZERO);
     }
 
     #[test]
     fn test_loan_known_values() {
-        let principal = Money::new(50_000_00, BRL);
-        let schedule = simulate_loan(principal, 24, rust_decimal::Decimal::from(12));
+        let principal = Money::from_cents(50_000_00, BRL);
+        let schedule = simulate_loan(principal, 24, Decimal::from(12));
 
         assert_eq!(schedule.entries.len(), 24);
         assert_eq!(
@@ -118,7 +113,7 @@ mod tests {
                 .entries
                 .iter()
                 .map(|e| e.payment.amount())
-                .sum::<i64>()
+                .sum::<Decimal>()
         );
         assert_eq!(
             schedule.total_interest.amount(),
@@ -126,22 +121,22 @@ mod tests {
                 .entries
                 .iter()
                 .map(|e| e.interest.amount())
-                .sum::<i64>()
+                .sum::<Decimal>()
         );
         let last = schedule.entries.last().unwrap();
-        assert!(last.balance.amount().abs() <= 100);
+        assert!(last.balance.amount().abs() <= Decimal::from(1));
         assert!(
             (schedule.total_paid.amount()
                 - (schedule.total_interest.amount() + principal.amount()))
             .abs()
-                <= 100
+                <= Decimal::from(1)
         );
     }
 
     #[test]
     fn test_loan_all_payments_equal() {
-        let principal = Money::new(100_000_00, BRL);
-        let schedule = simulate_loan(principal, 60, rust_decimal::Decimal::from(8));
+        let principal = Money::from_cents(100_000_00, BRL);
+        let schedule = simulate_loan(principal, 60, Decimal::from(8));
 
         let first = schedule.entries[0].payment.amount();
         for entry in &schedule.entries {

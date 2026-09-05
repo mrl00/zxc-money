@@ -2,6 +2,7 @@
 //!
 //! Run with: `cargo run --example credit_card_flow`
 
+use rust_decimal::prelude::ToPrimitive;
 use zxc_money::credit_card::domain::card::CreditCard;
 use zxc_money::credit_card::domain::invoice::Invoice;
 use zxc_money::credit_card::domain::purchase::Purchase;
@@ -19,13 +20,16 @@ async fn main() {
         owner,
         "Nubank".into(),
         "Mastercard".into(),
-        Money::new(10_000_00, Currency::BRL), // R$ 10.000,00 limit
-        20,                                   // closing day
-        27,                                   // due day
+        Money::from_cents(10_000_00, Currency::BRL), // R$ 10.000,00 limit
+        20,                                          // closing day
+        27,                                          // due day
     );
 
     println!("Registered card: {} ({})", card.name, card.brand);
-    println!("  Limit: R$ {:.2}", card.limit.amount() as f64 / 100.0);
+    println!(
+        "  Limit: R$ {:.2}",
+        card.limit.amount().to_f64().unwrap() / 100.0
+    );
 
     // Create an open invoice for January 2026
     let mut invoice = Invoice::new(InvoiceID::new(), card.id, YearMonth::new(2026, 1));
@@ -34,7 +38,7 @@ async fn main() {
     let netflix = Purchase::new(
         PurchaseID::new(),
         "Netflix".into(),
-        Money::new(39_90, Currency::BRL),
+        Money::from_cents(39_90, Currency::BRL),
         1,
         CategoryID::new(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
@@ -43,7 +47,7 @@ async fn main() {
     let supermarket = Purchase::new(
         PurchaseID::new(),
         "Supermarket".into(),
-        Money::new(350_00, Currency::BRL),
+        Money::from_cents(350_00, Currency::BRL),
         1,
         CategoryID::new(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -52,7 +56,7 @@ async fn main() {
     let tv = Purchase::new(
         PurchaseID::new(),
         "Smart TV".into(),
-        Money::new(3_000_00, Currency::BRL),
+        Money::from_cents(3_000_00, Currency::BRL),
         3, // 3 installments
         CategoryID::new(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -67,7 +71,10 @@ async fn main() {
         invoice.reference_month.year, invoice.reference_month.month
     );
     println!("  Purchases: {}", invoice.purchases.len());
-    println!("  Total: R$ {:.2}", invoice.total().amount() as f64 / 100.0);
+    println!(
+        "  Total: R$ {:.2}",
+        invoice.total().amount().to_f64().unwrap() / 100.0
+    );
 
     // Close the invoice
     invoice.close().unwrap();
@@ -78,10 +85,10 @@ async fn main() {
     println!("Invoice paid! Status: {:?}", invoice.status);
 
     // Check available limit
-    let used = Money::new(3_389_90, Currency::BRL);
+    let used = Money::from_cents(3_389_90, Currency::BRL);
     let available = card.available_limit(used).unwrap();
     println!(
         "\nAvailable limit: R$ {:.2}",
-        available.amount() as f64 / 100.0
+        available.amount().to_f64().unwrap() / 100.0
     );
 }

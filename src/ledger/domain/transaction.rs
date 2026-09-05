@@ -195,7 +195,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Income,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
             "Salary".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -207,7 +207,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Transfer,
-            Money::new(500, Currency::BRL),
+            Money::from_cents(500, Currency::BRL),
             "Transfer".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -241,7 +241,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Transfer,
-            Money::new(500, Currency::BRL),
+            Money::from_cents(500, Currency::BRL),
             "Transfer".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -268,7 +268,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Income,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
             "Zero".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         );
@@ -282,7 +282,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Expense,
-            Money::new(-100, Currency::BRL),
+            Money::from_cents(-100, Currency::BRL),
             "Negative".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         );
@@ -295,7 +295,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Income,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
             "".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         );
@@ -312,7 +312,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Income,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
             "Salary".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -327,7 +327,7 @@ mod tests {
             TransactionID::new(),
             AccountID::new(),
             TransactionType::Transfer,
-            Money::new(500, Currency::BRL),
+            Money::from_cents(500, Currency::BRL),
             "Transfer".into(),
             NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )

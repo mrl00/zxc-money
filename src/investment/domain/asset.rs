@@ -153,9 +153,9 @@ mod tests {
             Currency::BRL,
         )
         .unwrap();
-        let price = crate::shared::money::Money::new(2500, Currency::BRL); // R$ 25.00
+        let price = crate::shared::money::Money::from_cents(2500, Currency::BRL); // R$ 25.00
         let quantity = Decimal::from(10);
         let total = asset.total_cost(price, quantity);
-        assert_eq!(total.amount(), 25000); // R$ 250.00
+        assert_eq!(total.amount(), Decimal::from(250)); // R$ 250.00
     }
 }

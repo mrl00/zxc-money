@@ -123,7 +123,7 @@ mod tests {
             BillID::new(),
             UserID::new(),
             "Internet".into(),
-            Some(Money::new(99_90, Currency::BRL)),
+            Some(Money::from_cents(99_90, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
             recurrence,
             CategoryID::new(),
@@ -227,7 +227,7 @@ mod tests {
             BillID::new(),
             owner,
             "Gym".into(),
-            Some(Money::new(150_00, Currency::BRL)),
+            Some(Money::from_cents(150_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 1).unwrap(),
             Some(RecurrenceRule::Monthly),
             CategoryID::new(),
@@ -247,7 +247,7 @@ mod tests {
         let all = repo.find_by_owner(owner).await.unwrap();
         let next = all.iter().find(|b| b.id != id).unwrap();
         assert_eq!(next.name, "Gym");
-        assert_eq!(next.amount, Some(Money::new(150_00, Currency::BRL)));
+        assert_eq!(next.amount, Some(Money::from_cents(150_00, Currency::BRL)));
         assert_eq!(next.recurrence, Some(RecurrenceRule::Monthly));
     }
 }

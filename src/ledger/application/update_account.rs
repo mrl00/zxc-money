@@ -107,7 +107,7 @@ mod tests {
             "Checking".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         let id = account.id;

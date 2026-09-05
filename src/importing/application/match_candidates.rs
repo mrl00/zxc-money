@@ -135,12 +135,12 @@ fn amounts_close(a: Money, b: Money) -> bool {
     if a.is_zero() || b.is_zero() {
         return false;
     }
-    let diff = (a - b).abs();
+    let diff = (a - b).unwrap().abs();
     let a_abs = a.abs();
     let b_abs = b.abs();
     let base = if a_abs > b_abs { a_abs } else { b_abs };
     // diff / base < 0.01 → diff * 100 < base
-    diff.amount() * 100 < base.amount()
+    diff.amount() * rust_decimal::Decimal::from(100) < base.amount()
 }
 
 #[cfg(test)]
@@ -150,22 +150,22 @@ mod tests {
 
     #[test]
     fn test_amounts_close_exact() {
-        let a = Money::new(1000, Currency::BRL);
-        let b = Money::new(1000, Currency::BRL);
+        let a = Money::from_cents(1000, Currency::BRL);
+        let b = Money::from_cents(1000, Currency::BRL);
         assert!(amounts_close(a, b));
     }
 
     #[test]
     fn test_amounts_close_within_tolerance() {
-        let a = Money::new(1000, Currency::BRL);
-        let b = Money::new(1005, Currency::BRL);
+        let a = Money::from_cents(1000, Currency::BRL);
+        let b = Money::from_cents(1005, Currency::BRL);
         assert!(amounts_close(a, b));
     }
 
     #[test]
     fn test_amounts_not_close() {
-        let a = Money::new(1000, Currency::BRL);
-        let b = Money::new(1100, Currency::BRL);
+        let a = Money::from_cents(1000, Currency::BRL);
+        let b = Money::from_cents(1100, Currency::BRL);
         assert!(!amounts_close(a, b));
     }
 

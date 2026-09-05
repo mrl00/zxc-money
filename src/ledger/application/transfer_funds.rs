@@ -160,7 +160,7 @@ mod tests {
             "From".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(100000, Currency::BRL),
+            Money::from_cents(100000, Currency::BRL),
         )
         .unwrap();
         let to_account = crate::ledger::domain::account::Account::new(
@@ -169,7 +169,7 @@ mod tests {
             "To".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(50000, Currency::BRL),
+            Money::from_cents(50000, Currency::BRL),
         )
         .unwrap();
         account_repo.save(&from_account).await.unwrap();
@@ -180,7 +180,7 @@ mod tests {
         let cmd = TransferFundsCommand {
             from_account_id: from_id,
             to_account_id: to_id,
-            amount: Money::new(25000, Currency::BRL),
+            amount: Money::from_cents(25000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         };
@@ -202,7 +202,7 @@ mod tests {
         let cmd = TransferFundsCommand {
             from_account_id: same_id,
             to_account_id: same_id,
-            amount: Money::new(25000, Currency::BRL),
+            amount: Money::from_cents(25000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         };
@@ -227,7 +227,7 @@ mod tests {
             "Owner A".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(100000, Currency::BRL),
+            Money::from_cents(100000, Currency::BRL),
         )
         .unwrap();
         let to_account = crate::ledger::domain::account::Account::new(
@@ -236,7 +236,7 @@ mod tests {
             "Owner B".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(50000, Currency::BRL),
+            Money::from_cents(50000, Currency::BRL),
         )
         .unwrap();
         account_repo.save(&from_account).await.unwrap();
@@ -247,7 +247,7 @@ mod tests {
         let cmd = TransferFundsCommand {
             from_account_id: from_id,
             to_account_id: to_id,
-            amount: Money::new(25000, Currency::BRL),
+            amount: Money::from_cents(25000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         };

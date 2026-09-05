@@ -106,7 +106,7 @@ mod tests {
     use crate::shared::money::Currency;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     async fn setup() -> (
@@ -119,7 +119,7 @@ mod tests {
         let publisher = Arc::new(InMemoryEventDispatcher::new());
 
         // Create a portfolio
-        let mut portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
         portfolio_repo.save(&portfolio).await.unwrap();
 
         // Register an asset

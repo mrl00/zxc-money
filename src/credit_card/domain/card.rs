@@ -70,6 +70,7 @@ impl CreditCard {
 mod tests {
     use super::*;
     use crate::shared::money::Currency;
+    use rust_decimal::Decimal;
 
     fn make_card(limit_cents: i64) -> CreditCard {
         CreditCard::new(
@@ -77,7 +78,7 @@ mod tests {
             UserID::new(),
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(limit_cents, Currency::BRL),
+            Money::from_cents(limit_cents, Currency::BRL),
             20,
             27,
         )
@@ -87,33 +88,35 @@ mod tests {
     fn test_available_limit_within_bound() {
         let card = make_card(1000000);
         let available = card
-            .available_limit(Money::new(300000, Currency::BRL))
+            .available_limit(Money::from_cents(300000, Currency::BRL))
             .unwrap();
-        assert_eq!(available, Money::new(700000, Currency::BRL));
+        assert_eq!(available, Money::from_cents(700000, Currency::BRL));
     }
 
     #[test]
     fn test_available_limit_exact() {
         let card = make_card(1000000);
         let available = card
-            .available_limit(Money::new(1000000, Currency::BRL))
+            .available_limit(Money::from_cents(1000000, Currency::BRL))
             .unwrap();
-        assert_eq!(available, Money::new(0, Currency::BRL));
+        assert_eq!(available, Money::from_cents(0, Currency::BRL));
     }
 
     #[test]
     fn test_available_limit_exceeds() {
         let card = make_card(1000000);
         let available = card
-            .available_limit(Money::new(1500000, Currency::BRL))
+            .available_limit(Money::from_cents(1500000, Currency::BRL))
             .unwrap();
-        assert!(available.amount() < 0);
+        assert!(available.amount() < Decimal::ZERO);
     }
 
     #[test]
     fn test_available_limit_zero_used() {
         let card = make_card(500000);
-        let available = card.available_limit(Money::new(0, Currency::BRL)).unwrap();
-        assert_eq!(available, Money::new(500000, Currency::BRL));
+        let available = card
+            .available_limit(Money::from_cents(0, Currency::BRL))
+            .unwrap();
+        assert_eq!(available, Money::from_cents(500000, Currency::BRL));
     }
 }

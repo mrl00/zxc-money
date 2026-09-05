@@ -1,4 +1,4 @@
-use rust_decimal::Decimal;
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde::{Deserialize, Serialize};
 
 use crate::shared::money::Money;
@@ -35,7 +35,7 @@ pub struct AmortizationSchedule {
 /// # Example
 /// ```ignore
 /// let schedule = simulate_mortgage(
-///     Money::new(100_000, Currency::BRL),
+///     Money::from_cents(100_000, Currency::BRL),
 ///     12,
 ///     Decimal::from(12),
 ///     AmortizationMethod::SAC,
@@ -54,15 +54,15 @@ pub fn simulate_mortgage(
 
     match method {
         AmortizationMethod::SAC => {
-            let principal_per_month =
-                Money::new(principal.amount() / months as i64, principal.currency());
+            let principal_per_month = Money::new(
+                principal.amount() / Decimal::from(months),
+                principal.currency(),
+            );
 
             for month in 1..=months {
-                let interest_amount = (balance.amount() as f64
-                    * monthly_rate.to_string().parse::<f64>().unwrap())
-                    as i64;
+                let interest_amount = balance.amount() * monthly_rate;
                 let interest = Money::new(interest_amount, principal.currency());
-                let payment = principal_per_month + interest;
+                let payment = (principal_per_month + interest).unwrap();
                 balance = Money::new(
                     balance.amount() - principal_per_month.amount(),
                     principal.currency(),
@@ -83,9 +83,7 @@ pub fn simulate_mortgage(
             let monthly_payment = Money::new(monthly_payment_amount, principal.currency());
 
             for month in 1..=months {
-                let interest_amount = (balance.amount() as f64
-                    * monthly_rate.to_string().parse::<f64>().unwrap())
-                    as i64;
+                let interest_amount = balance.amount() * monthly_rate;
                 let interest = Money::new(interest_amount, principal.currency());
                 let principal_part = Money::new(
                     monthly_payment.amount() - interest.amount(),
@@ -123,12 +121,12 @@ pub fn simulate_mortgage(
     }
 }
 
-fn calculate_price_payment(principal: i64, months: u32, monthly_rate: Decimal) -> i64 {
-    let r = monthly_rate.to_string().parse::<f64>().unwrap();
+fn calculate_price_payment(principal: Decimal, months: u32, monthly_rate: Decimal) -> Decimal {
+    let r = monthly_rate.to_f64().unwrap();
     let n = months as f64;
-    let p = principal as f64;
+    let p = principal.to_f64().unwrap();
     let payment = p * (r * (1.0 + r).powf(n)) / ((1.0 + r).powf(n) - 1.0);
-    payment as i64
+    Decimal::try_from(payment).unwrap()
 }
 
 #[cfg(test)]
@@ -140,11 +138,11 @@ mod tests {
 
     #[test]
     fn test_mortgage_sac() {
-        let principal = Money::new(100000, BRL);
+        let principal = Money::from_cents(100000, BRL);
         let schedule = simulate_mortgage(principal, 12, Decimal::from(12), AmortizationMethod::SAC);
 
         assert_eq!(schedule.entries.len(), 12);
-        assert!(schedule.total_interest.amount() > 0);
+        assert!(schedule.total_interest.amount() > Decimal::ZERO);
         assert!(schedule.total_paid.amount() > principal.amount());
         assert_eq!(
             schedule.total_paid.amount(),
@@ -152,44 +150,44 @@ mod tests {
                 .entries
                 .iter()
                 .map(|e| e.payment.amount())
-                .sum::<i64>()
+                .sum::<Decimal>()
         );
     }
 
     #[test]
     fn test_mortgage_price() {
-        let principal = Money::new(100000, BRL);
+        let principal = Money::from_cents(100000, BRL);
         let schedule =
             simulate_mortgage(principal, 12, Decimal::from(12), AmortizationMethod::Price);
 
         assert_eq!(schedule.entries.len(), 12);
-        assert!(schedule.total_interest.amount() > 0);
+        assert!(schedule.total_interest.amount() > Decimal::ZERO);
         assert_eq!(
             schedule.total_paid.amount(),
             schedule
                 .entries
                 .iter()
                 .map(|e| e.payment.amount())
-                .sum::<i64>()
+                .sum::<Decimal>()
         );
     }
 
     #[test]
     fn test_mortgage_sac_known_values() {
-        let principal = Money::new(120_000_00, BRL);
+        let principal = Money::from_cents(120_000_00, BRL);
         let schedule =
             simulate_mortgage(principal, 240, Decimal::from(10), AmortizationMethod::SAC);
 
         assert_eq!(schedule.entries.len(), 240);
         let last = schedule.entries.last().unwrap();
-        assert_eq!(last.balance.amount(), 0);
+        assert_eq!(last.balance.amount(), Decimal::ZERO);
         assert_eq!(
             schedule.total_paid.amount(),
             schedule
                 .entries
                 .iter()
                 .map(|e| e.payment.amount())
-                .sum::<i64>()
+                .sum::<Decimal>()
         );
         assert_eq!(
             schedule.total_interest.amount(),
@@ -197,19 +195,19 @@ mod tests {
                 .entries
                 .iter()
                 .map(|e| e.interest.amount())
-                .sum::<i64>()
+                .sum::<Decimal>()
         );
     }
 
     #[test]
     fn test_mortgage_price_known_values() {
-        let principal = Money::new(120_000_00, BRL);
+        let principal = Money::from_cents(120_000_00, BRL);
         let schedule =
             simulate_mortgage(principal, 240, Decimal::from(10), AmortizationMethod::Price);
 
         assert_eq!(schedule.entries.len(), 240);
         let last = schedule.entries.last().unwrap();
-        assert!(last.balance.amount().abs() <= 100);
+        assert!(last.balance.amount().abs() <= Decimal::from(1));
         let first_payment = schedule.entries[0].payment.amount();
         for entry in &schedule.entries {
             assert_eq!(entry.payment.amount(), first_payment);
@@ -218,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_sac_vs_price_same_params() {
-        let principal = Money::new(200_000_00, BRL);
+        let principal = Money::from_cents(200_000_00, BRL);
         let months = 360;
         let rate = Decimal::from(12);
 

@@ -82,10 +82,13 @@ impl<P: PortfolioRepository> GetPortfolioSummaryHandler<P> {
                 .map(|price| *price * pos.quantity)
                 .unwrap_or_else(|| Money::zero(pos.average_cost.currency()));
 
-            let profit = current_value - invested;
+            let profit = (current_value - invested)
+                .map_err(|_| InvestmentError::InvariantViolation("currency mismatch".into()))?;
 
-            total_invested = total_invested + invested;
-            total_current_value = total_current_value + current_value;
+            total_invested = (total_invested + invested)
+                .map_err(|_| InvestmentError::InvariantViolation("currency mismatch".into()))?;
+            total_current_value = (total_current_value + current_value)
+                .map_err(|_| InvestmentError::InvariantViolation("currency mismatch".into()))?;
 
             positions.push(PositionSummary {
                 asset_id: pos.asset_id,
@@ -116,7 +119,7 @@ mod tests {
     use crate::shared::money::Currency;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     async fn setup_two_positions() -> (Arc<MockPortfolioRepository>, PortfolioID, AssetID, AssetID)
@@ -154,10 +157,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(summary.positions.len(), 2);
-        // invested: 10*2500 + 5*5000 = 50000
-        assert_eq!(summary.total_invested.amount(), 50000);
-        // current: 10*3000 + 5*4800 = 54000
-        assert_eq!(summary.total_current_value.amount(), 54000);
+        // invested: 10*25.00 + 5*50.00 = 500.00
+        assert_eq!(summary.total_invested.amount(), Decimal::from(500));
+        // current: 10*30.00 + 5*48.00 = 540.00
+        assert_eq!(summary.total_current_value.amount(), Decimal::from(540));
     }
 
     #[tokio::test]
@@ -178,8 +181,8 @@ mod tests {
             .unwrap();
 
         assert!(summary.positions.is_empty());
-        assert_eq!(summary.total_invested.amount(), 0);
-        assert_eq!(summary.total_current_value.amount(), 0);
+        assert_eq!(summary.total_invested.amount(), Decimal::ZERO);
+        assert_eq!(summary.total_current_value.amount(), Decimal::ZERO);
     }
 
     #[tokio::test]
@@ -201,7 +204,7 @@ mod tests {
 
         assert_eq!(summary.positions.len(), 2);
         // Only a1 contributes to current_value
-        assert_eq!(summary.total_current_value.amount(), 30000);
+        assert_eq!(summary.total_current_value.amount(), Decimal::from(300));
     }
 
     #[tokio::test]

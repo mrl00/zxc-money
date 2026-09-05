@@ -91,6 +91,7 @@ mod tests {
     use crate::shared::ids::{AccountID, GoalID, TransactionID, UserID};
     use crate::shared::mock::MockGoalRepository;
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
     use std::sync::Arc;
 
     async fn setup_with_linked_goal(
@@ -103,11 +104,11 @@ mod tests {
     ) {
         let goal_repo = Arc::new(MockGoalRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
-        let mut goal = FinancialGoal::new(
+        let goal = FinancialGoal::new(
             GoalID::new(),
             UserID::new(),
             "Savings Goal".into(),
-            Money::new(target, Currency::BRL),
+            Money::from_cents(target, Currency::BRL),
             chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         )
         .with_linked_account(account_id);
@@ -127,7 +128,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::new(3_000_00, Currency::BRL),
+            amount: Money::from_cents(3_000_00, Currency::BRL),
             category_id: None,
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -137,7 +138,7 @@ mod tests {
         handler.handle(&event).await.unwrap();
 
         let goal = goal_repo.find_by_id(goal_id).await.unwrap().unwrap();
-        assert_eq!(goal.current_amount.amount(), 3_000_00);
+        assert_eq!(goal.current_amount.amount(), Decimal::from(3_000));
     }
 
     #[tokio::test]
@@ -151,7 +152,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id,
             tx_type: TransactionType::Expense,
-            amount: Money::new(500_00, Currency::BRL),
+            amount: Money::from_cents(500_00, Currency::BRL),
             category_id: None,
             description: "Groceries".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -175,7 +176,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::new(5000_00, Currency::BRL),
+            amount: Money::from_cents(5000_00, Currency::BRL),
             category_id: None,
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -196,7 +197,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::new(5_000_00, Currency::BRL),
+            amount: Money::from_cents(5_000_00, Currency::BRL),
             category_id: None,
             description: "Bonus".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),

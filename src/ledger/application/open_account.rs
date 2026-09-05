@@ -84,7 +84,7 @@ mod tests {
             name: "My Account".into(),
             account_type: AccountType::Checking,
             currency: Currency::BRL,
-            opening_balance: Money::new(10000, Currency::BRL),
+            opening_balance: Money::from_cents(10000, Currency::BRL),
         };
 
         let id = handler.handle(cmd).await.unwrap();

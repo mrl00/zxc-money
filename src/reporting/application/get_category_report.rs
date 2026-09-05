@@ -46,7 +46,7 @@ impl GetCategoryReportHandler {
                     let entry = category_totals
                         .entry(category_id)
                         .or_insert_with(|| (Money::zero(crate::shared::money::Currency::BRL), 0));
-                    entry.0 = entry.0 + e.amount;
+                    entry.0 = (entry.0 + e.amount).unwrap();
                     entry.1 += 1;
                 }
             }
@@ -82,7 +82,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(amount, Currency::BRL),
+            amount: Money::from_cents(amount, Currency::BRL),
             category_id: Some(cat),
             description: "Test".into(),
             date,
@@ -120,9 +120,15 @@ mod tests {
         });
 
         assert_eq!(reports.len(), 2);
-        assert_eq!(reports[0].total.amount(), 300_00); // cat1 first (highest)
+        assert_eq!(
+            reports[0].total.amount(),
+            rust_decimal::Decimal::from(300_00) / rust_decimal::Decimal::from(100)
+        ); // cat1 first (highest)
         assert_eq!(reports[0].transaction_count, 2);
-        assert_eq!(reports[1].total.amount(), 50_00); // cat2 second
+        assert_eq!(
+            reports[1].total.amount(),
+            rust_decimal::Decimal::from(50_00) / rust_decimal::Decimal::from(100)
+        ); // cat2 second
     }
 
     #[test]
@@ -149,7 +155,10 @@ mod tests {
         });
 
         assert_eq!(reports.len(), 1);
-        assert_eq!(reports[0].total.amount(), 100_00);
+        assert_eq!(
+            reports[0].total.amount(),
+            rust_decimal::Decimal::from(100_00) / rust_decimal::Decimal::from(100)
+        );
     }
 
     #[test]
@@ -160,7 +169,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::new(5000_00, Currency::BRL),
+            amount: Money::from_cents(5000_00, Currency::BRL),
             category_id: Some(cat),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

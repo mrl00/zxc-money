@@ -45,7 +45,7 @@ mod tests {
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
             name: "Rent".into(),
-            amount: Some(Money::new(1500_00, Currency::BRL)),
+            amount: Some(Money::from_cents(1500_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
             timestamp: chrono::Utc::now(),
         });
@@ -53,7 +53,7 @@ mod tests {
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
             name: "Internet".into(),
-            amount: Some(Money::new(99_90, Currency::BRL)),
+            amount: Some(Money::from_cents(99_90, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 10).unwrap(),
             timestamp: chrono::Utc::now(),
         });

@@ -107,7 +107,7 @@ mod tests {
     fn sample_raw(date: &str, amount_cents: i64, desc: &str) -> RawTransaction {
         RawTransaction {
             date: chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").unwrap(),
-            amount: Money::new(amount_cents, Currency::BRL),
+            amount: Money::from_cents(amount_cents, Currency::BRL),
             description: desc.into(),
             raw_line: format!("{date},{amount_cents},{desc}"),
         }
@@ -179,6 +179,6 @@ mod tests {
             .unwrap();
         assert_eq!(txs.len(), 1);
         assert_eq!(txs[0].tx_type, TransactionType::Expense);
-        assert_eq!(txs[0].amount, Money::new(1000, Currency::BRL));
+        assert_eq!(txs[0].amount, Money::from_cents(1000, Currency::BRL));
     }
 }

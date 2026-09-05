@@ -77,6 +77,7 @@ mod tests {
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::mock::MockGoalRepository;
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
     use std::sync::Arc;
 
     async fn setup_with_goal(
@@ -88,11 +89,11 @@ mod tests {
     ) {
         let goal_repo = Arc::new(MockGoalRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
-        let mut goal = FinancialGoal::new(
+        let goal = FinancialGoal::new(
             GoalID::new(),
             crate::shared::ids::UserID::new(),
             "Test Goal".into(),
-            Money::new(target, Currency::BRL),
+            Money::from_cents(target, Currency::BRL),
             chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         );
         let goal_id = goal.id;
@@ -108,13 +109,13 @@ mod tests {
         handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::new(3_000_00, Currency::BRL),
+                amount: Money::from_cents(3_000_00, Currency::BRL),
             })
             .await
             .unwrap();
 
         let goal = goal_repo.find_by_id(goal_id).await.unwrap().unwrap();
-        assert_eq!(goal.current_amount.amount(), 3_000_00);
+        assert_eq!(goal.current_amount.amount(), Decimal::from(3_000));
         assert_eq!(goal.status, GoalStatus::InProgress);
     }
 
@@ -126,7 +127,7 @@ mod tests {
         handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::new(5_000_00, Currency::BRL),
+                amount: Money::from_cents(5_000_00, Currency::BRL),
             })
             .await
             .unwrap();
@@ -143,7 +144,7 @@ mod tests {
         handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::new(5_000_00, Currency::BRL),
+                amount: Money::from_cents(5_000_00, Currency::BRL),
             })
             .await
             .unwrap();
@@ -151,7 +152,7 @@ mod tests {
         let result = handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::new(1_000_00, Currency::BRL),
+                amount: Money::from_cents(1_000_00, Currency::BRL),
             })
             .await;
         assert!(result.is_err());
@@ -166,7 +167,7 @@ mod tests {
         let result = handler
             .handle(ContributeToGoalCommand {
                 goal_id: GoalID::new(),
-                amount: Money::new(1_000_00, Currency::BRL),
+                amount: Money::from_cents(1_000_00, Currency::BRL),
             })
             .await;
         assert!(result.is_err());

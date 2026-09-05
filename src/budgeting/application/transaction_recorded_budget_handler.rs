@@ -85,7 +85,7 @@ mod tests {
     use crate::budgeting::domain::repository::BudgetRepository;
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
-    use crate::provider::id::MockIdGenerator;
+
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
     use crate::shared::mock::MockBudgetRepository;
@@ -106,7 +106,7 @@ mod tests {
             UserID::new(),
             category_id,
             period,
-            Money::new(planned, Currency::BRL),
+            Money::from_cents(planned, Currency::BRL),
         )
         .unwrap();
         budget_repo.save(&budget).await.unwrap();
@@ -126,7 +126,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(500_00, Currency::BRL),
+            amount: Money::from_cents(500_00, Currency::BRL),
             category_id: Some(category_id),
             description: "Groceries".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -149,7 +149,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(600_00, Currency::BRL),
+            amount: Money::from_cents(600_00, Currency::BRL),
             category_id: Some(category_id),
             description: "Big purchase".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
@@ -172,7 +172,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::new(5000_00, Currency::BRL),
+            amount: Money::from_cents(5000_00, Currency::BRL),
             category_id: Some(category_id),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -194,7 +194,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(600_00, Currency::BRL),
+            amount: Money::from_cents(600_00, Currency::BRL),
             category_id: None,
             description: "Uncategorized".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -216,7 +216,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(500_00, Currency::BRL),
+            amount: Money::from_cents(500_00, Currency::BRL),
             category_id: Some(category_id),
             description: "Something".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

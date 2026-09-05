@@ -46,13 +46,14 @@ impl GetNetWorthHistoryHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ledger::domain::events::{AccountOpened, TransactionRecorded};
-    use crate::ledger::domain::transaction::TransactionType;
-    use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
+    use crate::ledger::domain::events::AccountOpened;
+
+    use crate::shared::ids::{AccountID, UserID};
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     #[test]
@@ -75,7 +76,7 @@ mod tests {
         });
 
         assert_eq!(snapshots.len(), 1);
-        assert_eq!(snapshots[0].total_assets.amount(), 1000_00);
+        assert_eq!(snapshots[0].total_assets.amount(), Decimal::from(1000));
     }
 
     #[test]
@@ -99,7 +100,7 @@ mod tests {
 
         assert_eq!(snapshots.len(), 3);
         for snap in &snapshots {
-            assert_eq!(snap.total_assets.amount(), 5000_00);
+            assert_eq!(snap.total_assets.amount(), Decimal::from(5000));
         }
     }
 

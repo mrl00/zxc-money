@@ -109,7 +109,7 @@ mod tests {
         let cmd = ScheduleBillCommand {
             owner_id: UserID::new(),
             name: "Internet".into(),
-            amount: Some(Money::new(99_90, Currency::BRL)),
+            amount: Some(Money::from_cents(99_90, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
             recurrence: Some(RecurrenceRule::Monthly),
             category_id: CategoryID::new(),
@@ -119,7 +119,7 @@ mod tests {
 
         let bill = repo.find_by_id(bill_id).await.unwrap().unwrap();
         assert_eq!(bill.name, "Internet");
-        assert_eq!(bill.amount, Some(Money::new(99_90, Currency::BRL)));
+        assert_eq!(bill.amount, Some(Money::from_cents(99_90, Currency::BRL)));
         assert_eq!(bill.status, BillStatus::Pending);
         assert_eq!(bill.recurrence, Some(RecurrenceRule::Monthly));
     }
@@ -152,7 +152,7 @@ mod tests {
         let cmd = ScheduleBillCommand {
             owner_id: UserID::new(),
             name: "One-time fee".into(),
-            amount: Some(Money::new(50_00, Currency::BRL)),
+            amount: Some(Money::from_cents(50_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
             recurrence: None,
             category_id: CategoryID::new(),
@@ -171,7 +171,7 @@ mod tests {
         let cmd = ScheduleBillCommand {
             owner_id: UserID::new(),
             name: "Weekly cleaning".into(),
-            amount: Some(Money::new(30_00, Currency::BRL)),
+            amount: Some(Money::from_cents(30_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 7).unwrap(),
             recurrence: Some(RecurrenceRule::Weekly),
             category_id: CategoryID::new(),
