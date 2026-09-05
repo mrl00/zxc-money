@@ -20,3 +20,4 @@ Thumbs.db
 
 # Cargo
 cargo-build.log
+/tmp/
