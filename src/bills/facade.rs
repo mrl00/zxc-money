@@ -102,7 +102,7 @@ mod tests {
     use crate::bills::domain::bill::{BillStatus, RecurrenceRule};
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{AccountID, CategoryID, UserID};
+    use crate::shared::ids::{AccountID, CategoryID, Principal, UserID};
     use crate::shared::mock::MockBillRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -126,7 +126,7 @@ mod tests {
         let facade = BillsFacade::new(repo.clone(), publisher, id_gen, calendar);
 
         let cmd = ScheduleBillCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "Electricity".into(),
             amount: Some(Money::from_cents(25000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
@@ -145,8 +145,9 @@ mod tests {
         let (repo, publisher, id_gen, calendar) = setup();
         let facade = BillsFacade::new(repo.clone(), publisher.clone(), id_gen.clone(), calendar);
 
+        let owner = UserID::new();
         let schedule_cmd = ScheduleBillCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(owner),
             name: "Water".into(),
             amount: Some(Money::from_cents(8000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 10).unwrap(),
@@ -157,6 +158,7 @@ mod tests {
         let bill_id = facade.schedule_bill(schedule_cmd).await.unwrap();
 
         let paid_cmd = MarkBillPaidCommand {
+            principal: Principal::new(owner),
             bill_id,
             account_id: AccountID::new(),
         };

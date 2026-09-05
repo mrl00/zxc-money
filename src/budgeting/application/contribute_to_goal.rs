@@ -5,11 +5,12 @@ use crate::budgeting::domain::goal::GoalStatus;
 use crate::budgeting::domain::repository::GoalRepository;
 use crate::shared::errors::BudgetingError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::GoalID;
+use crate::shared::ids::{GoalID, Principal};
 use crate::shared::money::Money;
 
 /// Command to contribute toward a financial goal.
 pub struct ContributeToGoalCommand {
+    pub principal: Principal,
     pub goal_id: GoalID,
     pub amount: Money,
 }
@@ -43,6 +44,12 @@ impl<G: GoalRepository, P: EventPublisher> ContributeToGoalHandler<G, P> {
             .await?
             .ok_or_else(|| BudgetingError::GoalNotFound(cmd.goal_id.to_string()))?;
 
+        if goal.owner_id != cmd.principal.user_id {
+            return Err(BudgetingError::InvariantViolation(
+                "goal does not belong to owner".into(),
+            ));
+        }
+
         let was_in_progress = goal.status == GoalStatus::InProgress;
 
         goal.contribute(cmd.amount)?;
@@ -75,6 +82,7 @@ mod tests {
     use super::*;
     use crate::budgeting::domain::goal::FinancialGoal;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::MockGoalRepository;
     use crate::shared::money::{Currency, Money};
     use rust_decimal::Decimal;
@@ -86,28 +94,31 @@ mod tests {
         Arc<MockGoalRepository>,
         Arc<InMemoryEventDispatcher>,
         GoalID,
+        UserID,
     ) {
         let goal_repo = Arc::new(MockGoalRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
+        let user_id = UserID::new();
         let goal = FinancialGoal::new(
             GoalID::new(),
-            crate::shared::ids::UserID::new(),
+            user_id,
             "Test Goal".into(),
             Money::from_cents(target, Currency::BRL),
             chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         );
         let goal_id = goal.id;
         goal_repo.save(&goal).await.unwrap();
-        (goal_repo, publisher, goal_id)
+        (goal_repo, publisher, goal_id, user_id)
     }
 
     #[tokio::test]
     async fn test_contribute_partial() {
-        let (goal_repo, publisher, goal_id) = setup_with_goal(1000000).await;
+        let (goal_repo, publisher, goal_id, user_id) = setup_with_goal(1000000).await;
         let handler = ContributeToGoalHandler::new(goal_repo.clone(), publisher);
 
         handler
             .handle(ContributeToGoalCommand {
+                principal: Principal::new(user_id),
                 goal_id,
                 amount: Money::from_cents(300000, Currency::BRL),
             })
@@ -121,11 +132,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_contribute_achieves_goal() {
-        let (goal_repo, publisher, goal_id) = setup_with_goal(500000).await;
+        let (goal_repo, publisher, goal_id, user_id) = setup_with_goal(500000).await;
         let handler = ContributeToGoalHandler::new(goal_repo.clone(), publisher);
 
         handler
             .handle(ContributeToGoalCommand {
+                principal: Principal::new(user_id),
                 goal_id,
                 amount: Money::from_cents(500000, Currency::BRL),
             })
@@ -138,11 +150,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_contribute_to_achieved_goal_fails() {
-        let (goal_repo, publisher, goal_id) = setup_with_goal(500000).await;
+        let (goal_repo, publisher, goal_id, user_id) = setup_with_goal(500000).await;
         let handler = ContributeToGoalHandler::new(goal_repo.clone(), publisher);
 
         handler
             .handle(ContributeToGoalCommand {
+                principal: Principal::new(user_id),
                 goal_id,
                 amount: Money::from_cents(500000, Currency::BRL),
             })
@@ -151,6 +164,7 @@ mod tests {
 
         let result = handler
             .handle(ContributeToGoalCommand {
+                principal: Principal::new(user_id),
                 goal_id,
                 amount: Money::from_cents(100000, Currency::BRL),
             })
@@ -166,6 +180,7 @@ mod tests {
 
         let result = handler
             .handle(ContributeToGoalCommand {
+                principal: Principal::new(UserID::new()),
                 goal_id: GoalID::new(),
                 amount: Money::from_cents(100000, Currency::BRL),
             })

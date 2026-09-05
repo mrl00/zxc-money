@@ -4,13 +4,14 @@ use crate::ledger::domain::transaction::{Transaction, TransactionType};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, CategoryID, TransactionID};
+use crate::shared::ids::{AccountID, CategoryID, Principal, TransactionID};
 use crate::shared::money::Money;
 use chrono::NaiveDate;
 use std::sync::Arc;
 
 /// Command to record a new transaction on an account.
 pub struct RecordTransactionCommand {
+    pub principal: Principal,
     pub account_id: AccountID,
     pub tx_type: TransactionType,
     pub amount: Money,
@@ -62,6 +63,12 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
             .find_by_id(cmd.account_id)
             .await?
             .ok_or_else(|| LedgerError::AccountNotFound(cmd.account_id.to_string()))?;
+
+        if account.owner_id != cmd.principal.user_id {
+            return Err(LedgerError::Forbidden(
+                "not the owner of this account".into(),
+            ));
+        }
 
         if cmd.amount.currency() != account.currency() {
             return Err(LedgerError::CurrencyMismatch {
@@ -146,7 +153,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::UserID;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
     use crate::shared::money::Currency;
 
@@ -158,9 +165,10 @@ mod tests {
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
 
         let account_id = AccountID::new();
+        let principal = Principal::new(UserID::new());
         let account = crate::ledger::domain::account::Account::new(
             account_id,
-            UserID::new(),
+            principal.user_id,
             "Test".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
@@ -173,6 +181,7 @@ mod tests {
 
         let category_id = CategoryID::new();
         let cmd = RecordTransactionCommand {
+            principal,
             account_id,
             tx_type: TransactionType::Income,
             amount: Money::from_cents(50000, Currency::BRL),
@@ -195,6 +204,7 @@ mod tests {
         let handler = RecordTransactionHandler::new(account_repo, tx_repo, publisher, id_gen);
 
         let cmd = RecordTransactionCommand {
+            principal: Principal::new(UserID::new()),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
             amount: Money::from_cents(50000, Currency::BRL),
@@ -217,6 +227,7 @@ mod tests {
         let handler = RecordTransactionHandler::new(account_repo, tx_repo, publisher, id_gen);
 
         let cmd = RecordTransactionCommand {
+            principal: Principal::new(UserID::new()),
             account_id: AccountID::new(),
             tx_type: TransactionType::Transfer,
             amount: Money::from_cents(50000, Currency::BRL),
@@ -237,9 +248,10 @@ mod tests {
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
 
         let account_id = AccountID::new();
+        let principal = Principal::new(UserID::new());
         let account = crate::ledger::domain::account::Account::new(
             account_id,
-            UserID::new(),
+            principal.user_id,
             "BRL Account".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
@@ -251,6 +263,7 @@ mod tests {
         let handler = RecordTransactionHandler::new(account_repo, tx_repo, publisher, id_gen);
 
         let cmd = RecordTransactionCommand {
+            principal,
             account_id,
             tx_type: TransactionType::Income,
             amount: Money::from_cents(100, Currency::USD),

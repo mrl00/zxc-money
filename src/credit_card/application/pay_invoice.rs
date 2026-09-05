@@ -2,12 +2,12 @@ use crate::credit_card::domain::events::InvoicePaid;
 use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
 use crate::shared::errors::CreditCardError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{CreditCardID, InvoiceID, UserID};
+use crate::shared::ids::{CreditCardID, InvoiceID, Principal};
 use std::sync::Arc;
 
 /// Command to pay a closed invoice on a credit card.
 pub struct PayInvoiceCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub credit_card_id: CreditCardID,
     pub invoice_id: InvoiceID,
 }
@@ -46,7 +46,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher> PayInvoic
             .await?
             .ok_or_else(|| CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string()))?;
 
-        if card.owner_id != cmd.owner_id {
+        if card.owner_id != cmd.principal.user_id {
             return Err(CreditCardError::InvariantViolation(
                 "credit card does not belong to owner".into(),
             ));
@@ -87,7 +87,7 @@ mod tests {
     use crate::credit_card::domain::invoice::{Invoice, InvoiceStatus};
     use crate::credit_card::domain::purchase::Purchase;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{CategoryID, PurchaseID};
+    use crate::shared::ids::{CategoryID, PurchaseID, UserID};
     use crate::shared::mock::{MockCreditCardRepository, MockInvoiceRepository};
     use crate::shared::money::{Currency, Money};
     use crate::shared::period::YearMonth;
@@ -139,7 +139,7 @@ mod tests {
 
         handler
             .handle(PayInvoiceCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 invoice_id: inv_id,
             })
@@ -175,7 +175,7 @@ mod tests {
 
         let result = handler
             .handle(PayInvoiceCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 invoice_id: inv_id,
             })
@@ -214,7 +214,7 @@ mod tests {
 
         let result = handler
             .handle(PayInvoiceCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 invoice_id: inv_id,
             })
@@ -247,7 +247,7 @@ mod tests {
 
         let result = handler
             .handle(PayInvoiceCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 invoice_id: InvoiceID::new(),
             })

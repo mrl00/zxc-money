@@ -65,7 +65,7 @@ mod tests {
     use crate::importing::domain::raw_transaction::RawTransaction;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::AccountID;
+    use crate::shared::ids::{AccountID, Principal, UserID};
     use crate::shared::mock::MockTransactionRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -91,6 +91,7 @@ mod tests {
         let facade = setup_facade();
         let result = facade
             .preview(PreviewCommand {
+                principal: Principal::new(UserID::new()),
                 account_id: AccountID::new(),
                 transactions: Vec::new(),
             })
@@ -111,6 +112,7 @@ mod tests {
         // 1. Preview
         let preview = facade
             .preview(PreviewCommand {
+                principal: Principal::new(UserID::new()),
                 account_id,
                 transactions: txs.clone(),
             })
@@ -123,6 +125,7 @@ mod tests {
         // 2. Match candidates
         let matches = facade
             .match_candidates(MatchCandidatesCommand {
+                principal: Principal::new(UserID::new()),
                 account_id,
                 transactions: txs.clone(),
                 date_tolerance_days: 3,
@@ -135,6 +138,7 @@ mod tests {
         // 3. Confirm
         let count = facade
             .confirm(ConfirmCommand {
+                principal: Principal::new(UserID::new()),
                 account_id,
                 transactions: txs,
             })

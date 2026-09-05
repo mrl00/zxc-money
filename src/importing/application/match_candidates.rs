@@ -5,7 +5,7 @@ use chrono::Days;
 use crate::importing::domain::raw_transaction::RawTransaction;
 use crate::ledger::domain::repository::TransactionRepository;
 use crate::shared::errors::ImportError;
-use crate::shared::ids::{AccountID, TransactionID};
+use crate::shared::ids::{AccountID, Principal, TransactionID};
 use crate::shared::money::Money;
 use crate::shared::period::Period;
 
@@ -14,6 +14,7 @@ use crate::shared::period::Period;
 /// Uses date-window + amount-tolerance matching. The frontend presents these
 /// candidates so the user can decide which to skip or merge.
 pub struct MatchCandidatesCommand {
+    pub principal: Principal,
     /// Target account to match against.
     pub account_id: AccountID,
     /// Parsed raw transactions to find matches for.
@@ -148,6 +149,8 @@ mod tests {
     use super::*;
     use crate::shared::money::Currency;
 
+    use crate::shared::ids::{Principal, UserID};
+
     #[test]
     fn test_amounts_close_exact() {
         let a = Money::from_cents(1000, Currency::BRL);
@@ -175,6 +178,7 @@ mod tests {
         let handler = MatchCandidatesHandler::new(repo);
         let result = handler
             .handle(MatchCandidatesCommand {
+                principal: Principal::new(UserID::new()),
                 account_id: AccountID::new(),
                 transactions: Vec::new(),
                 date_tolerance_days: 3,

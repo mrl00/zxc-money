@@ -2,12 +2,12 @@ use crate::credit_card::domain::events::InvoiceClosed;
 use crate::credit_card::domain::repository::{CreditCardRepository, InvoiceRepository};
 use crate::shared::errors::CreditCardError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{CreditCardID, InvoiceID, UserID};
+use crate::shared::ids::{CreditCardID, InvoiceID, Principal};
 use std::sync::Arc;
 
 /// Command to close the open invoice for a credit card.
 pub struct CloseInvoiceCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub credit_card_id: CreditCardID,
 }
 
@@ -46,7 +46,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher>
             .await?
             .ok_or_else(|| CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string()))?;
 
-        if card.owner_id != cmd.owner_id {
+        if card.owner_id != cmd.principal.user_id {
             return Err(CreditCardError::InvariantViolation(
                 "credit card does not belong to owner".into(),
             ));
@@ -81,7 +81,7 @@ mod tests {
     use crate::credit_card::domain::invoice::{Invoice, InvoiceStatus};
     use crate::credit_card::domain::purchase::Purchase;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{CategoryID, PurchaseID};
+    use crate::shared::ids::{CategoryID, PurchaseID, UserID};
     use crate::shared::mock::{MockCreditCardRepository, MockInvoiceRepository};
     use crate::shared::money::{Currency, Money};
     use crate::shared::period::YearMonth;
@@ -132,7 +132,7 @@ mod tests {
 
         let closed_id = handler
             .handle(CloseInvoiceCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
             })
             .await
@@ -165,7 +165,7 @@ mod tests {
 
         let result = handler
             .handle(CloseInvoiceCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
             })
             .await;
@@ -197,7 +197,7 @@ mod tests {
 
         let result = handler
             .handle(CloseInvoiceCommand {
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
                 credit_card_id: card_id,
             })
             .await;

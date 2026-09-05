@@ -6,13 +6,13 @@ use crate::budgeting::domain::repository::BudgetRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::BudgetingError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{BudgetID, CategoryID, UserID};
+use crate::shared::ids::{BudgetID, CategoryID, Principal};
 use crate::shared::money::Money;
 use crate::shared::period::Period;
 
 /// Command to define a budget for a category within a period.
 pub struct DefineBudgetCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub category_id: CategoryID,
     pub period: Period,
     pub planned_amount: Money,
@@ -58,7 +58,7 @@ impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator> DefineBudgetHandle
         let id = BudgetID::from_uuid(self.id_generator.new_id());
         let budget = Budget::new(
             id,
-            cmd.owner_id,
+            cmd.principal.user_id,
             cmd.category_id,
             cmd.period,
             cmd.planned_amount,
@@ -83,6 +83,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::MockBudgetRepository;
     use crate::shared::money::{Currency, Money};
     use rust_decimal::Decimal;
@@ -105,7 +106,7 @@ mod tests {
         let handler = DefineBudgetHandler::new(budget_repo.clone(), publisher.clone(), id_gen);
 
         let cmd = DefineBudgetCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             category_id: CategoryID::new(),
             period: Period::new(
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
@@ -134,7 +135,7 @@ mod tests {
         );
 
         let cmd1 = DefineBudgetCommand {
-            owner_id,
+            principal: Principal::new(owner_id),
             category_id,
             period,
             planned_amount: Money::from_cents(50000, Currency::BRL),
@@ -142,7 +143,7 @@ mod tests {
         handler.handle(cmd1).await.unwrap();
 
         let cmd2 = DefineBudgetCommand {
-            owner_id,
+            principal: Principal::new(owner_id),
             category_id,
             period,
             planned_amount: Money::from_cents(60000, Currency::BRL),
@@ -157,7 +158,7 @@ mod tests {
         let handler = DefineBudgetHandler::new(budget_repo, publisher, id_gen);
 
         let cmd = DefineBudgetCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             category_id: CategoryID::new(),
             period: Period::new(
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
@@ -184,7 +185,7 @@ mod tests {
 
         let id1 = handler
             .handle(DefineBudgetCommand {
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
                 category_id: CategoryID::new(),
                 period,
                 planned_amount: Money::from_cents(50000, Currency::BRL),
@@ -194,7 +195,7 @@ mod tests {
 
         let id2 = handler
             .handle(DefineBudgetCommand {
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
                 category_id: CategoryID::new(),
                 period,
                 planned_amount: Money::from_cents(30000, Currency::BRL),

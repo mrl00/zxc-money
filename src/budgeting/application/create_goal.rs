@@ -5,12 +5,12 @@ use crate::budgeting::domain::goal::FinancialGoal;
 use crate::budgeting::domain::repository::GoalRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::BudgetingError;
-use crate::shared::ids::{GoalID, UserID};
+use crate::shared::ids::{GoalID, Principal};
 use crate::shared::money::Money;
 
 /// Command to create a new financial goal.
 pub struct CreateGoalCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub name: String,
     pub target_amount: Money,
     pub target_date: NaiveDate,
@@ -36,7 +36,7 @@ impl<G: GoalRepository, Id: IdGenerator> CreateGoalHandler<G, Id> {
         let id = GoalID::from_uuid(self.id_generator.new_id());
         let goal = FinancialGoal::new(
             id,
-            cmd.owner_id,
+            cmd.principal.user_id,
             cmd.name,
             cmd.target_amount,
             cmd.target_date,
@@ -53,6 +53,7 @@ impl<G: GoalRepository, Id: IdGenerator> CreateGoalHandler<G, Id> {
 mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::MockGoalRepository;
     use crate::shared::money::{Currency, Money};
     use rust_decimal::Decimal;
@@ -70,7 +71,7 @@ mod tests {
         let handler = CreateGoalHandler::new(goal_repo.clone(), id_gen);
 
         let cmd = CreateGoalCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "Emergency Fund".into(),
             target_amount: Money::from_cents(1000000, Currency::BRL),
             target_date: NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
@@ -88,7 +89,7 @@ mod tests {
         let handler = CreateGoalHandler::new(goal_repo.clone(), id_gen);
 
         let cmd = CreateGoalCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "Vacation".into(),
             target_amount: Money::from_cents(500000, Currency::BRL),
             target_date: NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),

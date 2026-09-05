@@ -2,11 +2,12 @@ use crate::ledger::domain::events::TransactionDeleted;
 use crate::ledger::domain::repository::TransactionRepository;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::TransactionID;
+use crate::shared::ids::{Principal, TransactionID};
 use std::sync::Arc;
 
 /// Command to delete a transaction.
 pub struct DeleteTransactionCommand {
+    pub principal: Principal,
     pub transaction_id: TransactionID,
 }
 
@@ -67,7 +68,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::transaction::{Transaction, TransactionType};
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{AccountID, PurchaseID};
+    use crate::shared::ids::{AccountID, Principal, PurchaseID, UserID};
     use crate::shared::mock::MockTransactionRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -95,6 +96,7 @@ mod tests {
         let handler = DeleteTransactionHandler::new(repo, publisher);
         let result = handler
             .handle(DeleteTransactionCommand {
+                principal: Principal::new(UserID::new()),
                 transaction_id: tx_id,
             })
             .await;
@@ -113,6 +115,7 @@ mod tests {
         let handler = DeleteTransactionHandler::new(repo, publisher);
         let result = handler
             .handle(DeleteTransactionCommand {
+                principal: Principal::new(UserID::new()),
                 transaction_id: tx_id,
             })
             .await;
@@ -134,6 +137,7 @@ mod tests {
         let handler = DeleteTransactionHandler::new(repo, publisher);
         let result = handler
             .handle(DeleteTransactionCommand {
+                principal: Principal::new(UserID::new()),
                 transaction_id: tx_id,
             })
             .await;

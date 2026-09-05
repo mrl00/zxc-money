@@ -7,13 +7,13 @@ use crate::ledger::domain::transaction::TransactionType;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, CategoryID, RecurringTransactionID, UserID};
+use crate::shared::ids::{AccountID, CategoryID, Principal, RecurringTransactionID};
 use crate::shared::money::Money;
 use std::sync::Arc;
 
 /// Command to create a new recurring transaction.
 pub struct CreateRecurringTransactionCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub account_id: AccountID,
     pub tx_type: TransactionType,
     pub amount: Money,
@@ -57,7 +57,7 @@ impl<R: RecurringTransactionRepository, P: EventPublisher, I: IdGenerator>
 
         let recurring = RecurringTransaction::new(
             id,
-            cmd.owner_id,
+            cmd.principal.user_id,
             cmd.account_id,
             cmd.tx_type,
             cmd.amount,
@@ -71,7 +71,7 @@ impl<R: RecurringTransactionRepository, P: EventPublisher, I: IdGenerator>
 
         let event = RecurringTransactionCreated {
             recurring_transaction_id: id,
-            owner_id: cmd.owner_id,
+            owner_id: cmd.principal.user_id,
             account_id: cmd.account_id,
             amount: cmd.amount,
             frequency: cmd.frequency,
@@ -89,6 +89,7 @@ mod tests {
     use super::*;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::MockRecurringTransactionRepository;
     use crate::shared::money::Currency;
 
@@ -101,7 +102,7 @@ mod tests {
         let handler = CreateRecurringTransactionHandler::new(repo, publisher, id_gen);
 
         let cmd = CreateRecurringTransactionCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(5000, Currency::BRL),

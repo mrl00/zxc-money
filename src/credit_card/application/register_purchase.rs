@@ -8,7 +8,7 @@ use crate::provider::id::IdGenerator;
 use crate::shared::errors::CreditCardError;
 use crate::shared::events::EventPublisher;
 use crate::shared::ids::{
-    CategoryID, CreditCardID, InstallmentGroupID, InvoiceID, PurchaseID, UserID,
+    CategoryID, CreditCardID, InstallmentGroupID, InvoiceID, Principal, PurchaseID,
 };
 use crate::shared::money::Money;
 use crate::shared::period::YearMonth;
@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 /// Command to register a new purchase on a credit card.
 pub struct RegisterPurchaseCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub credit_card_id: CreditCardID,
     pub description: String,
     pub total_amount: Money,
@@ -74,7 +74,7 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGen
             .await?
             .ok_or_else(|| CreditCardError::CreditCardNotFound(cmd.credit_card_id.to_string()))?;
 
-        if card.owner_id != cmd.owner_id {
+        if card.owner_id != cmd.principal.user_id {
             return Err(CreditCardError::InvariantViolation(
                 "credit card does not belong to owner".into(),
             ));
@@ -212,6 +212,7 @@ mod tests {
     use super::*;
     use crate::provider::id::{MockIdGenerator, UuidGenerator};
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::{MockCreditCardRepository, MockInvoiceRepository};
     use crate::shared::money::Currency;
 
@@ -265,7 +266,7 @@ mod tests {
 
         let result = handler
             .handle(RegisterPurchaseCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 description: "Netflix".into(),
                 total_amount: Money::from_cents(5000, Currency::BRL),
@@ -297,7 +298,7 @@ mod tests {
 
         let result = handler
             .handle(RegisterPurchaseCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 description: "TV".into(),
                 total_amount: Money::from_cents(9000, Currency::BRL),
@@ -368,7 +369,7 @@ mod tests {
         // 1000 / 3 = 333 * 3 = 999, remainder = 1
         let result = handler
             .handle(RegisterPurchaseCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 description: "Something".into(),
                 total_amount: Money::from_cents(1000, Currency::BRL),
@@ -418,11 +419,11 @@ mod tests {
         let card_id = CreditCardID::new();
         make_card(&cc_repo, owner, card_id).await;
 
-        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo, publisher, id_gen);
+        let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo.clone(), publisher, id_gen);
 
         let result = handler
             .handle(RegisterPurchaseCommand {
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
                 credit_card_id: card_id,
                 description: "Hack".into(),
                 total_amount: Money::from_cents(5000, Currency::BRL),
@@ -449,7 +450,7 @@ mod tests {
 
         let result = handler
             .handle(RegisterPurchaseCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 description: "Bad".into(),
                 total_amount: Money::from_cents(5000, Currency::BRL),
@@ -476,7 +477,7 @@ mod tests {
 
         let result = handler
             .handle(RegisterPurchaseCommand {
-                owner_id: owner,
+                principal: Principal::new(owner),
                 credit_card_id: card_id,
                 description: "Annual thing".into(),
                 total_amount: Money::from_cents(12000, Currency::BRL),

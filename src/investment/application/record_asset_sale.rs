@@ -7,11 +7,12 @@ use crate::investment::domain::events::AssetSold;
 use crate::investment::domain::repository::PortfolioRepository;
 use crate::shared::errors::InvestmentError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AssetID, PortfolioID};
+use crate::shared::ids::{AssetID, PortfolioID, Principal};
 use crate::shared::money::Money;
 
 /// Command to record the sale of an asset from a portfolio.
 pub struct RecordSellCommand {
+    pub principal: Principal,
     /// The portfolio to sell from.
     pub portfolio_id: PortfolioID,
     /// The asset being sold.
@@ -60,6 +61,13 @@ impl<P: PortfolioRepository, EP: EventPublisher> RecordSellHandler<P, EP> {
             .await?
             .ok_or_else(|| InvestmentError::PortfolioNotFound(cmd.portfolio_id.to_string()))?;
 
+        if portfolio.owner_id != cmd.principal.user_id {
+            return Err(InvestmentError::InvariantViolation(format!(
+                "portfolio {} does not belong to user {}",
+                cmd.portfolio_id, cmd.principal.user_id,
+            )));
+        }
+
         portfolio.record_sell(cmd.asset_id, cmd.quantity, cmd.price)?;
 
         self.portfolio_repository.save(&portfolio).await?;
@@ -96,9 +104,10 @@ mod tests {
         Money::from_cents(amount, Currency::BRL)
     }
 
-    async fn setup_with_position() -> Arc<MockPortfolioRepository> {
+    async fn setup_with_position() -> (Arc<MockPortfolioRepository>, UserID) {
         let repo = Arc::new(MockPortfolioRepository::new());
-        let mut portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let owner = UserID::new();
+        let mut portfolio = Portfolio::new(PortfolioID::new(), owner);
         portfolio
             .record_buy(
                 AssetID::new(),
@@ -108,18 +117,19 @@ mod tests {
             )
             .unwrap();
         repo.save(&portfolio).await.unwrap();
-        repo
+        (repo, owner)
     }
 
     #[tokio::test]
     async fn test_record_sell_success() {
-        let repo = setup_with_position().await;
+        let (repo, owner) = setup_with_position().await;
         let portfolio = repo.find_all().await.unwrap().into_iter().next().unwrap();
         let asset_id = portfolio.positions[0].asset_id;
 
         let handler = RecordSellHandler::new(repo, Arc::new(InMemoryEventDispatcher::new()));
 
         let cmd = RecordSellCommand {
+            principal: Principal::new(owner),
             portfolio_id: portfolio.id,
             asset_id,
             quantity: Decimal::from(5),
@@ -131,7 +141,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_record_sell_full_position() {
-        let repo = setup_with_position().await;
+        let (repo, owner) = setup_with_position().await;
         let portfolio = repo.find_all().await.unwrap().into_iter().next().unwrap();
         let asset_id = portfolio.positions[0].asset_id;
 
@@ -139,6 +149,7 @@ mod tests {
             RecordSellHandler::new(repo.clone(), Arc::new(InMemoryEventDispatcher::new()));
 
         let cmd = RecordSellCommand {
+            principal: Principal::new(owner),
             portfolio_id: portfolio.id,
             asset_id,
             quantity: Decimal::from(10),
@@ -153,13 +164,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_record_sell_insufficient_quantity() {
-        let repo = setup_with_position().await;
+        let (repo, owner) = setup_with_position().await;
         let portfolio = repo.find_all().await.unwrap().into_iter().next().unwrap();
         let asset_id = portfolio.positions[0].asset_id;
 
         let handler = RecordSellHandler::new(repo, Arc::new(InMemoryEventDispatcher::new()));
 
         let cmd = RecordSellCommand {
+            principal: Principal::new(owner),
             portfolio_id: portfolio.id,
             asset_id,
             quantity: Decimal::from(20),
@@ -181,6 +193,7 @@ mod tests {
         );
 
         let cmd = RecordSellCommand {
+            principal: Principal::new(UserID::new()),
             portfolio_id: PortfolioID::new(),
             asset_id: AssetID::new(),
             quantity: Decimal::from(5),

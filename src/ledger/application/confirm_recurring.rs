@@ -4,11 +4,12 @@ use crate::ledger::domain::transaction::Transaction;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{RecurringTransactionID, TransactionID};
+use crate::shared::ids::{Principal, RecurringTransactionID, TransactionID};
 use std::sync::Arc;
 
 /// Command to confirm a due recurring transaction and generate a concrete transaction.
 pub struct ConfirmRecurringCommand {
+    pub principal: Principal,
     pub recurring_transaction_id: RecurringTransactionID,
 }
 
@@ -58,6 +59,12 @@ impl<R: RecurringTransactionRepository, T: TransactionRepository, P: EventPublis
         if !recurring.active {
             return Err(LedgerError::InvariantViolation(
                 "recurring transaction is not active".into(),
+            ));
+        }
+
+        if recurring.owner_id != cmd.principal.user_id {
+            return Err(LedgerError::Forbidden(
+                "not the owner of this recurring transaction".into(),
             ));
         }
 
@@ -119,7 +126,7 @@ mod tests {
     use crate::ledger::domain::transaction::TransactionType;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::{AccountID, CategoryID, UserID};
+    use crate::shared::ids::{AccountID, CategoryID, Principal, UserID};
     use crate::shared::mock::{MockRecurringTransactionRepository, MockTransactionRepository};
     use crate::shared::money::{Currency, Money};
 
@@ -131,9 +138,10 @@ mod tests {
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
 
         let recurring_id = RecurringTransactionID::new();
+        let principal = Principal::new(UserID::new());
         let r = RecurringTransaction::new(
             recurring_id,
-            UserID::new(),
+            principal.user_id,
             AccountID::new(),
             TransactionType::Expense,
             Money::from_cents(5000, Currency::BRL),
@@ -150,6 +158,7 @@ mod tests {
 
         let tx_id = handler
             .handle(ConfirmRecurringCommand {
+                principal,
                 recurring_transaction_id: recurring_id,
             })
             .await
@@ -194,6 +203,7 @@ mod tests {
 
         let result = handler
             .handle(ConfirmRecurringCommand {
+                principal: Principal::new(UserID::new()),
                 recurring_transaction_id: recurring_id,
             })
             .await;

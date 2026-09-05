@@ -9,13 +9,13 @@ use crate::bills::domain::repository::BillRepository;
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::BillsError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{BillID, CategoryID, UserID};
+use crate::shared::ids::{BillID, CategoryID, Principal};
 use crate::shared::money::Money;
 
 /// Command to schedule a new bill (recurring or one-time).
 pub struct ScheduleBillCommand {
     /// The user who owns this bill.
-    pub owner_id: UserID,
+    pub principal: Principal,
     /// Human-readable bill name (e.g. "Internet", "Rent").
     pub name: String,
     /// Monetary amount, or `None` for variable-amount bills.
@@ -57,7 +57,7 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> ScheduleBillHandler<B
 
         let bill = Bill::new(
             id,
-            cmd.owner_id,
+            cmd.principal.user_id,
             cmd.name.clone(),
             cmd.amount,
             cmd.due_date,
@@ -86,6 +86,7 @@ mod tests {
     use crate::bills::domain::bill::{BillStatus, RecurrenceRule};
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::UserID;
     use crate::shared::mock::MockBillRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -107,7 +108,7 @@ mod tests {
         let handler = ScheduleBillHandler::new(repo.clone(), publisher.clone(), id_gen);
 
         let cmd = ScheduleBillCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "Internet".into(),
             amount: Some(Money::from_cents(99_90, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
@@ -130,7 +131,7 @@ mod tests {
         let handler = ScheduleBillHandler::new(repo.clone(), publisher, id_gen);
 
         let cmd = ScheduleBillCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "Variable bill".into(),
             amount: None,
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 15).unwrap(),
@@ -150,7 +151,7 @@ mod tests {
         let handler = ScheduleBillHandler::new(repo.clone(), publisher, id_gen);
 
         let cmd = ScheduleBillCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "One-time fee".into(),
             amount: Some(Money::from_cents(50_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),
@@ -169,7 +170,7 @@ mod tests {
         let handler = ScheduleBillHandler::new(repo.clone(), publisher, id_gen);
 
         let cmd = ScheduleBillCommand {
-            owner_id: UserID::new(),
+            principal: Principal::new(UserID::new()),
             name: "Weekly cleaning".into(),
             amount: Some(Money::from_cents(30_00, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 7).unwrap(),

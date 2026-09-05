@@ -5,12 +5,12 @@ use crate::ledger::domain::events::{AccountRenamed, AccountTypeChanged};
 use crate::ledger::domain::repository::AccountRepository;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, UserID};
+use crate::shared::ids::{AccountID, Principal};
 
 /// Command to update an account's name and/or type.
 pub struct UpdateAccountCommand {
+    pub principal: Principal,
     pub account_id: AccountID,
-    pub owner_id: UserID,
     pub new_name: Option<String>,
     pub new_type: Option<AccountType>,
 }
@@ -37,7 +37,7 @@ impl<A: AccountRepository, P: EventPublisher> UpdateAccountHandler<A, P> {
             .await?
             .ok_or_else(|| LedgerError::AccountNotFound(cmd.account_id.to_string()))?;
 
-        if account.owner_id != cmd.owner_id {
+        if account.owner_id != cmd.principal.user_id {
             return Err(LedgerError::Forbidden(
                 "not the owner of this account".into(),
             ));
@@ -89,6 +89,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::account::Account;
     use crate::shared::events::InMemoryEventDispatcher;
+    use crate::shared::ids::{Principal, UserID};
     use crate::shared::mock::MockAccountRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -96,14 +97,14 @@ mod tests {
         Arc<MockAccountRepository>,
         Arc<InMemoryEventDispatcher>,
         AccountID,
-        UserID,
+        Principal,
     ) {
         let repo = Arc::new(MockAccountRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
-        let owner = UserID::new();
+        let owner = Principal::new(UserID::new());
         let account = Account::new(
             AccountID::new(),
-            owner,
+            owner.user_id,
             "Checking".into(),
             AccountType::Checking,
             Currency::BRL,
@@ -122,7 +123,7 @@ mod tests {
         handler
             .handle(UpdateAccountCommand {
                 account_id: id,
-                owner_id: owner,
+                principal: owner,
                 new_name: Some("New Name".into()),
                 new_type: None,
             })
@@ -137,7 +138,7 @@ mod tests {
         let result = handler
             .handle(UpdateAccountCommand {
                 account_id: id,
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
                 new_name: Some("Hacked".into()),
                 new_type: None,
             })

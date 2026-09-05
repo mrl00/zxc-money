@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use crate::ledger::domain::repository::TagRepository;
 use crate::shared::errors::LedgerError;
-use crate::shared::ids::{TagID, UserID};
+use crate::shared::ids::{Principal, TagID};
 
 /// Command to create a new tag (or find an existing one by name).
 pub struct CreateTagCommand {
-    pub owner_id: UserID,
+    pub principal: Principal,
     pub name: String,
 }
 

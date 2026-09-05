@@ -6,24 +6,24 @@ use crate::ledger::domain::events::{
 use crate::ledger::domain::repository::RecurringTransactionRepository;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{RecurringTransactionID, UserID};
+use crate::shared::ids::{Principal, RecurringTransactionID};
 
 /// Command to pause a recurring transaction.
 pub struct PauseRecurringCommand {
     pub recurring_id: RecurringTransactionID,
-    pub owner_id: UserID,
+    pub principal: Principal,
 }
 
 /// Command to resume a paused recurring transaction.
 pub struct ResumeRecurringCommand {
     pub recurring_id: RecurringTransactionID,
-    pub owner_id: UserID,
+    pub principal: Principal,
 }
 
 /// Command to cancel a recurring transaction.
 pub struct CancelRecurringCommand {
     pub recurring_id: RecurringTransactionID,
-    pub owner_id: UserID,
+    pub principal: Principal,
 }
 
 /// Handler for pause/resume/cancel operations on recurring transactions.
@@ -50,7 +50,7 @@ impl<R: RecurringTransactionRepository, P: EventPublisher> UpdateRecurringHandle
                 LedgerError::RecurringTransactionNotFound(cmd.recurring_id.to_string())
             })?;
 
-        if recurring.owner_id != cmd.owner_id {
+        if recurring.owner_id != cmd.principal.user_id {
             return Err(LedgerError::Forbidden(
                 "not the owner of this recurring transaction".into(),
             ));
@@ -81,7 +81,7 @@ impl<R: RecurringTransactionRepository, P: EventPublisher> UpdateRecurringHandle
                 LedgerError::RecurringTransactionNotFound(cmd.recurring_id.to_string())
             })?;
 
-        if recurring.owner_id != cmd.owner_id {
+        if recurring.owner_id != cmd.principal.user_id {
             return Err(LedgerError::Forbidden(
                 "not the owner of this recurring transaction".into(),
             ));
@@ -112,7 +112,7 @@ impl<R: RecurringTransactionRepository, P: EventPublisher> UpdateRecurringHandle
                 LedgerError::RecurringTransactionNotFound(cmd.recurring_id.to_string())
             })?;
 
-        if recurring.owner_id != cmd.owner_id {
+        if recurring.owner_id != cmd.principal.user_id {
             return Err(LedgerError::Forbidden(
                 "not the owner of this recurring transaction".into(),
             ));
@@ -140,7 +140,7 @@ mod tests {
     use crate::ledger::domain::recurring_transaction::{Frequency, RecurringTransaction};
     use crate::ledger::domain::transaction::TransactionType;
     use crate::shared::events::InMemoryEventDispatcher;
-    use crate::shared::ids::AccountID;
+    use crate::shared::ids::{AccountID, Principal, UserID};
     use crate::shared::mock::MockRecurringTransactionRepository;
     use crate::shared::money::{Currency, Money};
 
@@ -164,6 +164,7 @@ mod tests {
         let repo = Arc::new(MockRecurringTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let owner = UserID::new();
+        let _principal = Principal::new(owner);
 
         let recurring = make_recurring(owner);
         let id = recurring.id;
@@ -175,7 +176,7 @@ mod tests {
         handler
             .pause(PauseRecurringCommand {
                 recurring_id: id,
-                owner_id: owner,
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();
@@ -186,7 +187,7 @@ mod tests {
         handler
             .resume(ResumeRecurringCommand {
                 recurring_id: id,
-                owner_id: owner,
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();
@@ -197,7 +198,7 @@ mod tests {
         handler
             .cancel(CancelRecurringCommand {
                 recurring_id: id,
-                owner_id: owner,
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();
@@ -219,7 +220,7 @@ mod tests {
         let result = handler
             .pause(PauseRecurringCommand {
                 recurring_id: id,
-                owner_id: UserID::new(),
+                principal: Principal::new(UserID::new()),
             })
             .await;
         assert!(matches!(result, Err(LedgerError::Forbidden(_))));
