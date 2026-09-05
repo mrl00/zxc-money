@@ -34,6 +34,7 @@ use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
 use crate::shared::ids::{AccountID, RecurringTransactionID, TransactionID, UserID};
 use crate::shared::period::Period;
+use crate::shared::repository::IdempotencyRepository;
 
 use crate::ledger::domain::account::Account;
 use crate::ledger::domain::transaction::Transaction;
@@ -56,14 +57,15 @@ pub struct LedgerFacade<
     R: RecurringTransactionRepository,
     P: EventPublisher,
     I: IdGenerator,
+    ID: IdempotencyRepository,
 > {
     open_account: OpenAccountHandler<A, P, I>,
     update_account: UpdateAccountHandler<A, P>,
     delete_account: DeleteAccountHandler<A, T, P>,
-    record_transaction: RecordTransactionHandler<A, T, P, I>,
+    record_transaction: RecordTransactionHandler<A, T, P, I, ID>,
     update_transaction: UpdateTransactionHandler<T, P>,
     delete_transaction: DeleteTransactionHandler<T, P>,
-    transfer_funds: TransferFundsHandler<A, T, P, I>,
+    transfer_funds: TransferFundsHandler<A, T, P, I, ID>,
     reconcile_transaction: ReconcileTransactionHandler<T, P>,
     create_recurring: CreateRecurringTransactionHandler<R, P, I>,
     update_recurring: UpdateRecurringHandler<R, P>,
@@ -79,7 +81,8 @@ impl<
     R: RecurringTransactionRepository,
     P: EventPublisher,
     I: IdGenerator,
-> LedgerFacade<A, T, R, P, I>
+    ID: IdempotencyRepository,
+> LedgerFacade<A, T, R, P, I, ID>
 {
     /// Creates a new facade with shared dependencies.
     pub fn new(
@@ -88,6 +91,7 @@ impl<
         recurring_repository: Arc<R>,
         event_publisher: Arc<P>,
         id_generator: Arc<I>,
+        idempotency_repository: Arc<ID>,
     ) -> Self {
         Self {
             open_account: OpenAccountHandler::new(
@@ -109,6 +113,7 @@ impl<
                 transaction_repository.clone(),
                 event_publisher.clone(),
                 id_generator.clone(),
+                idempotency_repository.clone(),
             ),
             update_transaction: UpdateTransactionHandler::new(
                 transaction_repository.clone(),
@@ -123,6 +128,7 @@ impl<
                 transaction_repository.clone(),
                 event_publisher.clone(),
                 id_generator.clone(),
+                idempotency_repository,
             ),
             reconcile_transaction: ReconcileTransactionHandler::new(
                 transaction_repository.clone(),

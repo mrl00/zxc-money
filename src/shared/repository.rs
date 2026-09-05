@@ -7,6 +7,7 @@
 use async_trait::async_trait;
 
 use super::errors::RepositoryError;
+use super::ids::IdempotencyKey;
 
 /// Generic async CRUD repository trait.
 ///
@@ -43,4 +44,18 @@ pub trait UnitOfWork: Send + Sync {
     where
         F: FnOnce() -> Fut + Send,
         Fut: std::future::Future<Output = Result<T, RepositoryError>> + Send;
+}
+
+/// Port for idempotency tracking on sensitive commands.
+///
+/// Ensures that a command with a given [`IdempotencyKey`] is processed
+/// at most once. Adapters implement this with a persistent store;
+/// the in-memory [`super::mock::MockIdempotencyRepository`] is used
+/// for testing.
+#[async_trait]
+pub trait IdempotencyRepository: Send + Sync {
+    /// Returns `true` if the key has already been used.
+    async fn exists(&self, key: IdempotencyKey) -> Result<bool, RepositoryError>;
+    /// Marks the key as used. Must be called after successful processing.
+    async fn mark_used(&self, key: IdempotencyKey) -> Result<(), RepositoryError>;
 }
