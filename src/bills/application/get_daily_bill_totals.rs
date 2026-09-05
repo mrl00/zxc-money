@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use crate::bills::projections::bill_calendar::{BillCalendarStore, DayBillTotal};
+use crate::shared::ids::Principal;
 
 /// Query to retrieve the total pending amount per day in a given month.
 pub struct GetDailyBillTotalsQuery {
+    pub principal: Principal,
     /// Calendar year (e.g. `2026`).
     pub year: i32,
     /// Calendar month (1–12).
@@ -26,7 +28,8 @@ impl GetDailyBillTotalsHandler {
 
     /// Executes the query and returns [`DayBillTotal`] items sorted by date.
     pub async fn handle(&self, query: GetDailyBillTotalsQuery) -> Vec<DayBillTotal> {
-        self.calendar_store.daily_totals(query.year, query.month)
+        self.calendar_store
+            .daily_totals(query.principal.user_id, query.year, query.month)
     }
 }
 
@@ -34,16 +37,18 @@ impl GetDailyBillTotalsHandler {
 mod tests {
     use super::*;
     use crate::bills::domain::events::BillScheduled;
-    use crate::shared::ids::BillID;
+    use crate::shared::ids::{BillID, Principal, UserID};
     use crate::shared::money::{Currency, Money};
 
     #[tokio::test]
     async fn test_get_daily_bill_totals() {
         let store = Arc::new(BillCalendarStore::new());
         let handler = GetDailyBillTotalsHandler::new(store.clone());
+        let owner = UserID::new();
 
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
+            owner_id: owner,
             name: "Bill A".into(),
             amount: Some(Money::from_cents(10000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -52,6 +57,7 @@ mod tests {
 
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
+            owner_id: owner,
             name: "Bill B".into(),
             amount: Some(Money::from_cents(20000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -60,6 +66,7 @@ mod tests {
 
         let result = handler
             .handle(GetDailyBillTotalsQuery {
+                principal: Principal::new(owner),
                 year: 2026,
                 month: 4,
             })
@@ -75,6 +82,7 @@ mod tests {
 
         let result = handler
             .handle(GetDailyBillTotalsQuery {
+                principal: Principal::new(UserID::new()),
                 year: 2026,
                 month: 7,
             })

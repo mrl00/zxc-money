@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::reporting::projections::cash_flow::CashFlowStore;
+use crate::shared::ids::Principal;
 use crate::shared::money::Money;
 use crate::shared::period::YearMonth;
 
@@ -16,6 +17,7 @@ pub struct MonthSummary {
 
 /// Query to compare two months side by side.
 pub struct GetMonthComparisonQuery {
+    pub principal: Principal,
     pub left: (i32, u32),
     pub right: (i32, u32),
 }
@@ -68,7 +70,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
-    use crate::shared::ids::{AccountID, CategoryID, TransactionID};
+    use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
     use crate::shared::money::Currency;
 
     #[test]
@@ -81,6 +83,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Income,
                 amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -95,6 +98,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Expense,
                 amount: Money::from_cents(300000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -110,6 +114,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Income,
                 amount: Money::from_cents(600000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -124,6 +129,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Expense,
                 amount: Money::from_cents(200000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -135,6 +141,7 @@ mod tests {
         );
 
         let (jan, feb) = handler.handle(GetMonthComparisonQuery {
+            principal: Principal::new(UserID::new()),
             left: (2026, 1),
             right: (2026, 2),
         });
@@ -172,6 +179,7 @@ mod tests {
         let handler = GetMonthComparisonHandler::new(store);
 
         let (left, right) = handler.handle(GetMonthComparisonQuery {
+            principal: Principal::new(UserID::new()),
             left: (2026, 1),
             right: (2026, 6),
         });

@@ -99,6 +99,7 @@ impl crate::shared::events::DomainEvent for AccountDeleted {
 pub struct TransactionRecorded {
     pub transaction_id: TransactionID,
     pub account_id: AccountID,
+    pub owner_id: UserID,
     pub tx_type: crate::ledger::domain::transaction::TransactionType,
     pub amount: Money,
     pub category_id: Option<CategoryID>,

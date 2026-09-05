@@ -15,9 +15,10 @@ pub trait BudgetRepository: Send + Sync {
     async fn find_by_id(&self, id: BudgetID) -> Result<Option<Budget>, RepositoryError>;
     /// Retrieves all budgets belonging to a specific user.
     async fn find_by_owner(&self, owner: UserID) -> Result<Vec<Budget>, RepositoryError>;
-    /// Retrieves the budget for a specific category and period, if any.
+    /// Retrieves the budget for a specific category, period, and owner, if any.
     async fn find_by_category_and_period(
         &self,
+        owner: UserID,
         category_id: crate::shared::ids::CategoryID,
         period: Period,
     ) -> Result<Option<Budget>, RepositoryError>;

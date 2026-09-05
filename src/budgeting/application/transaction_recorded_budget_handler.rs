@@ -47,7 +47,7 @@ impl<B: BudgetRepository, P: EventPublisher> TransactionRecordedBudgetHandler<B,
 
         let budget = self
             .budget_repository
-            .find_by_category_and_period(category_id, period)
+            .find_by_category_and_period(event.owner_id, category_id, period)
             .await?;
 
         let budget = match budget {
@@ -125,6 +125,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(50000, Currency::BRL),
             category_id: Some(category_id),
@@ -148,6 +149,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(60000, Currency::BRL),
             category_id: Some(category_id),
@@ -171,6 +173,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: TransactionType::Income,
             amount: Money::from_cents(500000, Currency::BRL),
             category_id: Some(category_id),
@@ -193,6 +196,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(60000, Currency::BRL),
             category_id: None,
@@ -215,6 +219,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(50000, Currency::BRL),
             category_id: Some(category_id),

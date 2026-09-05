@@ -5,12 +5,13 @@ use crate::ledger::domain::events::TransactionRecorded;
 use crate::ledger::domain::transaction::TransactionType;
 use crate::reporting::projections::account_balance::CategoryReport;
 use crate::shared::events::DomainEvent;
-use crate::shared::ids::CategoryID;
+use crate::shared::ids::{CategoryID, Principal};
 use crate::shared::money::Money;
 use crate::shared::period::Period;
 
 /// Query to get spending breakdown by category within a date range.
 pub struct GetCategoryReportQuery {
+    pub principal: Principal,
     pub from: chrono::NaiveDate,
     pub to: chrono::NaiveDate,
 }
@@ -70,7 +71,7 @@ impl GetCategoryReportHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::ids::{AccountID, TransactionID};
+    use crate::shared::ids::{AccountID, TransactionID, UserID};
     use crate::shared::money::Currency;
 
     fn expense_event(
@@ -81,6 +82,7 @@ mod tests {
         Box::new(TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(amount, Currency::BRL),
             category_id: Some(cat),
@@ -115,6 +117,7 @@ mod tests {
 
         let handler = GetCategoryReportHandler::new(Arc::new(events));
         let reports = handler.handle(GetCategoryReportQuery {
+            principal: Principal::new(UserID::new()),
             from: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             to: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
         });
@@ -150,6 +153,7 @@ mod tests {
 
         let handler = GetCategoryReportHandler::new(Arc::new(events));
         let reports = handler.handle(GetCategoryReportQuery {
+            principal: Principal::new(UserID::new()),
             from: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             to: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
         });
@@ -168,6 +172,7 @@ mod tests {
         let events: Vec<Box<dyn DomainEvent + Send + Sync>> = vec![Box::new(TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Income,
             amount: Money::from_cents(500000, Currency::BRL),
             category_id: Some(cat),
@@ -178,6 +183,7 @@ mod tests {
 
         let handler = GetCategoryReportHandler::new(Arc::new(events));
         let reports = handler.handle(GetCategoryReportQuery {
+            principal: Principal::new(UserID::new()),
             from: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             to: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
         });

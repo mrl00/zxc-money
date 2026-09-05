@@ -55,7 +55,7 @@ impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator> CreateAnnualBudget
 
             let existing = self
                 .budget_repository
-                .find_by_category_and_period(cmd.category_id, period)
+                .find_by_category_and_period(cmd.principal.user_id, cmd.category_id, period)
                 .await?;
 
             if existing.is_some() {

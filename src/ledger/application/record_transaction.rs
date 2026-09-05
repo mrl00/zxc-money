@@ -124,6 +124,7 @@ impl<
         let event = TransactionRecorded {
             transaction_id: id,
             account_id: cmd.account_id,
+            owner_id: account.owner_id,
             tx_type: cmd.tx_type,
             amount: cmd.amount,
             category_id,

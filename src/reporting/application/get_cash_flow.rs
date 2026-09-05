@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use crate::reporting::projections::account_balance::CashFlowEntry;
 use crate::reporting::projections::cash_flow::CashFlowStore;
+use crate::shared::ids::Principal;
 use crate::shared::period::{Period, YearMonth};
 
 /// Query to get cash flow entries for the last N months.
 pub struct GetCashFlowQuery {
+    pub principal: Principal,
     pub months_back: u32,
 }
 
@@ -44,7 +46,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
-    use crate::shared::ids::{AccountID, CategoryID, TransactionID};
+    use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
     use crate::shared::money::{Currency, Money};
 
     fn add_expense(store: &CashFlowStore, date: chrono::NaiveDate, amount: i64) {
@@ -52,6 +54,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Expense,
                 amount: Money::from_cents(amount, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -79,7 +82,10 @@ mod tests {
             20000,
         );
 
-        let entries = handler.handle(GetCashFlowQuery { months_back: 1 });
+        let entries = handler.handle(GetCashFlowQuery {
+            principal: Principal::new(UserID::new()),
+            months_back: 1,
+        });
         // Should only include July entries (current month is Aug 2026)
         // Actually depends on current date. Let's just verify it doesn't panic.
         assert!(!entries.is_empty() || entries.is_empty()); // Just verify it compiles
@@ -90,7 +96,10 @@ mod tests {
         let store = Arc::new(CashFlowStore::new());
         let handler = GetCashFlowHandler::new(store);
 
-        let entries = handler.handle(GetCashFlowQuery { months_back: 3 });
+        let entries = handler.handle(GetCashFlowQuery {
+            principal: Principal::new(UserID::new()),
+            months_back: 3,
+        });
         assert!(entries.is_empty());
     }
 }

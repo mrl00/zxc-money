@@ -134,6 +134,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
+            owner_id: UserID::new(),
             amount: Some(Money::from_cents(99_90, Currency::BRL)),
             account_id,
             category_id: CategoryID::new(),
@@ -162,6 +163,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
+            owner_id: UserID::new(),
             amount: None,
             account_id,
             category_id: CategoryID::new(),
@@ -180,6 +182,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
+            owner_id: UserID::new(),
             amount: Some(Money::from_cents(5000, Currency::BRL)),
             account_id: AccountID::new(),
             category_id: CategoryID::new(),
@@ -199,6 +202,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
+            owner_id: UserID::new(),
             amount: Some(Money::from_cents(5000, Currency::USD)),
             account_id,
             category_id: CategoryID::new(),
@@ -219,6 +223,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
+            owner_id: UserID::new(),
             amount: Some(Money::from_cents(20000, Currency::BRL)),
             account_id,
             category_id: category,

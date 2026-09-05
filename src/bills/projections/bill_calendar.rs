@@ -5,7 +5,7 @@ use chrono::{Datelike, NaiveDate};
 
 use crate::bills::domain::bill::BillStatus;
 use crate::bills::domain::events::{BillPaid, BillScheduled};
-use crate::shared::ids::BillID;
+use crate::shared::ids::{BillID, UserID};
 use crate::shared::money::Money;
 
 /// A single bill entry in the calendar view.
@@ -13,6 +13,8 @@ use crate::shared::money::Money;
 pub struct BillCalendarEntry {
     /// The bill's unique identifier.
     pub bill_id: BillID,
+    /// Owner of the bill.
+    pub owner_id: UserID,
     /// Human-readable bill name.
     pub name: String,
     /// Monetary amount, or `None` for variable-amount bills.
@@ -66,6 +68,7 @@ impl BillCalendarStore {
             event.bill_id,
             BillCalendarEntry {
                 bill_id: event.bill_id,
+                owner_id: event.owner_id,
                 name: event.name.clone(),
                 amount: event.amount,
                 due_date: event.due_date,
@@ -86,11 +89,13 @@ impl BillCalendarStore {
     }
 
     /// Returns all bills due in the given month, regardless of status.
-    pub fn find_by_month(&self, year: i32, month: u32) -> Vec<BillCalendarEntry> {
+    pub fn find_by_month(&self, owner: UserID, year: i32, month: u32) -> Vec<BillCalendarEntry> {
         let entries = self.entries.lock().unwrap();
         entries
             .values()
-            .filter(|e| e.due_date.year() == year && e.due_date.month() == month)
+            .filter(|e| {
+                e.owner_id == owner && e.due_date.year() == year && e.due_date.month() == month
+            })
             .cloned()
             .collect()
     }
@@ -99,12 +104,13 @@ impl BillCalendarStore {
     ///
     /// Only includes bills with `Pending` status that have a
     /// non-`None` amount. Results are sorted chronologically.
-    pub fn daily_totals(&self, year: i32, month: u32) -> Vec<DayBillTotal> {
+    pub fn daily_totals(&self, owner: UserID, year: i32, month: u32) -> Vec<DayBillTotal> {
         let entries = self.entries.lock().unwrap();
         let mut totals: HashMap<NaiveDate, rust_decimal::Decimal> = HashMap::new();
 
         for entry in entries.values() {
-            if entry.due_date.year() == year
+            if entry.owner_id == owner
+                && entry.due_date.year() == year
                 && entry.due_date.month() == month
                 && entry.status == BillStatus::Pending
                 && let Some(amount) = entry.amount
@@ -129,7 +135,7 @@ impl BillCalendarStore {
     /// Returns pending bills due within the next `days` days from today.
     ///
     /// Excludes bills that have already been paid or are overdue.
-    pub fn find_upcoming(&self, days: i64) -> Vec<BillCalendarEntry> {
+    pub fn find_upcoming(&self, owner: UserID, days: i64) -> Vec<BillCalendarEntry> {
         let entries = self.entries.lock().unwrap();
         let today = chrono::Utc::now().date_naive();
         let limit = today + chrono::Duration::days(days);
@@ -137,7 +143,10 @@ impl BillCalendarStore {
         entries
             .values()
             .filter(|e| {
-                e.status == BillStatus::Pending && e.due_date >= today && e.due_date <= limit
+                e.owner_id == owner
+                    && e.status == BillStatus::Pending
+                    && e.due_date >= today
+                    && e.due_date <= limit
             })
             .cloned()
             .collect()
@@ -151,6 +160,7 @@ mod tests {
     use crate::shared::money::{Currency, Money};
 
     fn make_event(
+        owner_id: UserID,
         bill_id: BillID,
         name: &str,
         amount: Option<Money>,
@@ -158,6 +168,7 @@ mod tests {
     ) -> BillScheduled {
         BillScheduled {
             bill_id,
+            owner_id,
             name: name.into(),
             amount,
             due_date,
@@ -169,7 +180,9 @@ mod tests {
     fn test_handle_bill_scheduled() {
         let store = BillCalendarStore::new();
         let id = BillID::new();
+        let owner = UserID::new();
         let event = make_event(
+            owner,
             id,
             "Rent",
             Some(Money::from_cents(150000, Currency::BRL)),
@@ -178,7 +191,7 @@ mod tests {
 
         store.handle_bill_scheduled(&event);
 
-        let entries = store.find_by_month(2026, 3);
+        let entries = store.find_by_month(owner, 2026, 3);
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "Rent");
         assert_eq!(entries[0].status, BillStatus::Pending);
@@ -188,7 +201,9 @@ mod tests {
     fn test_handle_bill_paid() {
         let store = BillCalendarStore::new();
         let id = BillID::new();
+        let owner = UserID::new();
         let event = make_event(
+            owner,
             id,
             "Internet",
             Some(Money::from_cents(99_90, Currency::BRL)),
@@ -199,6 +214,7 @@ mod tests {
 
         let paid = BillPaid {
             bill_id: id,
+            owner_id: owner,
             amount: Some(Money::from_cents(99_90, Currency::BRL)),
             account_id: crate::shared::ids::AccountID::new(),
             category_id: CategoryID::new(),
@@ -206,35 +222,39 @@ mod tests {
         };
         store.handle_bill_paid(&paid);
 
-        let entries = store.find_by_month(2026, 2);
+        let entries = store.find_by_month(owner, 2026, 2);
         assert_eq!(entries[0].status, BillStatus::Paid);
     }
 
     #[test]
     fn test_find_by_month_filters_correctly() {
         let store = BillCalendarStore::new();
+        let owner = UserID::new();
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Jan bill",
             None,
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Feb bill",
             None,
             chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Jan bill 2",
             None,
             chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
         ));
 
-        let jan = store.find_by_month(2026, 1);
+        let jan = store.find_by_month(owner, 2026, 1);
         assert_eq!(jan.len(), 2);
-        let feb = store.find_by_month(2026, 2);
+        let feb = store.find_by_month(owner, 2026, 2);
         assert_eq!(feb.len(), 1);
     }
 
@@ -243,14 +263,17 @@ mod tests {
         let store = BillCalendarStore::new();
         let id1 = BillID::new();
         let id2 = BillID::new();
+        let owner = UserID::new();
 
         store.handle_bill_scheduled(&make_event(
+            owner,
             id1,
             "Paid bill",
             Some(Money::from_cents(10000, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             id2,
             "Pending bill",
             Some(Money::from_cents(20000, Currency::BRL)),
@@ -259,6 +282,7 @@ mod tests {
 
         let paid = BillPaid {
             bill_id: id1,
+            owner_id: owner,
             amount: Some(Money::from_cents(10000, Currency::BRL)),
             account_id: crate::shared::ids::AccountID::new(),
             category_id: CategoryID::new(),
@@ -266,7 +290,7 @@ mod tests {
         };
         store.handle_bill_paid(&paid);
 
-        let totals = store.daily_totals(2026, 4);
+        let totals = store.daily_totals(owner, 2026, 4);
         assert_eq!(totals.len(), 1);
         assert_eq!(totals[0].total, Money::from_cents(20000, Currency::BRL));
     }
@@ -274,26 +298,30 @@ mod tests {
     #[test]
     fn test_daily_totals_groups_by_date() {
         let store = BillCalendarStore::new();
+        let owner = UserID::new();
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Bill A",
             Some(Money::from_cents(5000, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 10).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Bill B",
             Some(Money::from_cents(7500, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 10).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Bill C",
             Some(Money::from_cents(3000, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 15).unwrap(),
         ));
 
-        let totals = store.daily_totals(2026, 5);
+        let totals = store.daily_totals(owner, 2026, 5);
         assert_eq!(totals.len(), 2);
         assert_eq!(totals[0].total, Money::from_cents(12500, Currency::BRL));
         assert_eq!(totals[1].total, Money::from_cents(3000, Currency::BRL));
@@ -303,27 +331,31 @@ mod tests {
     fn test_find_upcoming() {
         let store = BillCalendarStore::new();
         let today = chrono::Utc::now().date_naive();
+        let owner = UserID::new();
 
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Due tomorrow",
             None,
             today + chrono::Duration::days(1),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Due in 10 days",
             None,
             today + chrono::Duration::days(10),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Due in 30 days",
             None,
             today + chrono::Duration::days(30),
         ));
 
-        let upcoming = store.find_upcoming(7);
+        let upcoming = store.find_upcoming(owner, 7);
         assert_eq!(upcoming.len(), 1);
         assert_eq!(upcoming[0].name, "Due tomorrow");
     }
@@ -333,8 +365,10 @@ mod tests {
         let store = BillCalendarStore::new();
         let today = chrono::Utc::now().date_naive();
         let id = BillID::new();
+        let owner = UserID::new();
 
         store.handle_bill_scheduled(&make_event(
+            owner,
             id,
             "Paid bill",
             None,
@@ -343,6 +377,7 @@ mod tests {
 
         let paid = BillPaid {
             bill_id: id,
+            owner_id: owner,
             amount: None,
             account_id: crate::shared::ids::AccountID::new(),
             category_id: CategoryID::new(),
@@ -350,27 +385,30 @@ mod tests {
         };
         store.handle_bill_paid(&paid);
 
-        let upcoming = store.find_upcoming(7);
+        let upcoming = store.find_upcoming(owner, 7);
         assert_eq!(upcoming.len(), 0);
     }
 
     #[test]
     fn test_daily_totals_sorted_by_date() {
         let store = BillCalendarStore::new();
+        let owner = UserID::new();
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Later",
             Some(Money::from_cents(10000, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 6, 20).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
+            owner,
             BillID::new(),
             "Earlier",
             Some(Money::from_cents(5000, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 6, 5).unwrap(),
         ));
 
-        let totals = store.daily_totals(2026, 6);
+        let totals = store.daily_totals(owner, 2026, 6);
         assert!(totals[0].date < totals[1].date);
     }
 }

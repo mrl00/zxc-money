@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
 use crate::reporting::projections::cash_flow::CashFlowStore;
+use crate::shared::ids::Principal;
 use crate::shared::money::Money;
 use crate::shared::period::YearMonth;
 
 /// Query to get a monthly summary of income, expenses, and balance.
 pub struct GetMonthlySummaryQuery {
+    pub principal: Principal,
     pub year: i32,
     pub month: u32,
 }
@@ -62,7 +64,7 @@ mod tests {
     use super::*;
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
-    use crate::shared::ids::{AccountID, CategoryID, TransactionID};
+    use crate::shared::ids::{AccountID, CategoryID, Principal, TransactionID, UserID};
     use crate::shared::money::Currency;
 
     #[test]
@@ -75,6 +77,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Income,
                 amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -89,6 +92,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
+                owner_id: crate::shared::ids::UserID::new(),
                 tx_type: TransactionType::Expense,
                 amount: Money::from_cents(150000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -100,6 +104,7 @@ mod tests {
         );
 
         let summary = handler.handle(GetMonthlySummaryQuery {
+            principal: Principal::new(UserID::new()),
             year: 2026,
             month: 1,
         });
@@ -123,6 +128,7 @@ mod tests {
         let handler = GetMonthlySummaryHandler::new(store);
 
         let summary = handler.handle(GetMonthlySummaryQuery {
+            principal: Principal::new(UserID::new()),
             year: 2026,
             month: 3,
         });

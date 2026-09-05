@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::ledger::domain::events::TransactionRecorded;
 use crate::ledger::domain::transaction::TransactionType;
 use crate::shared::events::DomainEvent;
-use crate::shared::ids::TransactionID;
+use crate::shared::ids::{Principal, TransactionID};
 use crate::shared::money::Money;
 use crate::shared::period::Period;
 
@@ -18,6 +18,7 @@ pub struct TopExpenseEntry {
 
 /// Query to get the top N expenses within a date range.
 pub struct GetTopExpensesQuery {
+    pub principal: Principal,
     pub from: chrono::NaiveDate,
     pub to: chrono::NaiveDate,
     pub limit: usize,
@@ -67,13 +68,14 @@ impl GetTopExpensesHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::ids::{AccountID, CategoryID};
+    use crate::shared::ids::{AccountID, CategoryID, UserID};
     use crate::shared::money::Currency;
 
     fn expense_event(amount: i64, date: chrono::NaiveDate, desc: &str) -> Box<TransactionRecorded> {
         Box::new(TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(amount, Currency::BRL),
             category_id: Some(CategoryID::new()),
@@ -105,6 +107,7 @@ mod tests {
 
         let handler = GetTopExpensesHandler::new(Arc::new(events));
         let top = handler.handle(GetTopExpensesQuery {
+            principal: Principal::new(UserID::new()),
             from: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             to: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             limit: 2,
@@ -137,6 +140,7 @@ mod tests {
 
         let handler = GetTopExpensesHandler::new(Arc::new(events));
         let top = handler.handle(GetTopExpensesQuery {
+            principal: Principal::new(UserID::new()),
             from: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             to: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             limit: 1,

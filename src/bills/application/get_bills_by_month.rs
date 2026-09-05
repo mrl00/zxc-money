@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use crate::bills::projections::bill_calendar::{BillCalendarEntry, BillCalendarStore};
+use crate::shared::ids::Principal;
 
 /// Query to retrieve all bills due in a specific month.
 pub struct GetBillsByMonthQuery {
+    pub principal: Principal,
     /// Calendar year (e.g. `2026`).
     pub year: i32,
     /// Calendar month (1–12).
@@ -26,7 +28,8 @@ impl GetBillsByMonthHandler {
 
     /// Executes the query and returns matching [`BillCalendarEntry`] items.
     pub async fn handle(&self, query: GetBillsByMonthQuery) -> Vec<BillCalendarEntry> {
-        self.calendar_store.find_by_month(query.year, query.month)
+        self.calendar_store
+            .find_by_month(query.principal.user_id, query.year, query.month)
     }
 }
 
@@ -34,16 +37,18 @@ impl GetBillsByMonthHandler {
 mod tests {
     use super::*;
     use crate::bills::domain::events::BillScheduled;
-    use crate::shared::ids::BillID;
+    use crate::shared::ids::{BillID, Principal, UserID};
     use crate::shared::money::{Currency, Money};
 
     #[tokio::test]
     async fn test_get_bills_by_month() {
         let store = Arc::new(BillCalendarStore::new());
         let handler = GetBillsByMonthHandler::new(store.clone());
+        let owner = UserID::new();
 
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
+            owner_id: owner,
             name: "Rent".into(),
             amount: Some(Money::from_cents(150000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
@@ -52,6 +57,7 @@ mod tests {
 
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
+            owner_id: owner,
             name: "Internet".into(),
             amount: Some(Money::from_cents(99_90, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 10).unwrap(),
@@ -60,6 +66,7 @@ mod tests {
 
         let result = handler
             .handle(GetBillsByMonthQuery {
+                principal: Principal::new(owner),
                 year: 2026,
                 month: 3,
             })
@@ -74,6 +81,7 @@ mod tests {
 
         let result = handler
             .handle(GetBillsByMonthQuery {
+                principal: Principal::new(UserID::new()),
                 year: 2026,
                 month: 12,
             })

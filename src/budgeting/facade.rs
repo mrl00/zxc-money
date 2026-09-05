@@ -111,6 +111,7 @@ impl<B: BudgetRepository, G: GoalRepository, P: EventPublisher, Id: IdGenerator>
     /// Returns the budget progress for a specific category and period.
     pub async fn get_budget_progress(
         &self,
+        owner: crate::shared::ids::UserID,
         category_id: crate::shared::ids::CategoryID,
         period: Period,
     ) -> Result<
@@ -119,7 +120,7 @@ impl<B: BudgetRepository, G: GoalRepository, P: EventPublisher, Id: IdGenerator>
     > {
         let budget = self
             .budget_repository
-            .find_by_category_and_period(category_id, period)
+            .find_by_category_and_period(owner, category_id, period)
             .await?;
 
         match budget {

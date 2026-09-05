@@ -151,6 +151,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id,
+            owner_id: UserID::new(),
             tx_type: TransactionType::Income,
             amount: Money::from_cents(500, Currency::BRL),
             category_id: Some(crate::shared::ids::CategoryID::new()),
@@ -180,6 +181,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id,
+            owner_id: UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(200, Currency::BRL),
             category_id: Some(crate::shared::ids::CategoryID::new()),

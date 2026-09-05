@@ -217,6 +217,7 @@ mod tests {
                 portfolio_id: portfolio.id,
                 asset_id,
                 current_price: brl(7000),
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();

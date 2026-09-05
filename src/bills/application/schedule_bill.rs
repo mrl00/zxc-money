@@ -67,6 +67,7 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> ScheduleBillHandler<B
 
         let event = BillScheduled {
             bill_id: id,
+            owner_id: cmd.principal.user_id,
             name: cmd.name,
             amount: cmd.amount,
             due_date: cmd.due_date,
