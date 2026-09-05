@@ -26,7 +26,7 @@ pub struct LoanSchedule {
 /// # Example
 /// ```ignore
 /// let schedule = simulate_loan(
-///     Money::from_cents(50_000, Currency::BRL),
+///     Money::from_cents(50000, Currency::BRL),
 ///     12,
 ///     Decimal::from(10),
 /// );
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_loan_known_values() {
-        let principal = Money::from_cents(50_000_00, BRL);
+        let principal = Money::from_cents(5000000, BRL);
         let schedule = simulate_loan(principal, 24, Decimal::from(12));
 
         assert_eq!(schedule.entries.len(), 24);
@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn test_loan_all_payments_equal() {
-        let principal = Money::from_cents(100_000_00, BRL);
+        let principal = Money::from_cents(10000000, BRL);
         let schedule = simulate_loan(principal, 60, Decimal::from(8));
 
         let first = schedule.entries[0].payment.amount();

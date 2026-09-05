@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_clt_known_values() {
-        let gross = Money::from_cents(10_000_00, BRL);
+        let gross = Money::from_cents(1000000, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
 
         assert_eq!(result.gross.amount(), gross.amount());
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_pj_das_6pct() {
-        let gross = Money::from_cents(15_000_00, BRL);
+        let gross = Money::from_cents(1500000, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::PJ);
 
         assert_eq!(result.total_discounts.amount(), Decimal::from(900));
@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_zero_dependents() {
-        let gross = Money::from_cents(8_000_00, BRL);
+        let gross = Money::from_cents(800000, BRL);
         let r0 = calculate_net_salary(gross, 0, TaxRegime::CLT);
         let r2 = calculate_net_salary(gross, 2, TaxRegime::CLT);
 
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_many_dependents() {
-        let gross = Money::from_cents(3_000_00, BRL);
+        let gross = Money::from_cents(300000, BRL);
         let result = calculate_net_salary(gross, 20, TaxRegime::CLT);
 
         assert!(result.net.amount() > Decimal::ZERO);
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_max_bracket() {
-        let gross = Money::from_cents(80_000_00, BRL);
+        let gross = Money::from_cents(8000000, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
 
         assert!(result.irrf.amount() > Decimal::ZERO);
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_just_below_threshold() {
-        let gross = Money::from_cents(2_259_20, BRL);
+        let gross = Money::from_cents(225920, BRL);
         let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
 
         assert_eq!(result.irrf.amount(), Decimal::ZERO);
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_net_salary_discounts_never_exceed_gross() {
-        for gross_amount in [1_000_00, 5_000_00, 10_000_00, 50_000_00, 100_000_00] {
+        for gross_amount in [100000, 500000, 1000000, 5000000, 10000000] {
             let gross = Money::from_cents(gross_amount, BRL);
             let result = calculate_net_salary(gross, 0, TaxRegime::CLT);
             assert!(result.net.amount() > Decimal::ZERO);

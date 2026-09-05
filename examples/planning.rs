@@ -15,7 +15,7 @@ fn main() {
 
     // ── Mortgage: SAC vs Price ────────────────────────────────
     println!("═══ Mortgage Simulation ═══");
-    let principal = Money::from_cents(500_000_00, brl); // R$ 500.000,00
+    let principal = Money::from_cents(50000000, brl); // R$ 500.000,00
     let months = 360; // 30 years
     let rate = Decimal::from(10); // 10% annual
 
@@ -63,7 +63,7 @@ fn main() {
 
     // ── Loan ──────────────────────────────────────────────────
     println!("═══ Loan Simulation ═══");
-    let loan_principal = Money::from_cents(50_000_00, brl); // R$ 50.000,00
+    let loan_principal = Money::from_cents(5000000, brl); // R$ 50.000,00
     let loan = simulate_loan(loan_principal, 24, Decimal::from(12));
 
     println!(
@@ -83,8 +83,8 @@ fn main() {
 
     // ── Retirement ────────────────────────────────────────────
     println!("═══ Retirement Projection ═══");
-    let current = Money::from_cents(100_000_00, brl); // R$ 100.000,00
-    let monthly = Money::from_cents(2_000_00, brl); // R$ 2.000,00/month
+    let current = Money::from_cents(10000000, brl); // R$ 100.000,00
+    let monthly = Money::from_cents(200000, brl); // R$ 2.000,00/month
     let years = 20;
     let annual_return = Decimal::from(8);
 
@@ -115,7 +115,7 @@ fn main() {
         projection.final_balance.amount().to_f64().unwrap() / 100.0
     );
 
-    let target = Money::from_cents(2_000_000_00, brl); // R$ 2.000.000,00
+    let target = Money::from_cents(200000000, brl); // R$ 2.000.000,00
     let needed = required_contribution(target, current, years, annual_return);
     println!(
         "\n  To reach R$ {:.2} in {years} years:",
@@ -129,7 +129,7 @@ fn main() {
 
     // ── Net Salary ────────────────────────────────────────────
     println!("═══ Net Salary Calculator ═══");
-    let gross = Money::from_cents(12_000_00, brl); // R$ 12.000,00
+    let gross = Money::from_cents(1200000, brl); // R$ 12.000,00
 
     let clt = calculate_net_salary(gross, 2, TaxRegime::CLT);
     println!(

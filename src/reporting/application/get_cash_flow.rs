@@ -71,12 +71,12 @@ mod tests {
         add_expense(
             &store,
             chrono::NaiveDate::from_ymd_opt(2026, 7, 5).unwrap(),
-            100_00,
+            10000,
         );
         add_expense(
             &store,
             chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
-            200_00,
+            20000,
         );
 
         let entries = handler.handle(GetCashFlowQuery { months_back: 1 });

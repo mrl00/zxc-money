@@ -132,7 +132,7 @@ mod tests {
             GoalID::new(),
             UserID::new(),
             "Emergency Fund".into(),
-            Money::from_cents(10_000_00, Currency::BRL),
+            Money::from_cents(1000000, Currency::BRL),
             NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         )
     }
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_goal_contribute_partial() {
         let mut g = sample_goal();
-        g.contribute(Money::from_cents(5_000_00, Currency::BRL))
+        g.contribute(Money::from_cents(500000, Currency::BRL))
             .unwrap();
         assert_eq!(g.current_amount.amount(), Decimal::from(5000));
         assert_eq!(g.status, GoalStatus::InProgress);
@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn test_goal_contribute_exact_target() {
         let mut g = sample_goal();
-        g.contribute(Money::from_cents(10_000_00, Currency::BRL))
+        g.contribute(Money::from_cents(1000000, Currency::BRL))
             .unwrap();
         assert_eq!(g.status, GoalStatus::Achieved);
         assert!((g.progress() - 100.0).abs() < f64::EPSILON);
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn test_goal_contribute_over_target() {
         let mut g = sample_goal();
-        g.contribute(Money::from_cents(12_000_00, Currency::BRL))
+        g.contribute(Money::from_cents(1200000, Currency::BRL))
             .unwrap();
         assert_eq!(g.status, GoalStatus::Achieved);
     }
@@ -175,9 +175,9 @@ mod tests {
     #[test]
     fn test_goal_contribute_when_achieved_fails() {
         let mut g = sample_goal();
-        g.contribute(Money::from_cents(10_000_00, Currency::BRL))
+        g.contribute(Money::from_cents(1000000, Currency::BRL))
             .unwrap();
-        let result = g.contribute(Money::from_cents(1_000_00, Currency::BRL));
+        let result = g.contribute(Money::from_cents(100000, Currency::BRL));
         assert!(result.is_err());
     }
 
@@ -185,7 +185,7 @@ mod tests {
     fn test_goal_contribute_when_abandoned_fails() {
         let mut g = sample_goal();
         g.abandon().unwrap();
-        let result = g.contribute(Money::from_cents(1_000_00, Currency::BRL));
+        let result = g.contribute(Money::from_cents(100000, Currency::BRL));
         assert!(result.is_err());
     }
 
@@ -199,7 +199,7 @@ mod tests {
     #[test]
     fn test_goal_abandon_when_achieved_fails() {
         let mut g = sample_goal();
-        g.contribute(Money::from_cents(10_000_00, Currency::BRL))
+        g.contribute(Money::from_cents(1000000, Currency::BRL))
             .unwrap();
         let result = g.abandon();
         assert!(result.is_err());
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn test_goal_progress_calculation() {
         let mut g = sample_goal();
-        g.contribute(Money::from_cents(3_000_00, Currency::BRL))
+        g.contribute(Money::from_cents(300000, Currency::BRL))
             .unwrap();
         assert!((g.progress() - 30.0).abs() < f64::EPSILON);
     }

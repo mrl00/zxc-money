@@ -87,17 +87,17 @@ mod tests {
     fn test_top_expenses_sorted() {
         let events: Vec<Box<dyn DomainEvent + Send + Sync>> = vec![
             expense_event(
-                100_00,
+                10000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
                 "Cheap",
             ),
             expense_event(
-                500_00,
+                50000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
                 "Medium",
             ),
             expense_event(
-                1000_00,
+                100000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
                 "Expensive",
             ),
@@ -119,17 +119,17 @@ mod tests {
     fn test_top_expenses_limit() {
         let events: Vec<Box<dyn DomainEvent + Send + Sync>> = vec![
             expense_event(
-                100_00,
+                10000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
                 "A",
             ),
             expense_event(
-                200_00,
+                20000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 6).unwrap(),
                 "B",
             ),
             expense_event(
-                300_00,
+                30000,
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 7).unwrap(),
                 "C",
             ),

@@ -82,7 +82,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(5000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -96,7 +96,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(3000_00, Currency::BRL),
+                amount: Money::from_cents(300000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Rent".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -111,7 +111,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::from_cents(6000_00, Currency::BRL),
+                amount: Money::from_cents(600000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Bonus".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
@@ -125,7 +125,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::from_cents(2000_00, Currency::BRL),
+                amount: Money::from_cents(200000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Food".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 2, 20).unwrap(),
@@ -141,28 +141,28 @@ mod tests {
 
         assert_eq!(
             jan.total_income.amount(),
-            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(500000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             jan.total_expense.amount(),
-            rust_decimal::Decimal::from(3000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(300000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             jan.balance.amount(),
-            rust_decimal::Decimal::from(2000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(200000) / rust_decimal::Decimal::from(100)
         );
 
         assert_eq!(
             feb.total_income.amount(),
-            rust_decimal::Decimal::from(6000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(600000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             feb.total_expense.amount(),
-            rust_decimal::Decimal::from(2000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(200000) / rust_decimal::Decimal::from(100)
         );
         assert_eq!(
             feb.balance.amount(),
-            rust_decimal::Decimal::from(4000_00) / rust_decimal::Decimal::from(100)
+            rust_decimal::Decimal::from(400000) / rust_decimal::Decimal::from(100)
         );
     }
 

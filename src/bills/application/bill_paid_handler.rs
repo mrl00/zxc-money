@@ -118,7 +118,7 @@ mod tests {
             "Checking".into(),
             AccountType::Checking,
             currency,
-            Money::from_cents(5000_00, currency),
+            Money::from_cents(500000, currency),
         )
         .unwrap();
         repo.save(&account).await.unwrap();
@@ -180,7 +180,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::from_cents(50_00, Currency::BRL)),
+            amount: Some(Money::from_cents(5000, Currency::BRL)),
             account_id: AccountID::new(),
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -199,7 +199,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::from_cents(50_00, Currency::USD)),
+            amount: Some(Money::from_cents(5000, Currency::USD)),
             account_id,
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -219,7 +219,7 @@ mod tests {
 
         let event = BillPaid {
             bill_id: BillID::new(),
-            amount: Some(Money::from_cents(200_00, Currency::BRL)),
+            amount: Some(Money::from_cents(20000, Currency::BRL)),
             account_id,
             category_id: category,
             timestamp: chrono::Utc::now(),

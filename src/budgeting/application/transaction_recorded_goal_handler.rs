@@ -120,7 +120,7 @@ mod tests {
     #[tokio::test]
     async fn test_income_auto_contributes() {
         let account_id = AccountID::new();
-        let (goal_repo, publisher, goal_id) = setup_with_linked_goal(10_000_00, account_id).await;
+        let (goal_repo, publisher, goal_id) = setup_with_linked_goal(1000000, account_id).await;
 
         let handler = TransactionRecordedGoalHandler::new(goal_repo.clone(), publisher);
 
@@ -128,7 +128,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(3_000_00, Currency::BRL),
+            amount: Money::from_cents(300000, Currency::BRL),
             category_id: None,
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -138,13 +138,13 @@ mod tests {
         handler.handle(&event).await.unwrap();
 
         let goal = goal_repo.find_by_id(goal_id).await.unwrap().unwrap();
-        assert_eq!(goal.current_amount.amount(), Decimal::from(3_000));
+        assert_eq!(goal.current_amount.amount(), Decimal::from(3000));
     }
 
     #[tokio::test]
     async fn test_expense_does_not_contribute() {
         let account_id = AccountID::new();
-        let (goal_repo, publisher, goal_id) = setup_with_linked_goal(10_000_00, account_id).await;
+        let (goal_repo, publisher, goal_id) = setup_with_linked_goal(1000000, account_id).await;
 
         let handler = TransactionRecordedGoalHandler::new(goal_repo.clone(), publisher);
 
@@ -152,7 +152,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id,
             tx_type: TransactionType::Expense,
-            amount: Money::from_cents(500_00, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             category_id: None,
             description: "Groceries".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -176,7 +176,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(5000_00, Currency::BRL),
+            amount: Money::from_cents(500000, Currency::BRL),
             category_id: None,
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -189,7 +189,7 @@ mod tests {
     #[tokio::test]
     async fn test_income_achieves_goal() {
         let account_id = AccountID::new();
-        let (goal_repo, publisher, goal_id) = setup_with_linked_goal(5_000_00, account_id).await;
+        let (goal_repo, publisher, goal_id) = setup_with_linked_goal(500000, account_id).await;
 
         let handler = TransactionRecordedGoalHandler::new(goal_repo.clone(), publisher);
 
@@ -197,7 +197,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::from_cents(5_000_00, Currency::BRL),
+            amount: Money::from_cents(500000, Currency::BRL),
             category_id: None,
             description: "Bonus".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 6, 1).unwrap(),

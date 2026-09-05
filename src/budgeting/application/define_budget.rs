@@ -111,7 +111,7 @@ mod tests {
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            planned_amount: Money::from_cents(500_00, Currency::BRL),
+            planned_amount: Money::from_cents(50000, Currency::BRL),
         };
 
         let budget_id = handler.handle(cmd).await.unwrap();
@@ -137,7 +137,7 @@ mod tests {
             owner_id,
             category_id,
             period,
-            planned_amount: Money::from_cents(500_00, Currency::BRL),
+            planned_amount: Money::from_cents(50000, Currency::BRL),
         };
         handler.handle(cmd1).await.unwrap();
 
@@ -145,7 +145,7 @@ mod tests {
             owner_id,
             category_id,
             period,
-            planned_amount: Money::from_cents(600_00, Currency::BRL),
+            planned_amount: Money::from_cents(60000, Currency::BRL),
         };
         let result = handler.handle(cmd2).await;
         assert!(result.is_err());
@@ -187,7 +187,7 @@ mod tests {
                 owner_id: UserID::new(),
                 category_id: CategoryID::new(),
                 period,
-                planned_amount: Money::from_cents(500_00, Currency::BRL),
+                planned_amount: Money::from_cents(50000, Currency::BRL),
             })
             .await
             .unwrap();
@@ -197,7 +197,7 @@ mod tests {
                 owner_id: UserID::new(),
                 category_id: CategoryID::new(),
                 period,
-                planned_amount: Money::from_cents(300_00, Currency::BRL),
+                planned_amount: Money::from_cents(30000, Currency::BRL),
             })
             .await
             .unwrap();

@@ -103,31 +103,31 @@ mod tests {
 
     #[tokio::test]
     async fn test_contribute_partial() {
-        let (goal_repo, publisher, goal_id) = setup_with_goal(10_000_00).await;
+        let (goal_repo, publisher, goal_id) = setup_with_goal(1000000).await;
         let handler = ContributeToGoalHandler::new(goal_repo.clone(), publisher);
 
         handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::from_cents(3_000_00, Currency::BRL),
+                amount: Money::from_cents(300000, Currency::BRL),
             })
             .await
             .unwrap();
 
         let goal = goal_repo.find_by_id(goal_id).await.unwrap().unwrap();
-        assert_eq!(goal.current_amount.amount(), Decimal::from(3_000));
+        assert_eq!(goal.current_amount.amount(), Decimal::from(3000));
         assert_eq!(goal.status, GoalStatus::InProgress);
     }
 
     #[tokio::test]
     async fn test_contribute_achieves_goal() {
-        let (goal_repo, publisher, goal_id) = setup_with_goal(5_000_00).await;
+        let (goal_repo, publisher, goal_id) = setup_with_goal(500000).await;
         let handler = ContributeToGoalHandler::new(goal_repo.clone(), publisher);
 
         handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::from_cents(5_000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
             })
             .await
             .unwrap();
@@ -138,13 +138,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_contribute_to_achieved_goal_fails() {
-        let (goal_repo, publisher, goal_id) = setup_with_goal(5_000_00).await;
+        let (goal_repo, publisher, goal_id) = setup_with_goal(500000).await;
         let handler = ContributeToGoalHandler::new(goal_repo.clone(), publisher);
 
         handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::from_cents(5_000_00, Currency::BRL),
+                amount: Money::from_cents(500000, Currency::BRL),
             })
             .await
             .unwrap();
@@ -152,7 +152,7 @@ mod tests {
         let result = handler
             .handle(ContributeToGoalCommand {
                 goal_id,
-                amount: Money::from_cents(1_000_00, Currency::BRL),
+                amount: Money::from_cents(100000, Currency::BRL),
             })
             .await;
         assert!(result.is_err());
@@ -167,7 +167,7 @@ mod tests {
         let result = handler
             .handle(ContributeToGoalCommand {
                 goal_id: GoalID::new(),
-                amount: Money::from_cents(1_000_00, Currency::BRL),
+                amount: Money::from_cents(100000, Currency::BRL),
             })
             .await;
         assert!(result.is_err());

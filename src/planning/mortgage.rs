@@ -35,7 +35,7 @@ pub struct AmortizationSchedule {
 /// # Example
 /// ```ignore
 /// let schedule = simulate_mortgage(
-///     Money::from_cents(100_000, Currency::BRL),
+///     Money::from_cents(100000, Currency::BRL),
 ///     12,
 ///     Decimal::from(12),
 ///     AmortizationMethod::SAC,
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_mortgage_sac_known_values() {
-        let principal = Money::from_cents(120_000_00, BRL);
+        let principal = Money::from_cents(12000000, BRL);
         let schedule =
             simulate_mortgage(principal, 240, Decimal::from(10), AmortizationMethod::SAC);
 
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_mortgage_price_known_values() {
-        let principal = Money::from_cents(120_000_00, BRL);
+        let principal = Money::from_cents(12000000, BRL);
         let schedule =
             simulate_mortgage(principal, 240, Decimal::from(10), AmortizationMethod::Price);
 
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_sac_vs_price_same_params() {
-        let principal = Money::from_cents(200_000_00, BRL);
+        let principal = Money::from_cents(20000000, BRL);
         let months = 360;
         let rate = Decimal::from(12);
 
