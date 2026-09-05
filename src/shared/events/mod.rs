@@ -23,6 +23,7 @@ use chrono::{DateTime, Utc};
 use std::any::Any;
 
 use super::errors::PublishError;
+use super::ids::UserID;
 
 /// A domain event that occurred in the system.
 ///
@@ -37,6 +38,44 @@ pub trait DomainEvent: Any + Send + Sync {
 
     /// Upcast to `&dyn Any` for downcasting in handlers.
     fn as_any(&self) -> &dyn Any;
+}
+
+/// Wrapper that pairs any domain event with the [`UserID`] of the actor
+/// who triggered it.
+///
+/// Use this when publishing events to enable audit logging:
+///
+/// ```ignore
+/// let event = AuditableEvent::new(principal.user_id, TransactionRecorded { ... });
+/// publisher.publish(vec![&event]).await?;
+/// ```
+#[derive(Debug)]
+pub struct AuditableEvent<E: DomainEvent> {
+    /// The user who triggered this event.
+    pub actor: UserID,
+    /// The inner domain event.
+    pub event: E,
+}
+
+impl<E: DomainEvent> AuditableEvent<E> {
+    /// Wraps an event with the given actor.
+    pub fn new(actor: UserID, event: E) -> Self {
+        Self { actor, event }
+    }
+}
+
+impl<E: DomainEvent> DomainEvent for AuditableEvent<E> {
+    fn event_type(&self) -> &'static str {
+        self.event.event_type()
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.event.timestamp()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 /// A boxed closure that handles domain events by type string.
