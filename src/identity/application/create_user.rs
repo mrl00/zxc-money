@@ -19,6 +19,7 @@ pub struct CreateUserHandler<R: UserRepository, H: PasswordHasher, I: IdGenerato
 }
 
 impl<R: UserRepository, H: PasswordHasher, I: IdGenerator> CreateUserHandler<R, H, I> {
+    /// Creates a new handler with the given dependencies.
     pub fn new(user_repository: Arc<R>, password_hasher: Arc<H>, id_generator: Arc<I>) -> Self {
         Self {
             user_repository,
@@ -27,6 +28,12 @@ impl<R: UserRepository, H: PasswordHasher, I: IdGenerator> CreateUserHandler<R, 
         }
     }
 
+    /// Executes the create-user command.
+    ///
+    /// # Errors
+    /// - [`IdentityError::EmailAlreadyExists`] if the email is already registered.
+    /// - [`IdentityError::InvalidInput`] if email or name are empty, or hashing fails.
+    /// - [`IdentityError::Repository`] on persistence failures.
     pub async fn handle(&self, cmd: CreateUserCommand) -> Result<UserID, IdentityError> {
         // Check email uniqueness
         if self

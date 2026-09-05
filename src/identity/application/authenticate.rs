@@ -16,6 +16,7 @@ pub struct AuthenticateUserHandler<R: UserRepository, H: PasswordHasher> {
 }
 
 impl<R: UserRepository, H: PasswordHasher> AuthenticateUserHandler<R, H> {
+    /// Creates a new handler with the given dependencies.
     pub fn new(user_repository: Arc<R>, password_hasher: Arc<H>) -> Self {
         Self {
             user_repository,
@@ -23,6 +24,15 @@ impl<R: UserRepository, H: PasswordHasher> AuthenticateUserHandler<R, H> {
         }
     }
 
+    /// Authenticates a user by email and password.
+    ///
+    /// On success, returns a [`Principal`] containing the user's identity
+    /// for injection into downstream commands.
+    ///
+    /// # Errors
+    /// - [`IdentityError::InvalidCredentials`] if email not found or password wrong.
+    /// - [`IdentityError::InvalidInput`] if the stored hash is malformed.
+    /// - [`IdentityError::Repository`] on persistence failures.
     pub async fn handle(&self, cmd: AuthenticateUserCommand) -> Result<Principal, IdentityError> {
         let user = self
             .user_repository

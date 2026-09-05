@@ -7,10 +7,15 @@ use chrono::{DateTime, Utc};
 /// field contains an Argon2id hash — never store plaintext passwords.
 #[derive(Debug, Clone)]
 pub struct User {
+    /// Unique identifier for this user.
     pub id: UserID,
+    /// Email address used for login (unique, case-insensitive).
     pub email: String,
+    /// Argon2id hash of the user's password. Never store plaintext.
     pub password_hash: String,
+    /// Display name of the user.
     pub name: String,
+    /// Timestamp when the user account was created.
     pub created_at: DateTime<Utc>,
 }
 
@@ -54,8 +59,10 @@ pub trait PasswordHasher: Send + Sync {
 /// Errors from password hashing operations.
 #[derive(Debug, thiserror::Error)]
 pub enum PasswordError {
+    /// The hashing algorithm failed (e.g. system entropy source unavailable).
     #[error("hash failed: {0}")]
     HashFailed(String),
+    /// The stored hash string is not in a valid format.
     #[error("invalid hash format: {0}")]
     InvalidFormat(String),
 }

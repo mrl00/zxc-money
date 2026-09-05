@@ -23,10 +23,15 @@ pub enum IdentityError {
     Repository(#[from] RepositoryError),
 }
 
+/// Repository for persisting and querying [`User`] aggregates.
 #[async_trait]
 pub trait UserRepository: Send + Sync {
+    /// Persists a new or updated user.
     async fn save(&self, user: &User) -> Result<(), RepositoryError>;
+    /// Finds a user by their unique identifier.
     async fn find_by_id(&self, id: UserID) -> Result<Option<User>, RepositoryError>;
+    /// Finds a user by their email address (used for login lookup).
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, RepositoryError>;
+    /// Deletes a user by their unique identifier.
     async fn delete(&self, id: UserID) -> Result<(), RepositoryError>;
 }
