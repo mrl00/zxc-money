@@ -4,8 +4,9 @@ use crate::ledger::domain::transaction::{Transaction, TransactionType};
 use crate::provider::id::IdGenerator;
 use crate::shared::errors::LedgerError;
 use crate::shared::events::EventPublisher;
-use crate::shared::ids::{AccountID, Principal, TransactionID};
+use crate::shared::ids::{AccountID, IdempotencyKey, Principal, TransactionID};
 use crate::shared::money::Money;
+use crate::shared::repository::IdempotencyRepository;
 use chrono::NaiveDate;
 use std::sync::Arc;
 
@@ -17,6 +18,8 @@ pub struct TransferFundsCommand {
     pub amount: Money,
     pub description: String,
     pub date: NaiveDate,
+    /// Optional idempotency key to prevent duplicate processing.
+    pub idempotency_key: Option<IdempotencyKey>,
 }
 
 /// Handler that processes [`TransferFundsCommand`] requests.
@@ -25,27 +28,36 @@ pub struct TransferFundsHandler<
     T: TransactionRepository,
     P: EventPublisher,
     I: IdGenerator,
+    ID: IdempotencyRepository,
 > {
     account_repository: Arc<A>,
     transaction_repository: Arc<T>,
     event_publisher: Arc<P>,
     id_generator: Arc<I>,
+    idempotency_repository: Arc<ID>,
 }
 
-impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGenerator>
-    TransferFundsHandler<A, T, P, I>
+impl<
+    A: AccountRepository,
+    T: TransactionRepository,
+    P: EventPublisher,
+    I: IdGenerator,
+    ID: IdempotencyRepository,
+> TransferFundsHandler<A, T, P, I, ID>
 {
     pub fn new(
         account_repository: Arc<A>,
         transaction_repository: Arc<T>,
         event_publisher: Arc<P>,
         id_generator: Arc<I>,
+        idempotency_repository: Arc<ID>,
     ) -> Self {
         Self {
             account_repository,
             transaction_repository,
             event_publisher,
             id_generator,
+            idempotency_repository,
         }
     }
 
@@ -55,6 +67,15 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
     /// # Errors
     /// Fails if accounts have different currencies or different owners.
     pub async fn handle(&self, cmd: TransferFundsCommand) -> Result<(), LedgerError> {
+        // Idempotency check
+        if let Some(key) = cmd.idempotency_key
+            && self.idempotency_repository.exists(key).await?
+        {
+            return Err(LedgerError::AlreadyExists(
+                "transfer already processed with this idempotency key".into(),
+            ));
+        }
+
         self.validate(&cmd)?;
 
         let from_account = self
@@ -122,6 +143,11 @@ impl<A: AccountRepository, T: TransactionRepository, P: EventPublisher, I: IdGen
         };
         self.event_publisher.publish(vec![&event]).await?;
 
+        // Mark idempotency key as used
+        if let Some(key) = cmd.idempotency_key {
+            self.idempotency_repository.mark_used(key).await?;
+        }
+
         Ok(())
     }
 
@@ -147,7 +173,9 @@ mod tests {
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::ids::{Principal, UserID};
-    use crate::shared::mock::{MockAccountRepository, MockTransactionRepository};
+    use crate::shared::mock::{
+        MockAccountRepository, MockIdempotencyRepository, MockTransactionRepository,
+    };
     use crate::shared::money::Currency;
 
     #[tokio::test]
@@ -156,6 +184,7 @@ mod tests {
         let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
+        let idem_repo = Arc::new(MockIdempotencyRepository::new());
 
         let from_id = AccountID::new();
         let to_id = AccountID::new();
@@ -183,7 +212,8 @@ mod tests {
         account_repo.save(&from_account).await.unwrap();
         account_repo.save(&to_account).await.unwrap();
 
-        let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
+        let handler =
+            TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen, idem_repo);
 
         let cmd = TransferFundsCommand {
             principal,
@@ -192,6 +222,7 @@ mod tests {
             amount: Money::from_cents(25000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+            idempotency_key: None,
         };
 
         let result = handler.handle(cmd).await;
@@ -204,8 +235,10 @@ mod tests {
         let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
+        let idem_repo = Arc::new(MockIdempotencyRepository::new());
 
-        let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
+        let handler =
+            TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen, idem_repo);
 
         let same_id = AccountID::new();
         let cmd = TransferFundsCommand {
@@ -215,6 +248,7 @@ mod tests {
             amount: Money::from_cents(25000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+            idempotency_key: None,
         };
 
         let result = handler.validate(&cmd);
@@ -227,6 +261,7 @@ mod tests {
         let tx_repo = Arc::new(MockTransactionRepository::new());
         let publisher = Arc::new(InMemoryEventDispatcher::new());
         let id_gen = Arc::new(MockIdGenerator::new(uuid::Uuid::new_v4()));
+        let idem_repo = Arc::new(MockIdempotencyRepository::new());
 
         let from_id = AccountID::new();
         let to_id = AccountID::new();
@@ -252,7 +287,8 @@ mod tests {
         account_repo.save(&from_account).await.unwrap();
         account_repo.save(&to_account).await.unwrap();
 
-        let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
+        let handler =
+            TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen, idem_repo);
 
         let cmd = TransferFundsCommand {
             principal: Principal::new(UserID::new()),
@@ -261,6 +297,7 @@ mod tests {
             amount: Money::from_cents(25000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+            idempotency_key: None,
         };
 
         let result = handler.handle(cmd).await;

@@ -82,6 +82,10 @@ pub enum LedgerError {
     #[error("unauthenticated")]
     Unauthenticated,
 
+    /// A resource with the same identity already exists.
+    #[error("already exists: {0}")]
+    AlreadyExists(String),
+
     /// The specified recurring transaction does not exist.
     #[error("recurring transaction not found: {0}")]
     RecurringTransactionNotFound(String),

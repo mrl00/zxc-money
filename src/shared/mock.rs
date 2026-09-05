@@ -17,7 +17,8 @@ use crate::investment::domain::asset::Asset;
 use crate::investment::domain::portfolio::Portfolio;
 use crate::investment::domain::repository::{AssetRepository, PortfolioRepository};
 use crate::shared::errors::RepositoryError;
-use crate::shared::ids::{AccountID, BillID, TransactionID, UserID};
+use crate::shared::ids::{AccountID, BillID, IdempotencyKey, TransactionID, UserID};
+use crate::shared::repository::IdempotencyRepository;
 
 use crate::ledger::domain::account::Account;
 use crate::ledger::domain::recurring_transaction::RecurringTransaction;
@@ -687,6 +688,37 @@ impl UserRepository for MockUserRepository {
         if let Some(user) = users.remove(&id) {
             email_idx.remove(&user.email);
         }
+        Ok(())
+    }
+}
+
+/// In-memory mock implementation of [`IdempotencyRepository`].
+pub struct MockIdempotencyRepository {
+    used_keys: Mutex<HashMap<IdempotencyKey, ()>>,
+}
+
+impl MockIdempotencyRepository {
+    pub fn new() -> Self {
+        Self {
+            used_keys: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for MockIdempotencyRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl IdempotencyRepository for MockIdempotencyRepository {
+    async fn exists(&self, key: IdempotencyKey) -> Result<bool, RepositoryError> {
+        Ok(self.used_keys.lock().unwrap().contains_key(&key))
+    }
+
+    async fn mark_used(&self, key: IdempotencyKey) -> Result<(), RepositoryError> {
+        self.used_keys.lock().unwrap().insert(key, ());
         Ok(())
     }
 }
