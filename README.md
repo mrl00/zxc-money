@@ -6,8 +6,9 @@ A pure-Rust personal finance core library built with Domain-Driven Design (DDD).
 
 ```
 zxc-money (lib crate)
-├── shared/          → Value objects, error types, event system, ID types, mocks
+├── shared/          → Value objects, error types, event system, ID types, mocks, audit
 ├── provider/        → Port traits for ID generation and datetime
+├── identity/        → User aggregate, authentication, password hashing (Argon2)
 ├── ledger/          → Accounts, transactions, transfers, recurring transactions
 ├── credit_card/     → Credit cards, invoices, purchases, installments
 ├── bills/           → Bills reminder (scheduled payments)
@@ -32,10 +33,11 @@ module/
 ```
 
 **Key principles:**
-- All money amounts stored as `i64` cents (no floating-point)
+- All money amounts use `rust_decimal::Decimal` via the `Money` wrapper (no floating-point)
 - Cross-module communication via domain events (never direct repository access)
 - Errors are exhaustive enums (`thiserror`) — frontends use `match`, no string parsing
 - Generic handlers with dependency injection (`Arc<R>`, `Arc<P>`, `Arc<I>`)
+- Every handler and query receives `Principal` — ownership validated before any mutation or read
 
 ## Quick Start
 
@@ -53,7 +55,7 @@ use zxc_money::ledger::application::open_account::{OpenAccountCommand, OpenAccou
 use zxc_money::ledger::domain::account::AccountType;
 use zxc_money::provider::id::UuidGenerator;
 use zxc_money::shared::events::InMemoryEventDispatcher;
-use zxc_money::shared::ids::UserID;
+use zxc_money::shared::ids::{Principal, UserID};
 use zxc_money::shared::money::{Currency, Money};
 use zxc_money::shared::mock::MockAccountRepository;
 
@@ -66,11 +68,11 @@ async fn main() {
     let handler = OpenAccountHandler::new(repo, publisher, id_gen);
 
     let account_id = handler.handle(OpenAccountCommand {
-        owner_id: UserID::new(),
+        principal: Principal::new(UserID::new()),
         name: "Nubank Checking".into(),
         account_type: AccountType::Checking,
         currency: Currency::BRL,
-        opening_balance: Money::new(150_00, Currency::BRL), // R$ 150.00
+        opening_balance: Money::from_cents(150_00, Currency::BRL), // R$ 150.00
     }).await.unwrap();
 
     println!("Account created: {}", account_id);
@@ -84,17 +86,19 @@ use zxc_money::ledger::application::record_transaction::{
     RecordTransactionCommand, RecordTransactionHandler,
 };
 use zxc_money::ledger::domain::transaction::TransactionType;
-use zxc_money::shared::ids::{AccountID, CategoryID};
+use zxc_money::shared::ids::{AccountID, CategoryID, Principal, UserID};
 
-let handler = RecordTransactionHandler::new(repo, tx_repo, publisher, id_gen);
+let handler = RecordTransactionHandler::new(repo, tx_repo, publisher, id_gen, idempotency_repo);
 
 let tx_id = handler.handle(RecordTransactionCommand {
+    principal: Principal::new(UserID::new()),
     account_id,
     tx_type: TransactionType::Expense,
-    amount: Money::new(49_90, Currency::BRL), // R$ 49.90
+    amount: Money::from_cents(49_90, Currency::BRL), // R$ 49.90
     description: "Netflix".into(),
     date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
     category_id: Some(CategoryID::new()),
+    idempotency_key: None,
 }).await.unwrap();
 ```
 
@@ -105,14 +109,16 @@ use zxc_money::ledger::application::transfer_funds::{
     TransferFundsCommand, TransferFundsHandler,
 };
 
-let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen);
+let handler = TransferFundsHandler::new(account_repo, tx_repo, publisher, id_gen, idempotency_repo);
 
 handler.handle(TransferFundsCommand {
+    principal: Principal::new(UserID::new()),
     from_account_id: checking_id,
     to_account_id: savings_id,
-    amount: Money::new(500_00, Currency::BRL), // R$ 500.00
+    amount: Money::from_cents(500_00, Currency::BRL), // R$ 500.00
     description: "Monthly savings".into(),
     date: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
+    idempotency_key: None,
 }).await.unwrap();
 ```
 
@@ -126,10 +132,10 @@ use zxc_money::credit_card::application::register_purchase::{
 let handler = RegisterPurchaseHandler::new(cc_repo, inv_repo, publisher, id_gen);
 
 let purchase_id = handler.handle(RegisterPurchaseCommand {
-    owner_id,
+    principal: Principal::new(user_id),
     credit_card_id: card_id,
     description: "Amazon".into(),
-    total_amount: Money::new(299_90, Currency::BRL), // R$ 299.90
+    total_amount: Money::from_cents(299_90, Currency::BRL), // R$ 299.90
     installments_count: 3,
     category_id: CategoryID::new(),
     purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
@@ -149,14 +155,14 @@ use zxc_money::credit_card::application::pay_invoice::{
 // Close (typically at closing_day)
 let close_handler = CloseInvoiceHandler::new(cc_repo, inv_repo.clone(), publisher.clone());
 let invoice_id = close_handler.handle(CloseInvoiceCommand {
-    owner_id,
+    principal: Principal::new(user_id),
     credit_card_id: card_id,
 }).await.unwrap();
 
 // Pay (typically at due_day)
 let pay_handler = PayInvoiceHandler::new(cc_repo, inv_repo, publisher);
 pay_handler.handle(PayInvoiceCommand {
-    owner_id,
+    principal: Principal::new(user_id),
     credit_card_id: card_id,
     invoice_id,
 }).await.unwrap();
@@ -190,10 +196,10 @@ use zxc_money::ledger::domain::recurring_transaction::Frequency;
 let handler = CreateRecurringTransactionHandler::new(recurring_repo, publisher, id_gen);
 
 let recurring_id = handler.handle(CreateRecurringTransactionCommand {
-    owner_id,
+    principal: Principal::new(user_id),
     account_id,
     tx_type: TransactionType::Expense,
-    amount: Money::new(39_90, Currency::BRL),
+    amount: Money::from_cents(39_90, Currency::BRL),
     description: "Netflix".into(),
     category_id: Some(CategoryID::new()),
     frequency: Frequency::Monthly,
@@ -217,6 +223,7 @@ let pending = query.execute(chrono::NaiveDate::from_ymd_opt(2026, 2, 1).unwrap()
 // Confirm (creates Transaction, advances next_date)
 let confirm = ConfirmRecurringHandler::new(recurring_repo, tx_repo, publisher, id_gen);
 let tx_id = confirm.handle(ConfirmRecurringCommand {
+    principal: Principal::new(user_id),
     recurring_transaction_id: pending[0].recurring_transaction_id,
 }).await?;
 ```
@@ -227,7 +234,7 @@ let tx_id = confirm.handle(ConfirmRecurringCommand {
 use zxc_money::planning::mortgage::{simulate_mortgage, AmortizationMethod};
 
 let schedule = simulate_mortgage(
-    Money::new(500_000_00, Currency::BRL), // R$ 500,000.00
+    Money::from_cents(500_000_00, Currency::BRL), // R$ 500,000.00
     360,                                    // 30 years
     rust_decimal::Decimal::from(12),        // 12% annual
     AmortizationMethod::SAC,
@@ -247,7 +254,7 @@ for entry in &schedule.entries {
 use zxc_money::planning::net_salary::{calculate_net_salary, TaxRegime};
 
 let result = calculate_net_salary(
-    Money::new(10_000_00, Currency::BRL), // R$ 10,000.00 gross
+    Money::from_cents(10_000_00, Currency::BRL), // R$ 10,000.00 gross
     1,                                     // 1 dependent
     TaxRegime::CLT,
 );
@@ -378,7 +385,7 @@ match result {
 
 ## ID Types
 
-14 type-safe ID wrappers (UUID v4) via `define_id!` macro:
+15 type-safe ID wrappers (UUID v4) via `define_id!` macro:
 
 | Type | Module |
 |------|--------|
@@ -389,6 +396,7 @@ match result {
 | `BudgetID`, `GoalID` | Budgeting |
 | `AssetID`, `PortfolioID` | Investment |
 | `UserID` | Shared (owner_id on all sensitive aggregates) |
+| `IdempotencyKey` | Shared (idempotency for sensitive commands) |
 
 ## Testing
 
@@ -458,6 +466,7 @@ let facade = LedgerFacade::new(
     /* recurring_repo */ todo!(),
     events,
     ids,
+    /* idempotency_repo */ todo!(),
 );
 ```
 
@@ -467,11 +476,11 @@ let facade = LedgerFacade::new(
 use zxc_money::ledger::application::open_account::OpenAccountCommand;
 
 let account_id = facade.open_account(OpenAccountCommand {
-    owner_id: user_id,
+    principal: Principal::new(user_id),
     name: "My Account".into(),
     account_type: AccountType::Checking,
     currency: Currency::BRL,
-    opening_balance: Money::new(0, Currency::BRL),
+    opening_balance: Money::from_cents(0, Currency::BRL),
 }).await?;
 ```
 
@@ -499,6 +508,36 @@ let account_id = facade.open_account(OpenAccountCommand {
 
 ---
 
+## Security
+
+Every operation (commands and queries) requires a `Principal` — injected by the frontend, never constructed by the core.
+
+| Mechanism | Description |
+|-----------|-------------|
+| **Principal** | Every handler/query receives `Principal { user_id, roles, session_id }` |
+| **Ownership validation** | Command handlers validate `aggregate.owner_id == principal.user_id` before any mutation |
+| **Query scoping** | Query handlers receive `Principal` — bills/investment filter by owner, reporting stores are global (per-user scoping planned) |
+| **Idempotency** | Sensitive commands (`RecordTransaction`, `TransferFunds`) accept optional `IdempotencyKey` to prevent duplicate processing |
+| **Audit trail** | `AuditLogger` trait + `AuditEventHandler` records all domain mutations via event-driven pipeline |
+| **Password hashing** | `Argon2PasswordHasher` (Argon2id) — pure computation, lives in core |
+| **Error types** | `Forbidden(String)` and `Unauthenticated` variants on all error enums |
+
+```rust
+use zxc_money::shared::ids::{Principal, UserID};
+
+// Frontend creates Principal after authentication
+let principal = Principal::new(UserID::from_uuid(authenticated_user_id));
+
+// Pass to any facade method
+let account_id = facade.open_account(OpenAccountCommand {
+    principal,
+    name: "Checking".into(),
+    // ...
+}).await?;
+```
+
+---
+
 ## Dependencies
 
 | Crate | Purpose |
@@ -509,6 +548,9 @@ let account_id = facade.open_account(OpenAccountCommand {
 | `thiserror` | Error derive macros |
 | `async-trait` | Async trait support |
 | `rust_decimal` | Precise decimal arithmetic |
+| `argon2` | Password hashing (Argon2id) |
+| `password-hash` | Password hash parsing/verification |
+| `rand` | Cryptographic random number generation |
 
 ## Milestones
 
@@ -519,10 +561,11 @@ let account_id = facade.open_account(OpenAccountCommand {
 | M2 | Recurring transactions | ✅ |
 | M3 | Credit card (cards, invoices, purchases, installments) | ✅ |
 | M4 | Budgeting & financial goals | ✅ |
-| M5 | Reporting projections (6 advanced queries pending) | ⚠️ |
+| M5 | Reporting projections (6 advanced queries + 2 exports) | ✅ |
 | M6 | Bills reminder | ✅ |
 | M7 | Investment portfolio | ✅ |
 | M8 | Cross-module event wiring + statement import | ✅ |
 | M9 | Planning simulators | ✅ |
 | M10 | Facade / public API + provider ports | ✅ |
 | M11 | Documentation, examples, integration guide | ✅ |
+| Security | Identity, authorization, idempotency, audit (Phases 1-6) | ✅ |
