@@ -78,6 +78,10 @@ pub enum LedgerError {
     #[error("forbidden: {0}")]
     Forbidden(String),
 
+    /// The caller is not authenticated.
+    #[error("unauthenticated")]
+    Unauthenticated,
+
     /// The specified recurring transaction does not exist.
     #[error("recurring transaction not found: {0}")]
     RecurringTransactionNotFound(String),
@@ -114,6 +118,14 @@ pub enum BudgetingError {
     #[error("invalid amount: {0}")]
     InvalidAmount(String),
 
+    /// The caller is not authorized to perform this operation.
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    /// The caller is not authenticated.
+    #[error("unauthenticated")]
+    Unauthenticated,
+
     /// An error from the persistence layer.
     #[error("repository error: {0}")]
     Repository(#[from] RepositoryError),
@@ -146,6 +158,14 @@ pub enum CreditCardError {
     #[error("invariant violated: {0}")]
     InvariantViolation(String),
 
+    /// The caller is not authorized to perform this operation.
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    /// The caller is not authenticated.
+    #[error("unauthenticated")]
+    Unauthenticated,
+
     /// An error from the persistence layer.
     #[error("repository error: {0}")]
     Repository(#[from] RepositoryError),
@@ -165,6 +185,14 @@ pub enum BillsError {
     /// A domain invariant was violated.
     #[error("invariant violated: {0}")]
     InvariantViolation(String),
+
+    /// The caller is not authorized to perform this operation.
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    /// The caller is not authenticated.
+    #[error("unauthenticated")]
+    Unauthenticated,
 
     /// An error from the persistence layer.
     #[error("repository error: {0}")]
@@ -232,6 +260,14 @@ pub enum InvestmentError {
     /// A domain invariant was violated.
     #[error("invariant violated: {0}")]
     InvariantViolation(String),
+
+    /// The caller is not authorized to perform this operation.
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    /// The caller is not authenticated.
+    #[error("unauthenticated")]
+    Unauthenticated,
 
     /// An error from the persistence layer.
     #[error("repository error: {0}")]

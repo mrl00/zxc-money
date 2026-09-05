@@ -61,3 +61,6 @@ pub use reporting::facade::ReportingFacade;
 pub use provider::{
     ColumnMapping, DateTimeProvider, IdGenerator, StatementParser, SystemDateTime, UuidGenerator,
 };
+
+// Re-exports: Security types
+pub use shared::ids::{IdempotencyKey, Principal};

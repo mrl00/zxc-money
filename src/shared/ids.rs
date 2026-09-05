@@ -88,6 +88,47 @@ define_id!(RecurringTransactionID);
 define_id!(InstallmentGroupID);
 // Identifier for an import session.
 define_id!(ImportSessionID);
+// Key for idempotency checks on sensitive commands.
+define_id!(IdempotencyKey);
+
+/// Authenticated user context injected by the frontend into every command.
+///
+/// The core never authenticates directly — the front resolves the
+/// `Principal` (via JWT, OS user, or any other mechanism) and passes
+/// it to the facade, which forwards it to handlers for ownership
+/// validation.
+#[derive(Debug, Clone)]
+pub struct Principal {
+    pub user_id: UserID,
+    pub roles: Vec<String>,
+    pub session_id: Option<String>,
+}
+
+impl Principal {
+    /// Creates a new `Principal` with the given user id.
+    /// Roles default to empty; session id defaults to `None`.
+    pub fn new(user_id: UserID) -> Self {
+        Self {
+            user_id,
+            roles: Vec::new(),
+            session_id: None,
+        }
+    }
+
+    /// Creates a `Principal` with roles.
+    pub fn with_roles(user_id: UserID, roles: Vec<String>) -> Self {
+        Self {
+            user_id,
+            roles,
+            session_id: None,
+        }
+    }
+
+    /// Returns `true` if the principal has the given role.
+    pub fn has_role(&self, role: &str) -> bool {
+        self.roles.iter().any(|r| r == role)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -127,5 +168,44 @@ mod tests {
         let json = serde_json::to_string(&id).unwrap();
         let deserialized: CategoryID = serde_json::from_str(&json).unwrap();
         assert_eq!(id, deserialized);
+    }
+
+    #[test]
+    fn test_idempotency_key_creation() {
+        let key = IdempotencyKey::new();
+        assert!(!key.as_uuid().is_nil());
+    }
+
+    #[test]
+    fn test_idempotency_key_from_uuid() {
+        let uuid = Uuid::new_v4();
+        let key = IdempotencyKey::from_uuid(uuid);
+        assert_eq!(*key.as_uuid(), uuid);
+    }
+
+    #[test]
+    fn test_idempotency_key_serde_roundtrip() {
+        let key = IdempotencyKey::new();
+        let json = serde_json::to_string(&key).unwrap();
+        let deserialized: IdempotencyKey = serde_json::from_str(&json).unwrap();
+        assert_eq!(key, deserialized);
+    }
+
+    #[test]
+    fn test_principal_new() {
+        let uid = UserID::new();
+        let p = Principal::new(uid);
+        assert_eq!(p.user_id, uid);
+        assert!(p.roles.is_empty());
+        assert!(p.session_id.is_none());
+    }
+
+    #[test]
+    fn test_principal_with_roles() {
+        let uid = UserID::new();
+        let p = Principal::with_roles(uid, vec!["admin".into(), "user".into()]);
+        assert!(p.has_role("admin"));
+        assert!(p.has_role("user"));
+        assert!(!p.has_role("guest"));
     }
 }
