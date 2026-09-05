@@ -8,8 +8,10 @@
 //! - [`errors`] — Error enums per bounded context
 //! - [`events`] — Domain event trait, publisher, and in-memory dispatcher
 //! - [`repository`] — Generic repository and unit-of-work traits
+//! - [`audit`] — Audit logging trait and in-memory logger
 //! - [`mock`] — In-memory mock repositories for testing
 
+pub mod audit;
 pub mod errors;
 pub mod events;
 pub mod ids;
