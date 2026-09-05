@@ -5,7 +5,7 @@ use rust_decimal::Decimal;
 
 use crate::investment::domain::repository::PortfolioRepository;
 use crate::shared::errors::InvestmentError;
-use crate::shared::ids::{AssetID, PortfolioID};
+use crate::shared::ids::{AssetID, PortfolioID, Principal};
 use crate::shared::money::Money;
 
 /// Query to retrieve a summary of all positions in a portfolio.
@@ -15,6 +15,8 @@ pub struct GetPortfolioSummaryQuery {
     /// Current market prices keyed by asset ID
     /// (obtained from [`QuoteProvider`](crate::investment::domain::quote::QuoteProvider)).
     pub prices: HashMap<AssetID, Money>,
+    /// The authenticated principal.
+    pub principal: Principal,
 }
 
 /// Summary of a single position within a portfolio.
@@ -70,6 +72,12 @@ impl<P: PortfolioRepository> GetPortfolioSummaryHandler<P> {
             .await?
             .ok_or_else(|| InvestmentError::PortfolioNotFound(query.portfolio_id.to_string()))?;
 
+        if portfolio.owner_id != query.principal.user_id {
+            return Err(InvestmentError::Forbidden(
+                "not the owner of this portfolio".into(),
+            ));
+        }
+
         let mut total_invested = Money::zero(crate::shared::money::Currency::BRL);
         let mut total_current_value = Money::zero(crate::shared::money::Currency::BRL);
         let mut positions = Vec::new();
@@ -114,7 +122,7 @@ mod tests {
     use super::*;
     use crate::investment::domain::asset::AssetClass;
     use crate::investment::domain::portfolio::Portfolio;
-    use crate::shared::ids::{PortfolioID, UserID};
+    use crate::shared::ids::{PortfolioID, Principal, UserID};
     use crate::shared::mock::MockPortfolioRepository;
     use crate::shared::money::Currency;
 
@@ -122,10 +130,16 @@ mod tests {
         Money::from_cents(amount, Currency::BRL)
     }
 
-    async fn setup_two_positions() -> (Arc<MockPortfolioRepository>, PortfolioID, AssetID, AssetID)
-    {
+    async fn setup_two_positions() -> (
+        Arc<MockPortfolioRepository>,
+        PortfolioID,
+        AssetID,
+        AssetID,
+        UserID,
+    ) {
         let repo = Arc::new(MockPortfolioRepository::new());
-        let mut portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let owner = UserID::new();
+        let mut portfolio = Portfolio::new(PortfolioID::new(), owner);
         let a1 = AssetID::new();
         let a2 = AssetID::new();
         portfolio
@@ -136,12 +150,12 @@ mod tests {
             .unwrap();
         let pid = portfolio.id;
         repo.save(&portfolio).await.unwrap();
-        (repo, pid, a1, a2)
+        (repo, pid, a1, a2, owner)
     }
 
     #[tokio::test]
     async fn test_portfolio_summary_two_positions() {
-        let (repo, pid, a1, a2) = setup_two_positions().await;
+        let (repo, pid, a1, a2, owner) = setup_two_positions().await;
         let handler = GetPortfolioSummaryHandler::new(repo);
 
         let mut prices = HashMap::new();
@@ -152,6 +166,7 @@ mod tests {
             .handle(GetPortfolioSummaryQuery {
                 portfolio_id: pid,
                 prices,
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();
@@ -166,7 +181,8 @@ mod tests {
     #[tokio::test]
     async fn test_portfolio_summary_empty() {
         let repo = Arc::new(MockPortfolioRepository::new());
-        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let owner = UserID::new();
+        let portfolio = Portfolio::new(PortfolioID::new(), owner);
         let pid = portfolio.id;
         repo.save(&portfolio).await.unwrap();
 
@@ -176,6 +192,7 @@ mod tests {
             .handle(GetPortfolioSummaryQuery {
                 portfolio_id: pid,
                 prices: HashMap::new(),
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();
@@ -187,7 +204,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_portfolio_summary_missing_prices() {
-        let (repo, pid, a1, _a2) = setup_two_positions().await;
+        let (repo, pid, a1, _a2, owner) = setup_two_positions().await;
         let handler = GetPortfolioSummaryHandler::new(repo);
 
         let mut prices = HashMap::new();
@@ -198,6 +215,7 @@ mod tests {
             .handle(GetPortfolioSummaryQuery {
                 portfolio_id: pid,
                 prices,
+                principal: Principal::new(owner),
             })
             .await
             .unwrap();
@@ -216,9 +234,28 @@ mod tests {
             .handle(GetPortfolioSummaryQuery {
                 portfolio_id: PortfolioID::new(),
                 prices: HashMap::new(),
+                principal: Principal::new(UserID::new()),
             })
             .await;
 
         assert!(matches!(result, Err(InvestmentError::PortfolioNotFound(_))));
+    }
+
+    #[tokio::test]
+    async fn test_portfolio_summary_wrong_owner() {
+        let (repo, pid, _a1, _a2, _owner) = setup_two_positions().await;
+        let handler = GetPortfolioSummaryHandler::new(repo);
+
+        let wrong_owner = UserID::new();
+
+        let result = handler
+            .handle(GetPortfolioSummaryQuery {
+                principal: Principal::new(wrong_owner),
+                portfolio_id: pid,
+                prices: HashMap::new(),
+            })
+            .await;
+
+        assert!(matches!(result, Err(InvestmentError::Forbidden(_))));
     }
 }

@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use crate::reporting::projections::cash_flow::CashFlowStore;
 use crate::reporting::projections::net_worth::NetWorthStore;
+use crate::shared::ids::Principal;
 use crate::shared::period::Period;
 
 /// Query to export all reporting data as JSON.
 pub struct ExportDataQuery {
+    pub principal: Principal,
     pub period: Period,
 }
 
@@ -84,7 +86,7 @@ mod tests {
     use crate::ledger::domain::events::AccountOpened;
     use crate::ledger::domain::events::TransactionRecorded;
     use crate::ledger::domain::transaction::TransactionType;
-    use crate::shared::ids::{AccountID, CategoryID, TransactionID, UserID};
+    use crate::shared::ids::{AccountID, CategoryID, Principal, TransactionID, UserID};
     use crate::shared::money::{Currency, Money};
 
     #[test]
@@ -108,6 +110,7 @@ mod tests {
             &TransactionRecorded {
                 transaction_id: TransactionID::new(),
                 account_id,
+                owner_id: UserID::new(),
                 tx_type: TransactionType::Income,
                 amount: Money::from_cents(500000, Currency::BRL),
                 category_id: Some(CategoryID::new()),
@@ -123,7 +126,12 @@ mod tests {
             chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
         );
 
-        let json = handler.handle(ExportDataQuery { period }).unwrap();
+        let json = handler
+            .handle(ExportDataQuery {
+                principal: Principal::new(UserID::new()),
+                period,
+            })
+            .unwrap();
         assert!(json.contains("10000"));
         assert!(json.contains("5000"));
     }
@@ -139,7 +147,12 @@ mod tests {
             chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
         );
 
-        let json = handler.handle(ExportDataQuery { period }).unwrap();
+        let json = handler
+            .handle(ExportDataQuery {
+                principal: Principal::new(UserID::new()),
+                period,
+            })
+            .unwrap();
         assert!(json.contains("net_worth"));
         assert!(json.contains("cash_flow"));
     }

@@ -93,6 +93,7 @@ impl<R: RecurringTransactionRepository, T: TransactionRepository, P: EventPublis
         let tx_event = TransactionRecorded {
             transaction_id: tx_id,
             account_id: recurring.account_id,
+            owner_id: recurring.owner_id,
             tx_type: recurring.tx_type,
             amount: recurring.amount,
             category_id: recurring.category_id,

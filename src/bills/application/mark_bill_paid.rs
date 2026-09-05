@@ -63,6 +63,7 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> MarkBillPaidHandler<B
 
         let paid_event = BillPaid {
             bill_id: cmd.bill_id,
+            owner_id: bill.owner_id,
             amount: bill.amount,
             account_id: cmd.account_id,
             category_id: bill.category_id,
@@ -86,6 +87,7 @@ impl<B: BillRepository, P: EventPublisher, I: IdGenerator> MarkBillPaidHandler<B
 
             let scheduled_event = BillScheduled {
                 bill_id: new_id,
+                owner_id: bill.owner_id,
                 name: new_bill.name.clone(),
                 amount: new_bill.amount,
                 due_date: next_date,

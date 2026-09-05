@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use crate::reporting::projections::account_balance::NetWorthSnapshot;
 use crate::reporting::projections::net_worth::NetWorthStore;
+use crate::shared::ids::Principal;
 use crate::shared::period::YearMonth;
 
 /// Query to get net worth snapshots over a date range.
 pub struct GetNetWorthHistoryQuery {
+    pub principal: Principal,
     pub start: chrono::NaiveDate,
     pub end: chrono::NaiveDate,
 }
@@ -71,6 +73,7 @@ mod tests {
         });
 
         let snapshots = handler.handle(GetNetWorthHistoryQuery {
+            principal: Principal::new(UserID::new()),
             start: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             end: chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
         });
@@ -94,6 +97,7 @@ mod tests {
         });
 
         let snapshots = handler.handle(GetNetWorthHistoryQuery {
+            principal: Principal::new(UserID::new()),
             start: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             end: chrono::NaiveDate::from_ymd_opt(2026, 3, 31).unwrap(),
         });
@@ -110,6 +114,7 @@ mod tests {
         let handler = GetNetWorthHistoryHandler::new(store);
 
         let snapshots = handler.handle(GetNetWorthHistoryQuery {
+            principal: Principal::new(UserID::new()),
             start: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             end: chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         });

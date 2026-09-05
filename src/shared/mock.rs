@@ -389,13 +389,14 @@ impl BudgetRepository for MockBudgetRepository {
 
     async fn find_by_category_and_period(
         &self,
+        owner: UserID,
         category_id: crate::shared::ids::CategoryID,
         period: Period,
     ) -> Result<Option<Budget>, RepositoryError> {
         let budgets = self.budgets.lock().unwrap();
         let result = budgets
             .values()
-            .find(|b| b.category_id == category_id && b.period == period)
+            .find(|b| b.owner_id == owner && b.category_id == category_id && b.period == period)
             .cloned();
         Ok(result)
     }

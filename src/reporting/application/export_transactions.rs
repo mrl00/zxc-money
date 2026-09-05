@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use crate::ledger::domain::repository::TransactionRepository;
 use crate::ledger::domain::transaction::Transaction;
+use crate::shared::ids::Principal;
 use crate::shared::period::Period;
 
 /// Query to export transactions as CSV within a date range.
 pub struct ExportTransactionsQuery {
+    pub principal: Principal,
     pub period: Period,
 }
 

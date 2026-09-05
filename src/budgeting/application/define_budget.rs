@@ -46,7 +46,7 @@ impl<B: BudgetRepository, P: EventPublisher, Id: IdGenerator> DefineBudgetHandle
     pub async fn handle(&self, cmd: DefineBudgetCommand) -> Result<BudgetID, BudgetingError> {
         let existing = self
             .budget_repository
-            .find_by_category_and_period(cmd.category_id, cmd.period)
+            .find_by_category_and_period(cmd.principal.user_id, cmd.category_id, cmd.period)
             .await?;
 
         if existing.is_some() {
@@ -224,5 +224,39 @@ mod tests {
                 .amount(),
             Decimal::from(300)
         );
+    }
+
+    #[tokio::test]
+    async fn test_define_budget_different_users_same_category_period() {
+        let (budget_repo, publisher, id_gen) = setup();
+        let handler =
+            DefineBudgetHandler::new(budget_repo.clone(), publisher.clone(), id_gen.clone());
+
+        let user_a = UserID::new();
+        let user_b = UserID::new();
+        let category_id = CategoryID::new();
+        let period = Period::new(
+            chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
+        );
+
+        // User A creates budget
+        let cmd1 = DefineBudgetCommand {
+            principal: Principal::new(user_a),
+            category_id,
+            period,
+            planned_amount: Money::from_cents(50000, Currency::BRL),
+        };
+        handler.handle(cmd1).await.unwrap();
+
+        // User B creates budget for SAME category+period — should succeed
+        let cmd2 = DefineBudgetCommand {
+            principal: Principal::new(user_b),
+            category_id,
+            period,
+            planned_amount: Money::from_cents(60000, Currency::BRL),
+        };
+        let result = handler.handle(cmd2).await;
+        assert!(result.is_ok());
     }
 }

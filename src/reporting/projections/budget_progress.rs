@@ -154,6 +154,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(30000, Currency::BRL),
             category_id: Some(cat),
@@ -186,6 +187,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(60000, Currency::BRL),
             category_id: Some(cat),
@@ -213,6 +215,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Income,
             amount: Money::from_cents(500000, Currency::BRL),
             category_id: Some(cat),
@@ -235,6 +238,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: crate::shared::ids::UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(10000, Currency::BRL),
             category_id: None,

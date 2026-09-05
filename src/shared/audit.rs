@@ -280,6 +280,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: crate::ledger::domain::transaction::TransactionType::Income,
             amount: Money::from_cents(100, Currency::BRL),
             category_id: None,
@@ -309,6 +310,7 @@ mod tests {
         let event = TransactionRecorded {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: crate::ledger::domain::transaction::TransactionType::Income,
             amount: Money::from_cents(5000, Currency::BRL),
             category_id: None,
@@ -357,6 +359,7 @@ mod tests {
         let tx_event = TransactionRecorded {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
+            owner_id: UserID::new(),
             tx_type: crate::ledger::domain::transaction::TransactionType::Expense,
             amount: Money::from_cents(250, Currency::BRL),
             category_id: None,

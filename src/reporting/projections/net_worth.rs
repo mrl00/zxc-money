@@ -210,6 +210,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: id,
+            owner_id: UserID::new(),
             tx_type: TransactionType::Income,
             amount: Money::from_cents(50000, Currency::BRL),
             category_id: Some(CategoryID::new()),
@@ -231,6 +232,7 @@ mod tests {
         store.handle_event(&TransactionRecorded {
             transaction_id: TransactionID::new(),
             account_id: id,
+            owner_id: UserID::new(),
             tx_type: TransactionType::Expense,
             amount: Money::from_cents(20000, Currency::BRL),
             category_id: Some(CategoryID::new()),

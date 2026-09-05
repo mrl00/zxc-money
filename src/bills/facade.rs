@@ -180,8 +180,10 @@ mod tests {
         );
 
         // Seed the calendar store
+        let owner = UserID::new();
         calendar.handle_bill_scheduled(&crate::bills::domain::events::BillScheduled {
             bill_id: crate::shared::ids::BillID::new(),
+            owner_id: owner,
             name: "Rent".into(),
             amount: Some(Money::from_cents(150000, Currency::BRL)),
             due_date: chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
@@ -190,6 +192,7 @@ mod tests {
 
         let result = facade
             .get_bills_by_month(GetBillsByMonthQuery {
+                principal: Principal::new(owner),
                 year: 2026,
                 month: 3,
             })

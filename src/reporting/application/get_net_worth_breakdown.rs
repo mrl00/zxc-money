@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::reporting::projections::net_worth::NetWorthStore;
-use crate::shared::ids::{AccountID, PortfolioID};
+use crate::shared::ids::{AccountID, PortfolioID, Principal};
 use crate::shared::money::Money;
 
 /// Breakdown of net worth by component type.
@@ -18,7 +18,9 @@ pub struct NetWorthBreakdown {
 }
 
 /// Query to get a detailed breakdown of net worth.
-pub struct GetNetWorthBreakdownQuery;
+pub struct GetNetWorthBreakdownQuery {
+    pub principal: Principal,
+}
 
 /// Handles [`GetNetWorthBreakdownQuery`] by reading from the [`NetWorthStore`].
 pub struct GetNetWorthBreakdownHandler {
@@ -93,7 +95,9 @@ mod tests {
             timestamp: chrono::Utc::now(),
         });
 
-        let breakdown = handler.handle(GetNetWorthBreakdownQuery);
+        let breakdown = handler.handle(GetNetWorthBreakdownQuery {
+            principal: Principal::new(UserID::new()),
+        });
         assert_eq!(breakdown.accounts.len(), 2);
         assert_eq!(
             breakdown.total_accounts.amount(),
@@ -117,7 +121,9 @@ mod tests {
             timestamp: chrono::Utc::now(),
         });
 
-        let breakdown = handler.handle(GetNetWorthBreakdownQuery);
+        let breakdown = handler.handle(GetNetWorthBreakdownQuery {
+            principal: Principal::new(UserID::new()),
+        });
         assert!(breakdown.accounts.is_empty());
         assert_eq!(breakdown.investments.len(), 1);
         assert_eq!(
@@ -131,7 +137,9 @@ mod tests {
         let store = Arc::new(NetWorthStore::new());
         let handler = GetNetWorthBreakdownHandler::new(store);
 
-        let breakdown = handler.handle(GetNetWorthBreakdownQuery);
+        let breakdown = handler.handle(GetNetWorthBreakdownQuery {
+            principal: Principal::new(UserID::new()),
+        });
         assert!(breakdown.accounts.is_empty());
         assert!(breakdown.investments.is_empty());
         assert!(breakdown.total_accounts.is_zero());

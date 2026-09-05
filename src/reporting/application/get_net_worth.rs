@@ -2,9 +2,11 @@ use std::sync::Arc;
 
 use crate::reporting::projections::account_balance::NetWorthSnapshot;
 use crate::reporting::projections::net_worth::NetWorthStore;
+use crate::shared::ids::Principal;
 
 /// Query to get a net worth snapshot.
 pub struct GetNetWorthQuery {
+    pub principal: Principal,
     pub date: chrono::NaiveDate,
 }
 
@@ -48,6 +50,7 @@ mod tests {
         });
 
         let snapshot = handler.handle(GetNetWorthQuery {
+            principal: Principal::new(UserID::new()),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         });
         assert_eq!(snapshot.total_assets.amount(), Decimal::from(10000));
@@ -60,6 +63,7 @@ mod tests {
         let handler = GetNetWorthHandler::new(store);
 
         let snapshot = handler.handle(GetNetWorthQuery {
+            principal: Principal::new(UserID::new()),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
         });
         assert!(snapshot.total_assets.is_zero());

@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use crate::bills::projections::bill_calendar::{BillCalendarEntry, BillCalendarStore};
+use crate::shared::ids::Principal;
 
 /// Query to retrieve bills due within the next N days.
 pub struct GetUpcomingBillsQuery {
+    pub principal: Principal,
     /// Number of days to look ahead from today.
     pub days: i64,
 }
@@ -24,7 +26,8 @@ impl GetUpcomingBillsHandler {
 
     /// Executes the query and returns matching [`BillCalendarEntry`] items.
     pub async fn handle(&self, query: GetUpcomingBillsQuery) -> Vec<BillCalendarEntry> {
-        self.calendar_store.find_upcoming(query.days)
+        self.calendar_store
+            .find_upcoming(query.principal.user_id, query.days)
     }
 }
 
@@ -32,7 +35,7 @@ impl GetUpcomingBillsHandler {
 mod tests {
     use super::*;
     use crate::bills::domain::events::BillScheduled;
-    use crate::shared::ids::BillID;
+    use crate::shared::ids::{BillID, Principal, UserID};
     use crate::shared::money::{Currency, Money};
 
     #[tokio::test]
@@ -40,9 +43,11 @@ mod tests {
         let store = Arc::new(BillCalendarStore::new());
         let handler = GetUpcomingBillsHandler::new(store.clone());
         let today = chrono::Utc::now().date_naive();
+        let owner = UserID::new();
 
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
+            owner_id: owner,
             name: "Due tomorrow".into(),
             amount: Some(Money::from_cents(5000, Currency::BRL)),
             due_date: today + chrono::Duration::days(1),
@@ -51,13 +56,19 @@ mod tests {
 
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
+            owner_id: owner,
             name: "Due in 30 days".into(),
             amount: Some(Money::from_cents(10000, Currency::BRL)),
             due_date: today + chrono::Duration::days(30),
             timestamp: chrono::Utc::now(),
         });
 
-        let result = handler.handle(GetUpcomingBillsQuery { days: 7 }).await;
+        let result = handler
+            .handle(GetUpcomingBillsQuery {
+                principal: Principal::new(owner),
+                days: 7,
+            })
+            .await;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name, "Due tomorrow");
     }
@@ -67,7 +78,12 @@ mod tests {
         let store = Arc::new(BillCalendarStore::new());
         let handler = GetUpcomingBillsHandler::new(store);
 
-        let result = handler.handle(GetUpcomingBillsQuery { days: 3 }).await;
+        let result = handler
+            .handle(GetUpcomingBillsQuery {
+                principal: Principal::new(UserID::new()),
+                days: 3,
+            })
+            .await;
         assert_eq!(result.len(), 0);
     }
 }
