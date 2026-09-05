@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 
 use crate::investment::domain::repository::PortfolioRepository;
 use crate::shared::errors::InvestmentError;
@@ -74,12 +75,14 @@ impl<P: PortfolioRepository> GetProfitabilityHandler<P> {
 
         let invested = position.average_cost * position.quantity;
         let current_value = query.current_price * position.quantity;
-        let profit = current_value - invested;
+        let profit = (current_value - invested)
+            .map_err(|_| InvestmentError::InvariantViolation("currency mismatch".into()))?;
 
-        let profit_pct = if invested.amount() == 0 {
+        let profit_pct = if invested.amount() == Decimal::ZERO {
             0.0
         } else {
-            (profit.amount() as f64 / invested.amount() as f64) * 100.0
+            (profit.amount().to_f64().unwrap_or(0.0) / invested.amount().to_f64().unwrap_or(0.0))
+                * 100.0
         };
 
         Ok(ProfitabilityResult {
@@ -103,7 +106,7 @@ mod tests {
     use crate::shared::money::Currency;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     async fn setup_with_position() -> (Arc<MockPortfolioRepository>, PortfolioID, AssetID) {
@@ -133,9 +136,9 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.quantity, Decimal::from(10));
-        assert_eq!(result.invested.amount(), 25000); // 10 × 2500
-        assert_eq!(result.current_value.amount(), 30000); // 10 × 3000
-        assert_eq!(result.profit.amount(), 5000);
+        assert_eq!(result.invested.amount(), Decimal::from(250)); // 10 × 25.00
+        assert_eq!(result.current_value.amount(), Decimal::from(300)); // 10 × 30.00
+        assert_eq!(result.profit.amount(), Decimal::from(50));
         assert!((result.profit_pct - 20.0).abs() < 0.01);
     }
 
@@ -153,7 +156,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.profit.amount(), -5000);
+        assert_eq!(result.profit.amount(), Decimal::from(-50));
         assert!((result.profit_pct - (-20.0)).abs() < 0.01);
     }
 

@@ -85,6 +85,7 @@ mod tests {
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::mock::MockBudgetRepository;
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
     use std::sync::Arc;
 
     fn setup() -> (
@@ -110,13 +111,13 @@ mod tests {
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            planned_amount: Money::new(500_00, Currency::BRL),
+            planned_amount: Money::from_cents(500_00, Currency::BRL),
         };
 
         let budget_id = handler.handle(cmd).await.unwrap();
         let saved = budget_repo.find_by_id(budget_id).await.unwrap();
         assert!(saved.is_some());
-        assert_eq!(saved.unwrap().planned_amount.amount(), 500_00);
+        assert_eq!(saved.unwrap().planned_amount.amount(), Decimal::from(500));
     }
 
     #[tokio::test]
@@ -136,7 +137,7 @@ mod tests {
             owner_id,
             category_id,
             period,
-            planned_amount: Money::new(500_00, Currency::BRL),
+            planned_amount: Money::from_cents(500_00, Currency::BRL),
         };
         handler.handle(cmd1).await.unwrap();
 
@@ -144,7 +145,7 @@ mod tests {
             owner_id,
             category_id,
             period,
-            planned_amount: Money::new(600_00, Currency::BRL),
+            planned_amount: Money::from_cents(600_00, Currency::BRL),
         };
         let result = handler.handle(cmd2).await;
         assert!(result.is_err());
@@ -162,7 +163,7 @@ mod tests {
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap(),
             ),
-            planned_amount: Money::new(0, Currency::BRL),
+            planned_amount: Money::from_cents(0, Currency::BRL),
         };
 
         let result = handler.handle(cmd).await;
@@ -186,7 +187,7 @@ mod tests {
                 owner_id: UserID::new(),
                 category_id: CategoryID::new(),
                 period,
-                planned_amount: Money::new(500_00, Currency::BRL),
+                planned_amount: Money::from_cents(500_00, Currency::BRL),
             })
             .await
             .unwrap();
@@ -196,7 +197,7 @@ mod tests {
                 owner_id: UserID::new(),
                 category_id: CategoryID::new(),
                 period,
-                planned_amount: Money::new(300_00, Currency::BRL),
+                planned_amount: Money::from_cents(300_00, Currency::BRL),
             })
             .await
             .unwrap();
@@ -210,7 +211,7 @@ mod tests {
                 .unwrap()
                 .planned_amount
                 .amount(),
-            500_00
+            Decimal::from(500)
         );
         assert_eq!(
             budget_repo
@@ -220,7 +221,7 @@ mod tests {
                 .unwrap()
                 .planned_amount
                 .amount(),
-            300_00
+            Decimal::from(300)
         );
     }
 }

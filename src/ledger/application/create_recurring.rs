@@ -104,7 +104,7 @@ mod tests {
             owner_id: UserID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(5000, Currency::BRL),
+            amount: Money::from_cents(5000, Currency::BRL),
             description: "Netflix".into(),
             category_id: Some(CategoryID::new()),
             frequency: Frequency::Monthly,

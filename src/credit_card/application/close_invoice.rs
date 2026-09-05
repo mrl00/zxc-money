@@ -108,7 +108,7 @@ mod tests {
             owner,
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(500000, Currency::BRL),
+            Money::from_cents(500000, Currency::BRL),
             20,
             27,
         );
@@ -120,7 +120,7 @@ mod tests {
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
                 "Netflix".into(),
-                Money::new(5000, Currency::BRL),
+                Money::from_cents(5000, Currency::BRL),
                 1,
                 CategoryID::new(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -155,7 +155,7 @@ mod tests {
             owner,
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(500000, Currency::BRL),
+            Money::from_cents(500000, Currency::BRL),
             20,
             27,
         );
@@ -187,7 +187,7 @@ mod tests {
             owner,
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(500000, Currency::BRL),
+            Money::from_cents(500000, Currency::BRL),
             20,
             27,
         );

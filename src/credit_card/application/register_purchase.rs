@@ -141,8 +141,9 @@ impl<C: CreditCardRepository, I: InvoiceRepository, P: EventPublisher, Id: IdGen
         cmd: RegisterPurchaseCommand,
     ) -> Result<Vec<PurchaseID>, CreditCardError> {
         let n = cmd.installments_count as i64;
-        let base_amount = cmd.total_amount.amount() / n;
-        let remainder = cmd.total_amount.amount() - base_amount * (n - 1);
+        let base_amount = (cmd.total_amount.amount() / rust_decimal::Decimal::from(n)).round_dp(2);
+        let remainder =
+            cmd.total_amount.amount() - base_amount * rust_decimal::Decimal::from(n - 1);
 
         let group_id = InstallmentGroupID::from_uuid(self.id_generator.new_id());
         let start_month = YearMonth::from_date(cmd.purchased_at);
@@ -209,7 +210,7 @@ fn add_months(ym: &YearMonth, months: u32) -> YearMonth {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::provider::id::{IdGenerator, MockIdGenerator, UuidGenerator};
+    use crate::provider::id::{MockIdGenerator, UuidGenerator};
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::mock::{MockCreditCardRepository, MockInvoiceRepository};
     use crate::shared::money::Currency;
@@ -246,7 +247,7 @@ mod tests {
             owner,
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(500000, Currency::BRL),
+            Money::from_cents(500000, Currency::BRL),
             20,
             27,
         );
@@ -267,7 +268,7 @@ mod tests {
                 owner_id: owner,
                 credit_card_id: card_id,
                 description: "Netflix".into(),
-                total_amount: Money::new(5000, Currency::BRL),
+                total_amount: Money::from_cents(5000, Currency::BRL),
                 installments_count: 1,
                 category_id: CategoryID::new(),
                 purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -281,7 +282,7 @@ mod tests {
         assert_eq!(invoice.purchases.len(), 1);
         assert_eq!(
             invoice.purchases[0].total_amount,
-            Money::new(5000, Currency::BRL)
+            Money::from_cents(5000, Currency::BRL)
         );
     }
 
@@ -299,7 +300,7 @@ mod tests {
                 owner_id: owner,
                 credit_card_id: card_id,
                 description: "TV".into(),
-                total_amount: Money::new(9000, Currency::BRL),
+                total_amount: Money::from_cents(9000, Currency::BRL),
                 installments_count: 3,
                 category_id: CategoryID::new(),
                 purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -333,15 +334,15 @@ mod tests {
         // Each installment is 3000
         assert_eq!(
             inv_jan.purchases[0].total_amount,
-            Money::new(3000, Currency::BRL)
+            Money::from_cents(3000, Currency::BRL)
         );
         assert_eq!(
             inv_feb.purchases[0].total_amount,
-            Money::new(3000, Currency::BRL)
+            Money::from_cents(3000, Currency::BRL)
         );
         assert_eq!(
             inv_mar.purchases[0].total_amount,
-            Money::new(3000, Currency::BRL)
+            Money::from_cents(3000, Currency::BRL)
         );
 
         // Same group_id
@@ -370,7 +371,7 @@ mod tests {
                 owner_id: owner,
                 credit_card_id: card_id,
                 description: "Something".into(),
-                total_amount: Money::new(1000, Currency::BRL),
+                total_amount: Money::from_cents(1000, Currency::BRL),
                 installments_count: 3,
                 category_id: CategoryID::new(),
                 purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 6, 10).unwrap(),
@@ -398,15 +399,15 @@ mod tests {
 
         assert_eq!(
             inv_jun.purchases[0].total_amount,
-            Money::new(333, Currency::BRL)
+            Money::from_cents(333, Currency::BRL)
         );
         assert_eq!(
             inv_jul.purchases[0].total_amount,
-            Money::new(333, Currency::BRL)
+            Money::from_cents(333, Currency::BRL)
         );
         assert_eq!(
             inv_aug.purchases[0].total_amount,
-            Money::new(334, Currency::BRL)
+            Money::from_cents(334, Currency::BRL)
         );
     }
 
@@ -424,7 +425,7 @@ mod tests {
                 owner_id: UserID::new(),
                 credit_card_id: card_id,
                 description: "Hack".into(),
-                total_amount: Money::new(5000, Currency::BRL),
+                total_amount: Money::from_cents(5000, Currency::BRL),
                 installments_count: 1,
                 category_id: CategoryID::new(),
                 purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -451,7 +452,7 @@ mod tests {
                 owner_id: owner,
                 credit_card_id: card_id,
                 description: "Bad".into(),
-                total_amount: Money::new(5000, Currency::BRL),
+                total_amount: Money::from_cents(5000, Currency::BRL),
                 installments_count: 0,
                 category_id: CategoryID::new(),
                 purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -478,7 +479,7 @@ mod tests {
                 owner_id: owner,
                 credit_card_id: card_id,
                 description: "Annual thing".into(),
-                total_amount: Money::new(12000, Currency::BRL),
+                total_amount: Money::from_cents(12000, Currency::BRL),
                 installments_count: 3,
                 category_id: CategoryID::new(),
                 purchased_at: chrono::NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
@@ -506,15 +507,15 @@ mod tests {
 
         assert_eq!(
             inv_nov.purchases[0].total_amount,
-            Money::new(4000, Currency::BRL)
+            Money::from_cents(4000, Currency::BRL)
         );
         assert_eq!(
             inv_dec.purchases[0].total_amount,
-            Money::new(4000, Currency::BRL)
+            Money::from_cents(4000, Currency::BRL)
         );
         assert_eq!(
             inv_jan.purchases[0].total_amount,
-            Money::new(4000, Currency::BRL)
+            Money::from_cents(4000, Currency::BRL)
         );
     }
 }

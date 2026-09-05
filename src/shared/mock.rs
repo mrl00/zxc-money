@@ -653,7 +653,7 @@ mod tests {
             "Test Account".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
         )
         .unwrap();
 
@@ -679,7 +679,7 @@ mod tests {
             "Account 1".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
         )
         .unwrap();
         let account2 = Account::new(
@@ -688,7 +688,7 @@ mod tests {
             "Account 2".into(),
             crate::ledger::domain::account::AccountType::Savings,
             Currency::BRL,
-            Money::new(2000, Currency::BRL),
+            Money::from_cents(2000, Currency::BRL),
         )
         .unwrap();
         let account3 = Account::new(
@@ -697,7 +697,7 @@ mod tests {
             "Account 3".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(3000, Currency::BRL),
+            Money::from_cents(3000, Currency::BRL),
         )
         .unwrap();
 
@@ -720,7 +720,7 @@ mod tests {
             TransactionID::new(),
             account_id,
             crate::ledger::domain::transaction::TransactionType::Income,
-            Money::new(500, Currency::BRL),
+            Money::from_cents(500, Currency::BRL),
             "Salary".into(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -750,7 +750,7 @@ mod tests {
             BillID::new(),
             owner_id,
             "Internet".into(),
-            Some(Money::new(99_90, Currency::BRL)),
+            Some(Money::from_cents(99_90, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
             Some(crate::bills::domain::bill::RecurrenceRule::Monthly),
             CategoryID::new(),

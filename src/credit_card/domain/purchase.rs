@@ -80,7 +80,9 @@ impl Purchase {
 
     /// Returns the amount of a single installment (integer division, truncating).
     pub fn installment_amount(&self) -> Money {
-        let per_installment = self.total_amount.amount() / self.installments_count as i64;
+        let per_installment = (self.total_amount.amount()
+            / rust_decimal::Decimal::from(self.installments_count))
+        .round_dp(2);
         Money::new(per_installment, self.total_amount.currency())
     }
 }
@@ -95,12 +97,15 @@ mod tests {
         let p = Purchase::new(
             PurchaseID::new(),
             "Netflix".into(),
-            Money::new(5000, Currency::BRL),
+            Money::from_cents(5000, Currency::BRL),
             1,
             CategoryID::new(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
         );
-        assert_eq!(p.installment_amount(), Money::new(5000, Currency::BRL));
+        assert_eq!(
+            p.installment_amount(),
+            Money::from_cents(5000, Currency::BRL)
+        );
     }
 
     #[test]
@@ -108,12 +113,15 @@ mod tests {
         let p = Purchase::new(
             PurchaseID::new(),
             "TV".into(),
-            Money::new(9000, Currency::BRL),
+            Money::from_cents(9000, Currency::BRL),
             3,
             CategoryID::new(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
         );
-        assert_eq!(p.installment_amount(), Money::new(3000, Currency::BRL));
+        assert_eq!(
+            p.installment_amount(),
+            Money::from_cents(3000, Currency::BRL)
+        );
     }
 
     #[test]
@@ -121,12 +129,15 @@ mod tests {
         let p = Purchase::new(
             PurchaseID::new(),
             "Notebook".into(),
-            Money::new(50000, Currency::BRL),
+            Money::from_cents(50000, Currency::BRL),
             10,
             CategoryID::new(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
         );
-        assert_eq!(p.installment_amount(), Money::new(5000, Currency::BRL));
+        assert_eq!(
+            p.installment_amount(),
+            Money::from_cents(5000, Currency::BRL)
+        );
     }
 
     #[test]
@@ -134,12 +145,15 @@ mod tests {
         let p = Purchase::new(
             PurchaseID::new(),
             "Something".into(),
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
             3,
             CategoryID::new(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
         );
-        assert_eq!(p.installment_amount(), Money::new(333, Currency::BRL));
+        assert_eq!(
+            p.installment_amount(),
+            Money::from_cents(333, Currency::BRL)
+        );
     }
 
     #[test]
@@ -147,11 +161,14 @@ mod tests {
         let p = Purchase::new(
             PurchaseID::new(),
             "Coffee".into(),
-            Money::new(1500, Currency::BRL),
+            Money::from_cents(1500, Currency::BRL),
             1,
             CategoryID::new(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
         );
-        assert_eq!(p.installment_amount(), Money::new(1500, Currency::BRL));
+        assert_eq!(
+            p.installment_amount(),
+            Money::from_cents(1500, Currency::BRL)
+        );
     }
 }

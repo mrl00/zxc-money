@@ -110,7 +110,7 @@ mod tests {
         let event = InvoicePaid {
             invoice_id: InvoiceID::new(),
             credit_card_id: card_id,
-            total: Money::new(15000, Currency::BRL),
+            total: Money::from_cents(15000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         };
 
@@ -123,7 +123,7 @@ mod tests {
         let txns = tx_repo.find_by_account(account_id, period).await.unwrap();
         assert_eq!(txns.len(), 1);
         assert_eq!(txns[0].tx_type, TransactionType::Expense);
-        assert_eq!(txns[0].amount, Money::new(15000, Currency::BRL));
+        assert_eq!(txns[0].amount, Money::from_cents(15000, Currency::BRL));
     }
 
     #[tokio::test]
@@ -137,7 +137,7 @@ mod tests {
         let event = InvoicePaid {
             invoice_id: InvoiceID::new(),
             credit_card_id: CreditCardID::new(),
-            total: Money::new(15000, Currency::BRL),
+            total: Money::from_cents(15000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         };
 

@@ -134,9 +134,10 @@ mod tests {
     use crate::shared::ids::{PortfolioID, UserID};
     use crate::shared::mock::{MockAssetRepository, MockPortfolioRepository};
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     async fn setup() -> (
@@ -158,7 +159,7 @@ mod tests {
         .unwrap();
         asset_repo.save(&asset).await.unwrap();
 
-        let mut portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
+        let portfolio = Portfolio::new(PortfolioID::new(), UserID::new());
         portfolio_repo.save(&portfolio).await.unwrap();
 
         (asset_repo, portfolio_repo, publisher)
@@ -216,7 +217,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(result.invested.amount(), 65000);
-        assert_eq!(result.current_value.amount(), 70000);
+        assert_eq!(result.invested.amount(), Decimal::from(650));
+        assert_eq!(result.current_value.amount(), Decimal::from(700));
     }
 }

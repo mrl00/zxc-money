@@ -124,7 +124,7 @@ mod tests {
             id,
             AccountID::new(),
             TransactionType::Income,
-            Money::new(100, Currency::BRL),
+            Money::from_cents(100, Currency::BRL),
             "Salary".into(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
@@ -163,7 +163,7 @@ mod tests {
         let handler = UpdateTransactionHandler::new(repo, publisher);
         let cmd = UpdateTransactionCommand {
             transaction_id: tx_id,
-            amount: Some(Money::new(200, Currency::BRL)),
+            amount: Some(Money::from_cents(200, Currency::BRL)),
             description: None,
             date: None,
             category_id: None,

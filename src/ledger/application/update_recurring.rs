@@ -150,7 +150,7 @@ mod tests {
             owner,
             AccountID::new(),
             TransactionType::Expense,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
             "Netflix".into(),
             Some(crate::shared::ids::CategoryID::new()),
             Frequency::Monthly,

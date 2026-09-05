@@ -19,17 +19,17 @@ pub struct ReportingExport {
 #[derive(serde::Serialize)]
 pub struct NetWorthExport {
     pub date: String,
-    pub total_assets_cents: i64,
-    pub total_liabilities_cents: i64,
-    pub net_worth_cents: i64,
+    pub total_assets: rust_decimal::Decimal,
+    pub total_liabilities: rust_decimal::Decimal,
+    pub net_worth: rust_decimal::Decimal,
 }
 
 #[derive(serde::Serialize)]
 pub struct CashFlowExport {
     pub date: String,
-    pub income_cents: i64,
-    pub expense_cents: i64,
-    pub net_cents: i64,
+    pub income: rust_decimal::Decimal,
+    pub expense: rust_decimal::Decimal,
+    pub net: rust_decimal::Decimal,
 }
 
 /// Handles [`ExportDataQuery`] by serializing reporting projections to JSON.
@@ -53,9 +53,9 @@ impl ExportDataHandler {
 
         let net_worth = NetWorthExport {
             date: snapshot.date.to_string(),
-            total_assets_cents: snapshot.total_assets.amount(),
-            total_liabilities_cents: snapshot.total_liabilities.amount(),
-            net_worth_cents: snapshot.net_worth.amount(),
+            total_assets: snapshot.total_assets.amount(),
+            total_liabilities: snapshot.total_liabilities.amount(),
+            net_worth: snapshot.net_worth.amount(),
         };
 
         let entries = self.cash_flow_store.get_period(query.period);
@@ -63,9 +63,9 @@ impl ExportDataHandler {
             .iter()
             .map(|e| CashFlowExport {
                 date: e.date.to_string(),
-                income_cents: e.income.amount(),
-                expense_cents: e.expense.amount(),
-                net_cents: e.net.amount(),
+                income: e.income.amount(),
+                expense: e.expense.amount(),
+                net: e.net.amount(),
             })
             .collect();
 
@@ -100,7 +100,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Checking".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(10000_00, Currency::BRL),
+            opening_balance: Money::from_cents(10000_00, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
@@ -109,7 +109,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id,
                 tx_type: TransactionType::Income,
-                amount: Money::new(5000_00, Currency::BRL),
+                amount: Money::from_cents(5000_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -124,8 +124,8 @@ mod tests {
         );
 
         let json = handler.handle(ExportDataQuery { period }).unwrap();
-        assert!(json.contains("1000000"));
-        assert!(json.contains("500000"));
+        assert!(json.contains("10000"));
+        assert!(json.contains("5000"));
     }
 
     #[test]

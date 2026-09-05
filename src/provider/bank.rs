@@ -99,7 +99,7 @@ mod tests {
     fn sample_raw() -> RawTransaction {
         RawTransaction {
             date: chrono::NaiveDate::from_ymd_opt(2026, 3, 15).unwrap(),
-            amount: Money::new(-2500, Currency::BRL),
+            amount: Money::from_cents(-2500, Currency::BRL),
             description: "Supermarket".into(),
             raw_line: "15/03/2026,-25.00,Supermarket".into(),
         }

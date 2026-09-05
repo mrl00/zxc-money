@@ -164,7 +164,7 @@ mod tests {
             "Test".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         account_repo.save(&account).await.unwrap();
@@ -175,7 +175,7 @@ mod tests {
         let cmd = RecordTransactionCommand {
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::new(50000, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
             category_id: Some(category_id),
@@ -197,7 +197,7 @@ mod tests {
         let cmd = RecordTransactionCommand {
             account_id: AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::new(50000, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
             category_id: None,
@@ -219,7 +219,7 @@ mod tests {
         let cmd = RecordTransactionCommand {
             account_id: AccountID::new(),
             tx_type: TransactionType::Transfer,
-            amount: Money::new(50000, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             description: "Transfer".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
             category_id: Some(CategoryID::new()),
@@ -243,7 +243,7 @@ mod tests {
             "BRL Account".into(),
             crate::ledger::domain::account::AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         account_repo.save(&account).await.unwrap();
@@ -253,7 +253,7 @@ mod tests {
         let cmd = RecordTransactionCommand {
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::new(100, Currency::USD),
+            amount: Money::from_cents(100, Currency::USD),
             description: "USD income".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
             category_id: Some(CategoryID::new()),

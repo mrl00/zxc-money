@@ -113,16 +113,14 @@ impl<R: RecurringTransactionRepository, T: TransactionRepository, P: EventPublis
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ledger::domain::events::RecurringTransactionCreated;
+
     use crate::ledger::domain::recurring_transaction::Frequency;
     use crate::ledger::domain::recurring_transaction::RecurringTransaction;
     use crate::ledger::domain::transaction::TransactionType;
     use crate::provider::id::MockIdGenerator;
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::ids::{AccountID, CategoryID, UserID};
-    use crate::shared::mock::{
-        MockAccountRepository, MockRecurringTransactionRepository, MockTransactionRepository,
-    };
+    use crate::shared::mock::{MockRecurringTransactionRepository, MockTransactionRepository};
     use crate::shared::money::{Currency, Money};
 
     #[tokio::test]
@@ -138,7 +136,7 @@ mod tests {
             UserID::new(),
             AccountID::new(),
             TransactionType::Expense,
-            Money::new(5000, Currency::BRL),
+            Money::from_cents(5000, Currency::BRL),
             "Netflix".into(),
             Some(CategoryID::new()),
             Frequency::Monthly,
@@ -182,7 +180,7 @@ mod tests {
             UserID::new(),
             AccountID::new(),
             TransactionType::Expense,
-            Money::new(5000, Currency::BRL),
+            Money::from_cents(5000, Currency::BRL),
             "Netflix".into(),
             Some(CategoryID::new()),
             Frequency::Monthly,

@@ -105,7 +105,7 @@ mod tests {
             "My Account".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
         );
         assert!(account.is_ok());
     }
@@ -118,7 +118,7 @@ mod tests {
             "".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(1000, Currency::BRL),
+            Money::from_cents(1000, Currency::BRL),
         );
         assert!(result.is_err());
         assert!(matches!(
@@ -135,7 +135,7 @@ mod tests {
             "Account".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(1000, Currency::USD),
+            Money::from_cents(1000, Currency::USD),
         );
         assert!(result.is_err());
         assert!(matches!(
@@ -152,7 +152,7 @@ mod tests {
             "Old Name".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         account.rename("New Name".into());
@@ -167,7 +167,7 @@ mod tests {
             "Account".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         account.change_type(AccountType::Savings);

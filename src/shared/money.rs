@@ -1,30 +1,34 @@
 //! Monetary value object with currency-safe arithmetic.
 //!
-//! All amounts are stored as `i64` cents to avoid floating-point precision issues.
-//! The [`Currency`] enum enforces that operations only combine matching currencies.
+//! Amounts are stored as [`rust_decimal::Decimal`] in major currency units
+//! (e.g. `15.50` for R$ 15,50). The [`Currency`] enum enforces that operations
+//! only combine matching currencies.
 //!
 //! # Example
 //!
 //! ```ignore
 //! use zxc_money::shared::money::{Money, Currency};
 //!
-//! let price = Money::new(49_90, Currency::BRL);  // R$ 49.90
-//! let tax   = Money::new(9_98, Currency::BRL);   // R$  9.98
-//! let total = price.checked_add(tax).unwrap();    // R$ 59.88
-//! assert_eq!(format!("{total}"), "59 88");
+//! let price = Money::new(dec!(49.90), Currency::BRL);  // R$ 49,90
+//! let tax   = Money::new(dec!(9.98),  Currency::BRL);  // R$  9,98
+//! let total = price.checked_add(tax).unwrap();           // R$ 59,88
+//! assert_eq!(format!("{total}"), "49.90 + 9.98");
 //! ```
 
+use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, Sub};
 
 /// A monetary value with an associated currency.
 ///
-/// Amounts are stored in **cents** (minor currency units) as `i64`.
-/// This avoids floating-point rounding errors common in financial calculations.
+/// Amounts are stored as [`Decimal`] in major currency units (e.g. `15.50`).
+/// This avoids floating-point rounding errors common in financial calculations
+/// and provides arbitrary precision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub struct Money {
-    amount: i64,
+    amount: Decimal,
     currency: Currency,
 }
 
@@ -60,15 +64,18 @@ impl Currency {
 }
 
 impl Money {
-    /// Create a new `Money` from an amount in cents and a currency.
-    pub fn new(amount: i64, currency: Currency) -> Self {
+    /// Create a new `Money` from a decimal amount and a currency.
+    pub fn new(amount: Decimal, currency: Currency) -> Self {
         Self { amount, currency }
     }
 
-    /// Alias for [`Money::new`]. Creates a `Money` from cents.
-    pub fn from_decimal(cents: i64, currency: Currency) -> Self {
+    /// Create a `Money` from an amount in minor currency units (cents).
+    ///
+    /// This is a convenience for migrating from the old `i64`-based API.
+    /// `Money::from_cents(1500, BRL)` creates R$ 15,00.
+    pub fn from_cents(cents: i64, currency: Currency) -> Self {
         Self {
-            amount: cents,
+            amount: Decimal::from(cents) / Decimal::from(100),
             currency,
         }
     }
@@ -76,14 +83,26 @@ impl Money {
     /// Create a zero-amount `Money` in the given currency.
     pub fn zero(currency: Currency) -> Self {
         Self {
-            amount: 0,
+            amount: Decimal::ZERO,
             currency,
         }
     }
 
-    /// Return the amount in cents.
-    pub fn amount(&self) -> i64 {
+    /// Return the amount as a [`Decimal`].
+    pub fn amount(&self) -> Decimal {
         self.amount
+    }
+
+    /// Return the amount truncated to an integer (no fractional part).
+    pub fn amount_trunc(&self) -> Decimal {
+        self.amount.trunc()
+    }
+
+    /// Return the amount in minor currency units (cents) as `i64`.
+    ///
+    /// Returns `None` if the amount cannot be exactly represented as `i64` cents.
+    pub fn to_cents(&self) -> Option<i64> {
+        (self.amount * Decimal::from(100)).to_i64()
     }
 
     /// Return the currency.
@@ -93,17 +112,17 @@ impl Money {
 
     /// Returns `true` if the amount is positive.
     pub fn is_positive(&self) -> bool {
-        self.amount > 0
+        self.amount > Decimal::ZERO
     }
 
     /// Returns `true` if the amount is negative.
     pub fn is_negative(&self) -> bool {
-        self.amount < 0
+        self.amount < Decimal::ZERO
     }
 
     /// Returns `true` if the amount is zero.
     pub fn is_zero(&self) -> bool {
-        self.amount == 0
+        self.amount == Decimal::ZERO
     }
 
     /// Return the absolute value of the amount.
@@ -116,8 +135,7 @@ impl Money {
 
     /// Safely add two `Money` values.
     ///
-    /// Returns [`LedgerError::CurrencyMismatch`](crate::shared::errors::LedgerError::CurrencyMismatch) if currencies differ,
-    /// or [`LedgerError::InvalidAmount`](crate::shared::errors::LedgerError::InvalidAmount) on integer overflow.
+    /// Returns [`LedgerError::CurrencyMismatch`] if currencies differ.
     pub fn checked_add(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
             return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
@@ -126,17 +144,14 @@ impl Money {
             });
         }
         Ok(Money {
-            amount: self.amount.checked_add(other.amount).ok_or_else(|| {
-                crate::shared::errors::LedgerError::InvalidAmount("overflow on addition".into())
-            })?,
+            amount: self.amount + other.amount,
             currency: self.currency,
         })
     }
 
     /// Safely subtract two `Money` values.
     ///
-    /// Returns [`LedgerError::CurrencyMismatch`](crate::shared::errors::LedgerError::CurrencyMismatch) if currencies differ,
-    /// or [`LedgerError::InvalidAmount`](crate::shared::errors::LedgerError::InvalidAmount) on integer overflow.
+    /// Returns [`LedgerError::CurrencyMismatch`] if currencies differ.
     pub fn checked_sub(self, other: Money) -> Result<Money, crate::shared::errors::LedgerError> {
         if self.currency != other.currency {
             return Err(crate::shared::errors::LedgerError::CurrencyMismatch {
@@ -145,39 +160,34 @@ impl Money {
             });
         }
         Ok(Money {
-            amount: self.amount.checked_sub(other.amount).ok_or_else(|| {
-                crate::shared::errors::LedgerError::InvalidAmount("overflow on subtraction".into())
-            })?,
+            amount: self.amount - other.amount,
             currency: self.currency,
         })
     }
 }
 
 impl Add for Money {
-    type Output = Money;
+    type Output = Result<Money, crate::shared::errors::LedgerError>;
 
     fn add(self, rhs: Money) -> Self::Output {
         self.checked_add(rhs)
-            .expect("moeda incompatível ou overflow")
     }
 }
 
 impl Sub for Money {
-    type Output = Money;
+    type Output = Result<Money, crate::shared::errors::LedgerError>;
 
     fn sub(self, rhs: Money) -> Self::Output {
         self.checked_sub(rhs)
-            .expect("moeda incompatível ou overflow")
     }
 }
 
-impl std::ops::Mul<rust_decimal::Decimal> for Money {
+impl std::ops::Mul<Decimal> for Money {
     type Output = Money;
 
-    fn mul(self, rhs: rust_decimal::Decimal) -> Self::Output {
-        let result = (self.amount as f64 * rhs.to_string().parse::<f64>().unwrap()) as i64;
+    fn mul(self, rhs: Decimal) -> Self::Output {
         Money {
-            amount: result,
+            amount: self.amount * rhs,
             currency: self.currency,
         }
     }
@@ -188,19 +198,18 @@ impl std::ops::Mul<i64> for Money {
 
     fn mul(self, rhs: i64) -> Self::Output {
         Money {
-            amount: self.amount * rhs,
+            amount: self.amount * Decimal::from(rhs),
             currency: self.currency,
         }
     }
 }
 
-impl std::ops::Div<rust_decimal::Decimal> for Money {
+impl std::ops::Div<Decimal> for Money {
     type Output = Money;
 
-    fn div(self, rhs: rust_decimal::Decimal) -> Self::Output {
-        let result = (self.amount as f64 / rhs.to_string().parse::<f64>().unwrap()) as i64;
+    fn div(self, rhs: Decimal) -> Self::Output {
         Money {
-            amount: result,
+            amount: self.amount / rhs,
             currency: self.currency,
         }
     }
@@ -211,7 +220,7 @@ impl std::ops::Div<i64> for Money {
 
     fn div(self, rhs: i64) -> Self::Output {
         Money {
-            amount: self.amount / rhs,
+            amount: self.amount / Decimal::from(rhs),
             currency: self.currency,
         }
     }
@@ -219,21 +228,27 @@ impl std::ops::Div<i64> for Money {
 
 impl fmt::Display for Money {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let units = self.amount / 100;
-        let cents = (self.amount % 100).unsigned_abs();
-        write!(f, "{} {:02}", units, cents)
+        write!(f, "{}", self.amount)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_decimal_macros::dec;
 
     #[test]
     fn test_money_creation() {
-        let m = Money::new(1500, Currency::BRL);
-        assert_eq!(m.amount(), 1500);
+        let m = Money::new(dec!(15.00), Currency::BRL);
+        assert_eq!(m.amount(), dec!(15.00));
         assert_eq!(m.currency(), Currency::BRL);
+    }
+
+    #[test]
+    fn test_from_cents() {
+        let m = Money::from_cents(1500, Currency::BRL);
+        assert_eq!(m.amount(), dec!(15.00));
+        assert_eq!(m.to_cents(), Some(1500));
     }
 
     #[test]
@@ -246,37 +261,65 @@ mod tests {
 
     #[test]
     fn test_add_same_currency() {
-        let a = Money::new(1000, Currency::BRL);
-        let b = Money::new(500, Currency::BRL);
-        let result = a.checked_add(b).unwrap();
-        assert_eq!(result.amount(), 1500);
+        let a = Money::new(dec!(10.00), Currency::BRL);
+        let b = Money::new(dec!(5.00), Currency::BRL);
+        let result = (a + b).unwrap();
+        assert_eq!(result.amount(), dec!(15.00));
     }
 
     #[test]
     fn test_add_different_currency_fails() {
-        let a = Money::new(1000, Currency::BRL);
-        let b = Money::new(500, Currency::USD);
-        assert!(a.checked_add(b).is_err());
+        let a = Money::new(dec!(10.00), Currency::BRL);
+        let b = Money::new(dec!(5.00), Currency::USD);
+        assert!((a + b).is_err());
     }
 
     #[test]
     fn test_sub() {
-        let a = Money::new(1000, Currency::BRL);
-        let b = Money::new(300, Currency::BRL);
-        let result = a.checked_sub(b).unwrap();
-        assert_eq!(result.amount(), 700);
+        let a = Money::new(dec!(10.00), Currency::BRL);
+        let b = Money::new(dec!(3.00), Currency::BRL);
+        let result = (a - b).unwrap();
+        assert_eq!(result.amount(), dec!(7.00));
+    }
+
+    #[test]
+    fn test_mul_decimal() {
+        let m = Money::new(dec!(100.00), Currency::BRL);
+        let result = m * dec!(1.5);
+        assert_eq!(result.amount(), dec!(150.00));
+    }
+
+    #[test]
+    fn test_mul_i64() {
+        let m = Money::new(dec!(50.00), Currency::BRL);
+        let result = m * 3;
+        assert_eq!(result.amount(), dec!(150.00));
+    }
+
+    #[test]
+    fn test_div_decimal() {
+        let m = Money::new(dec!(150.00), Currency::BRL);
+        let result = m / dec!(3);
+        assert_eq!(result.amount(), dec!(50.00));
+    }
+
+    #[test]
+    fn test_div_i64() {
+        let m = Money::new(dec!(150.00), Currency::BRL);
+        let result = m / 3;
+        assert_eq!(result.amount(), dec!(50.00));
     }
 
     #[test]
     fn test_display() {
-        let m = Money::new(1550, Currency::BRL);
-        assert_eq!(format!("{m}"), "15 50");
+        let m = Money::new(dec!(15.50), Currency::BRL);
+        assert_eq!(format!("{m}"), "15.50");
     }
 
     #[test]
     fn test_abs() {
-        let m = Money::new(-500, Currency::EUR);
-        assert_eq!(m.abs().amount(), 500);
+        let m = Money::new(dec!(-5.00), Currency::EUR);
+        assert_eq!(m.abs().amount(), dec!(5.00));
     }
 
     #[test]
@@ -288,9 +331,21 @@ mod tests {
 
     #[test]
     fn test_serde_roundtrip() {
-        let m = Money::new(12345, Currency::BRL);
+        let m = Money::new(dec!(123.45), Currency::BRL);
         let json = serde_json::to_string(&m).unwrap();
         let deserialized: Money = serde_json::from_str(&json).unwrap();
         assert_eq!(m, deserialized);
+    }
+
+    #[test]
+    fn test_to_cents() {
+        let m = Money::new(dec!(15.50), Currency::BRL);
+        assert_eq!(m.to_cents(), Some(1550));
+    }
+
+    #[test]
+    fn test_amount_trunc() {
+        let m = Money::new(dec!(15.99), Currency::BRL);
+        assert_eq!(m.amount_trunc(), dec!(15));
     }
 }

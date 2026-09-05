@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 
 use crate::investment::domain::asset::AssetClass;
@@ -69,17 +68,13 @@ impl Portfolio {
                 )));
             }
 
-            let old_total_cents = Decimal::from(position.average_cost.amount()) * position.quantity;
-            let new_total_cents = old_total_cents + Decimal::from(price.amount()) * quantity;
+            let old_total = position.average_cost.amount() * position.quantity;
+            let new_total = old_total + price.amount() * quantity;
             let new_quantity = position.quantity + quantity;
 
-            // new average cost per unit in cents
-            let new_avg_cents = new_total_cents / new_quantity;
-            let new_avg_i64 = new_avg_cents.to_i64().ok_or_else(|| {
-                InvestmentError::InvariantViolation("average cost overflow".into())
-            })?;
+            let new_avg = new_total / new_quantity;
 
-            position.average_cost = Money::new(new_avg_i64, price.currency());
+            position.average_cost = Money::new(new_avg, price.currency());
             position.quantity = new_quantity;
         } else {
             self.positions.push(Position {
@@ -130,7 +125,8 @@ impl Portfolio {
 
         let sale_proceeds = price * quantity;
         let cost_basis = position.average_cost * quantity;
-        let profit = sale_proceeds - cost_basis;
+        let profit = (sale_proceeds - cost_basis)
+            .map_err(|_| InvestmentError::InvariantViolation("currency mismatch".into()))?;
 
         position.quantity -= quantity;
 
@@ -145,14 +141,14 @@ impl Portfolio {
     ///
     /// Returns `None` if the portfolio has no positions with available prices.
     pub fn total_value(&self, prices: &std::collections::HashMap<AssetID, Money>) -> Option<Money> {
-        let mut total = None;
+        let mut total: Option<Money> = None;
 
         for position in &self.positions {
             if let Some(price) = prices.get(&position.asset_id) {
                 let value = *price * position.quantity;
                 total = Some(match total {
                     None => value,
-                    Some(t) => t + value,
+                    Some(t) => t.checked_add(value).unwrap(),
                 });
             }
         }
@@ -162,13 +158,13 @@ impl Portfolio {
 
     /// Returns the total amount invested (cost basis) across all positions.
     pub fn total_invested(&self) -> Option<Money> {
-        let mut total = None;
+        let mut total: Option<Money> = None;
 
         for position in &self.positions {
             let cost = position.average_cost * position.quantity;
             total = Some(match total {
                 None => cost,
-                Some(t) => t + cost,
+                Some(t) => t.checked_add(cost).unwrap(),
             });
         }
 
@@ -181,13 +177,15 @@ mod tests {
     use super::*;
     use crate::shared::ids::{AssetID, PortfolioID, UserID};
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
+    use rust_decimal::prelude::ToPrimitive;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     fn usd(amount: i64) -> Money {
-        Money::new(amount, Currency::USD)
+        Money::from_cents(amount, Currency::USD)
     }
 
     #[test]
@@ -222,8 +220,8 @@ mod tests {
 
         let pos = &portfolio.positions[0];
         assert_eq!(pos.quantity, Decimal::from(15));
-        // avg = (10*2500 + 5*3000) / 15 = 40000/15 = 2666.666... → 2666
-        assert_eq!(pos.average_cost.amount(), 2666);
+        // avg = (10*25.00 + 5*30.00) / 15 = 400.00/15 = 26.6666...
+        assert!((pos.average_cost.amount().to_f64().unwrap() - 26.6667).abs() < 0.01);
     }
 
     #[test]
@@ -258,8 +256,8 @@ mod tests {
             .record_sell(asset_id, Decimal::from(5), brl(3000))
             .unwrap();
 
-        // profit = (3000 - 2500) * 5 = 2500
-        assert_eq!(profit.amount(), 2500);
+        // profit = (30.00 - 25.00) * 5 = 25.00
+        assert_eq!(profit.amount(), Decimal::from(25));
 
         let pos = &portfolio.positions[0];
         assert_eq!(pos.quantity, Decimal::from(5));
@@ -318,8 +316,8 @@ mod tests {
         prices.insert(a2, brl(4800));
 
         let total = portfolio.total_value(&prices).unwrap();
-        // 10*3000 + 5*4800 = 30000 + 24000 = 54000
-        assert_eq!(total.amount(), 54000);
+        // 10*30.00 + 5*48.00 = 540.00
+        assert_eq!(total.amount(), Decimal::from(540));
     }
 
     #[test]
@@ -332,7 +330,7 @@ mod tests {
             .unwrap();
 
         let invested = portfolio.total_invested().unwrap();
-        assert_eq!(invested.amount(), 25000);
+        assert_eq!(invested.amount(), Decimal::from(250));
     }
 
     #[test]

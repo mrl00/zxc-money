@@ -72,7 +72,7 @@ mod tests {
     fn sample_raw(date: &str, amount_cents: i64) -> RawTransaction {
         RawTransaction {
             date: chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").unwrap(),
-            amount: Money::new(amount_cents, Currency::BRL),
+            amount: Money::from_cents(amount_cents, Currency::BRL),
             description: "test".into(),
             raw_line: format!("{date},{amount_cents},test"),
         }

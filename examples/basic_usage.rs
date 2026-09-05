@@ -22,7 +22,7 @@ async fn main() {
         "Nubank Checking".into(),
         AccountType::Checking,
         Currency::BRL,
-        Money::new(1_000_00, Currency::BRL), // R$ 1.000,00
+        Money::from_cents(1_000_00, Currency::BRL), // R$ 1.000,00
     )
     .unwrap();
 
@@ -34,7 +34,7 @@ async fn main() {
         TransactionID::new(),
         account.id,
         TransactionType::Income,
-        Money::new(8_000_00, Currency::BRL), // R$ 8.000,00
+        Money::from_cents(8_000_00, Currency::BRL), // R$ 8.000,00
         "Monthly Salary".into(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
     )
@@ -51,7 +51,7 @@ async fn main() {
         TransactionID::new(),
         account.id,
         TransactionType::Expense,
-        Money::new(450_00, Currency::BRL), // R$ 450,00
+        Money::from_cents(450_00, Currency::BRL), // R$ 450,00
         "Supermarket".into(),
         chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
     )

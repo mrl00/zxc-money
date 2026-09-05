@@ -75,7 +75,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(amount, Currency::BRL),
+            amount: Money::from_cents(amount, Currency::BRL),
             category_id: Some(CategoryID::new()),
             description: desc.into(),
             date,

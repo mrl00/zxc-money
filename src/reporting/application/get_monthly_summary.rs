@@ -41,11 +41,11 @@ impl GetMonthlySummaryHandler {
         let mut total_expense = Money::zero(crate::shared::money::Currency::BRL);
 
         for entry in &entries {
-            total_income = total_income + entry.income;
-            total_expense = total_expense + entry.expense;
+            total_income = (total_income + entry.income).unwrap();
+            total_expense = (total_expense + entry.expense).unwrap();
         }
 
-        let balance = total_income - total_expense;
+        let balance = (total_income - total_expense).unwrap();
 
         MonthlySummary {
             year: query.year,
@@ -76,7 +76,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::new(5000_00, Currency::BRL),
+                amount: Money::from_cents(5000_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date,
@@ -90,7 +90,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::new(1500_00, Currency::BRL),
+                amount: Money::from_cents(1500_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Rent".into(),
                 date,
@@ -103,9 +103,18 @@ mod tests {
             year: 2026,
             month: 1,
         });
-        assert_eq!(summary.total_income.amount(), 5000_00);
-        assert_eq!(summary.total_expense.amount(), 1500_00);
-        assert_eq!(summary.balance.amount(), 3500_00);
+        assert_eq!(
+            summary.total_income.amount(),
+            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            summary.total_expense.amount(),
+            rust_decimal::Decimal::from(1500_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            summary.balance.amount(),
+            rust_decimal::Decimal::from(3500_00) / rust_decimal::Decimal::from(100)
+        );
     }
 
     #[test]

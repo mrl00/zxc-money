@@ -101,7 +101,7 @@ impl BillCalendarStore {
     /// non-`None` amount. Results are sorted chronologically.
     pub fn daily_totals(&self, year: i32, month: u32) -> Vec<DayBillTotal> {
         let entries = self.entries.lock().unwrap();
-        let mut totals: HashMap<NaiveDate, i64> = HashMap::new();
+        let mut totals: HashMap<NaiveDate, rust_decimal::Decimal> = HashMap::new();
 
         for entry in entries.values() {
             if entry.due_date.year() == year
@@ -109,7 +109,9 @@ impl BillCalendarStore {
                 && entry.status == BillStatus::Pending
                 && let Some(amount) = entry.amount
             {
-                *totals.entry(entry.due_date).or_insert(0) += amount.amount();
+                *totals
+                    .entry(entry.due_date)
+                    .or_insert(rust_decimal::Decimal::ZERO) += amount.amount();
             }
         }
 
@@ -170,7 +172,7 @@ mod tests {
         let event = make_event(
             id,
             "Rent",
-            Some(Money::new(1500_00, Currency::BRL)),
+            Some(Money::from_cents(1500_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 3, 5).unwrap(),
         );
 
@@ -189,7 +191,7 @@ mod tests {
         let event = make_event(
             id,
             "Internet",
-            Some(Money::new(99_90, Currency::BRL)),
+            Some(Money::from_cents(99_90, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
         );
 
@@ -197,7 +199,7 @@ mod tests {
 
         let paid = BillPaid {
             bill_id: id,
-            amount: Some(Money::new(99_90, Currency::BRL)),
+            amount: Some(Money::from_cents(99_90, Currency::BRL)),
             account_id: crate::shared::ids::AccountID::new(),
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -245,19 +247,19 @@ mod tests {
         store.handle_bill_scheduled(&make_event(
             id1,
             "Paid bill",
-            Some(Money::new(100_00, Currency::BRL)),
+            Some(Money::from_cents(100_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
             id2,
             "Pending bill",
-            Some(Money::new(200_00, Currency::BRL)),
+            Some(Money::from_cents(200_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
         ));
 
         let paid = BillPaid {
             bill_id: id1,
-            amount: Some(Money::new(100_00, Currency::BRL)),
+            amount: Some(Money::from_cents(100_00, Currency::BRL)),
             account_id: crate::shared::ids::AccountID::new(),
             category_id: CategoryID::new(),
             timestamp: chrono::Utc::now(),
@@ -266,7 +268,7 @@ mod tests {
 
         let totals = store.daily_totals(2026, 4);
         assert_eq!(totals.len(), 1);
-        assert_eq!(totals[0].total, Money::new(200_00, Currency::BRL));
+        assert_eq!(totals[0].total, Money::from_cents(200_00, Currency::BRL));
     }
 
     #[test]
@@ -275,26 +277,26 @@ mod tests {
         store.handle_bill_scheduled(&make_event(
             BillID::new(),
             "Bill A",
-            Some(Money::new(50_00, Currency::BRL)),
+            Some(Money::from_cents(50_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 10).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
             BillID::new(),
             "Bill B",
-            Some(Money::new(75_00, Currency::BRL)),
+            Some(Money::from_cents(75_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 10).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
             BillID::new(),
             "Bill C",
-            Some(Money::new(30_00, Currency::BRL)),
+            Some(Money::from_cents(30_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 5, 15).unwrap(),
         ));
 
         let totals = store.daily_totals(2026, 5);
         assert_eq!(totals.len(), 2);
-        assert_eq!(totals[0].total, Money::new(125_00, Currency::BRL));
-        assert_eq!(totals[1].total, Money::new(30_00, Currency::BRL));
+        assert_eq!(totals[0].total, Money::from_cents(125_00, Currency::BRL));
+        assert_eq!(totals[1].total, Money::from_cents(30_00, Currency::BRL));
     }
 
     #[test]
@@ -358,13 +360,13 @@ mod tests {
         store.handle_bill_scheduled(&make_event(
             BillID::new(),
             "Later",
-            Some(Money::new(100_00, Currency::BRL)),
+            Some(Money::from_cents(100_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 6, 20).unwrap(),
         ));
         store.handle_bill_scheduled(&make_event(
             BillID::new(),
             "Earlier",
-            Some(Money::new(50_00, Currency::BRL)),
+            Some(Money::from_cents(50_00, Currency::BRL)),
             chrono::NaiveDate::from_ymd_opt(2026, 6, 5).unwrap(),
         ));
 

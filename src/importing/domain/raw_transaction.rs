@@ -26,7 +26,7 @@ mod tests {
     fn sample_raw() -> RawTransaction {
         RawTransaction {
             date: NaiveDate::from_ymd_opt(2026, 3, 15).unwrap(),
-            amount: Money::new(-2500, Currency::BRL),
+            amount: Money::from_cents(-2500, Currency::BRL),
             description: "Supermarket".into(),
             raw_line: "15/03/2026,-25.00,Supermarket".into(),
         }
@@ -36,7 +36,7 @@ mod tests {
     fn test_raw_transaction_creation() {
         let raw = sample_raw();
         assert_eq!(raw.date, NaiveDate::from_ymd_opt(2026, 3, 15).unwrap());
-        assert_eq!(raw.amount, Money::new(-2500, Currency::BRL));
+        assert_eq!(raw.amount, Money::from_cents(-2500, Currency::BRL));
         assert_eq!(raw.description, "Supermarket");
     }
 
@@ -51,7 +51,7 @@ mod tests {
     fn test_raw_transaction_positive_amount() {
         let raw = RawTransaction {
             date: NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
-            amount: Money::new(50000, Currency::BRL),
+            amount: Money::from_cents(50000, Currency::BRL),
             description: "Salary".into(),
             raw_line: "01/01/2026,500.00,Salary".into(),
         };

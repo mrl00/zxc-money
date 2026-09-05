@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rust_decimal::prelude::ToPrimitive;
+
 use crate::budgeting::application::annual_budget::{
     CreateAnnualBudgetCommand, CreateAnnualBudgetHandler,
 };
@@ -145,7 +147,9 @@ impl<B: BudgetRepository, G: GoalRepository, P: EventPublisher, Id: IdGenerator>
             let pct = if g.target_amount.is_zero() {
                 0.0
             } else {
-                (g.current_amount.amount() as f64 / g.target_amount.amount() as f64) * 100.0
+                (g.current_amount.amount().to_f64().unwrap_or(0.0)
+                    / g.target_amount.amount().to_f64().unwrap_or(1.0))
+                    * 100.0
             };
             let remaining = g
                 .target_amount

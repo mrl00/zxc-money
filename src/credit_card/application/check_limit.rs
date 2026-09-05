@@ -1,3 +1,6 @@
+use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
+
 use crate::credit_card::domain::card::CreditCard;
 use crate::credit_card::domain::repository::InvoiceRepository;
 use crate::shared::errors::CreditCardError;
@@ -53,8 +56,8 @@ impl<I: InvoiceRepository> CreditCardService<I> {
 
         let available = card.available_limit(used)?;
         let limit_amount = card.limit.amount();
-        let utilization_pct = if limit_amount > 0 {
-            (used.amount() as f64 / limit_amount as f64) * 100.0
+        let utilization_pct = if limit_amount > Decimal::ZERO {
+            (used.amount().to_f64().unwrap_or(0.0) / limit_amount.to_f64().unwrap_or(1.0)) * 100.0
         } else {
             0.0
         };
@@ -113,7 +116,7 @@ mod tests {
             UserID::new(),
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(limit_cents, Currency::BRL),
+            Money::from_cents(limit_cents, Currency::BRL),
             20,
             27,
         )
@@ -127,8 +130,8 @@ mod tests {
         let card = make_card(1000000);
         let summary = service.summary(&card).await.unwrap();
 
-        assert_eq!(summary.used, Money::new(0, Currency::BRL));
-        assert_eq!(summary.available, Money::new(1000000, Currency::BRL));
+        assert_eq!(summary.used, Money::zero(Currency::BRL));
+        assert_eq!(summary.available, Money::from_cents(1000000, Currency::BRL));
         assert_eq!(summary.utilization_pct, 0.0);
     }
 
@@ -142,7 +145,7 @@ mod tests {
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
                 "Netflix".into(),
-                Money::new(5000, Currency::BRL),
+                Money::from_cents(5000, Currency::BRL),
                 1,
                 CategoryID::new(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -152,7 +155,7 @@ mod tests {
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
                 "Spotify".into(),
-                Money::new(3000, Currency::BRL),
+                Money::from_cents(3000, Currency::BRL),
                 1,
                 CategoryID::new(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -167,14 +170,14 @@ mod tests {
             UserID::new(),
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(1000000, Currency::BRL),
+            Money::from_cents(1000000, Currency::BRL),
             20,
             27,
         );
         let summary = service.summary(&card).await.unwrap();
 
-        assert_eq!(summary.used, Money::new(8000, Currency::BRL));
-        assert_eq!(summary.available, Money::new(992000, Currency::BRL));
+        assert_eq!(summary.used, Money::from_cents(8000, Currency::BRL));
+        assert_eq!(summary.available, Money::from_cents(992000, Currency::BRL));
         assert!((summary.utilization_pct - 0.8).abs() < 0.01);
     }
 
@@ -188,7 +191,7 @@ mod tests {
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
                 "Coffee".into(),
-                Money::new(5000, Currency::BRL),
+                Money::from_cents(5000, Currency::BRL),
                 1,
                 CategoryID::new(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -203,7 +206,7 @@ mod tests {
             UserID::new(),
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(1000000, Currency::BRL),
+            Money::from_cents(1000000, Currency::BRL),
             20,
             27,
         );
@@ -221,7 +224,7 @@ mod tests {
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
                 "TV".into(),
-                Money::new(900000, Currency::BRL),
+                Money::from_cents(900000, Currency::BRL),
                 1,
                 CategoryID::new(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -236,7 +239,7 @@ mod tests {
             UserID::new(),
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(1000000, Currency::BRL),
+            Money::from_cents(1000000, Currency::BRL),
             20,
             27,
         );
@@ -254,7 +257,7 @@ mod tests {
             .add_purchase(Purchase::new(
                 PurchaseID::new(),
                 "Everything".into(),
-                Money::new(1000000, Currency::BRL),
+                Money::from_cents(1000000, Currency::BRL),
                 1,
                 CategoryID::new(),
                 chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -269,7 +272,7 @@ mod tests {
             UserID::new(),
             "Nubank".into(),
             "Mastercard".into(),
-            Money::new(1000000, Currency::BRL),
+            Money::from_cents(1000000, Currency::BRL),
             20,
             27,
         );

@@ -47,11 +47,11 @@ impl GetMonthComparisonHandler {
         let mut total_expense = Money::zero(crate::shared::money::Currency::BRL);
 
         for entry in &entries {
-            total_income = total_income + entry.income;
-            total_expense = total_expense + entry.expense;
+            total_income = (total_income + entry.income).unwrap();
+            total_expense = (total_expense + entry.expense).unwrap();
         }
 
-        let balance = total_income - total_expense;
+        let balance = (total_income - total_expense).unwrap();
 
         MonthSummary {
             year,
@@ -82,7 +82,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::new(5000_00, Currency::BRL),
+                amount: Money::from_cents(5000_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Salary".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -96,7 +96,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::new(3000_00, Currency::BRL),
+                amount: Money::from_cents(3000_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Rent".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 1, 10).unwrap(),
@@ -111,7 +111,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Income,
-                amount: Money::new(6000_00, Currency::BRL),
+                amount: Money::from_cents(6000_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Bonus".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 2, 10).unwrap(),
@@ -125,7 +125,7 @@ mod tests {
                 transaction_id: TransactionID::new(),
                 account_id: AccountID::new(),
                 tx_type: TransactionType::Expense,
-                amount: Money::new(2000_00, Currency::BRL),
+                amount: Money::from_cents(2000_00, Currency::BRL),
                 category_id: Some(CategoryID::new()),
                 description: "Food".into(),
                 date: chrono::NaiveDate::from_ymd_opt(2026, 2, 20).unwrap(),
@@ -139,13 +139,31 @@ mod tests {
             right: (2026, 2),
         });
 
-        assert_eq!(jan.total_income.amount(), 5000_00);
-        assert_eq!(jan.total_expense.amount(), 3000_00);
-        assert_eq!(jan.balance.amount(), 2000_00);
+        assert_eq!(
+            jan.total_income.amount(),
+            rust_decimal::Decimal::from(5000_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            jan.total_expense.amount(),
+            rust_decimal::Decimal::from(3000_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            jan.balance.amount(),
+            rust_decimal::Decimal::from(2000_00) / rust_decimal::Decimal::from(100)
+        );
 
-        assert_eq!(feb.total_income.amount(), 6000_00);
-        assert_eq!(feb.total_expense.amount(), 2000_00);
-        assert_eq!(feb.balance.amount(), 4000_00);
+        assert_eq!(
+            feb.total_income.amount(),
+            rust_decimal::Decimal::from(6000_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            feb.total_expense.amount(),
+            rust_decimal::Decimal::from(2000_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            feb.balance.amount(),
+            rust_decimal::Decimal::from(4000_00) / rust_decimal::Decimal::from(100)
+        );
     }
 
     #[test]

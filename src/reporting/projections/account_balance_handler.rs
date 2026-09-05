@@ -50,10 +50,10 @@ impl AccountBalanceProjectionStore {
             if let Some(projection) = projections.get_mut(&e.account_id) {
                 match e.tx_type {
                     TransactionType::Income => {
-                        projection.balance = projection.balance + e.amount;
+                        projection.balance = (projection.balance + e.amount).unwrap();
                     }
                     TransactionType::Expense => {
-                        projection.balance = projection.balance - e.amount;
+                        projection.balance = (projection.balance - e.amount).unwrap();
                     }
                     TransactionType::Transfer => {
                         // Transfers are handled by TransferCompleted to avoid double-counting
@@ -73,11 +73,11 @@ impl AccountBalanceProjectionStore {
         if let Some(e) = event.as_any().downcast_ref::<TransferCompleted>() {
             let mut projections = self.projections.lock().unwrap();
             if let Some(from) = projections.get_mut(&e.from_account_id) {
-                from.balance = from.balance - e.amount;
+                from.balance = (from.balance - e.amount).unwrap();
                 from.last_updated = chrono::Utc::now();
             }
             if let Some(to) = projections.get_mut(&e.to_account_id) {
-                to.balance = to.balance + e.amount;
+                to.balance = (to.balance + e.amount).unwrap();
                 to.last_updated = chrono::Utc::now();
             }
         }
@@ -120,17 +120,17 @@ mod tests {
             owner_id: UserID::new(),
             name: "Test".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(1000, Currency::BRL),
+            opening_balance: Money::from_cents(1000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         };
 
         store.handle_event(&event);
 
         let projection = store.get(account_id).unwrap();
-        assert_eq!(projection.balance, Money::new(1000, Currency::BRL));
+        assert_eq!(projection.balance, Money::from_cents(1000, Currency::BRL));
         assert_eq!(
             projection.reconciled_balance,
-            Money::new(1000, Currency::BRL)
+            Money::from_cents(1000, Currency::BRL)
         );
     }
 
@@ -144,7 +144,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Test".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(1000, Currency::BRL),
+            opening_balance: Money::from_cents(1000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
@@ -152,7 +152,7 @@ mod tests {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id,
             tx_type: TransactionType::Income,
-            amount: Money::new(500, Currency::BRL),
+            amount: Money::from_cents(500, Currency::BRL),
             category_id: Some(crate::shared::ids::CategoryID::new()),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -160,7 +160,7 @@ mod tests {
         });
 
         let projection = store.get(account_id).unwrap();
-        assert_eq!(projection.balance, Money::new(1500, Currency::BRL));
+        assert_eq!(projection.balance, Money::from_cents(1500, Currency::BRL));
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Test".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(1000, Currency::BRL),
+            opening_balance: Money::from_cents(1000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
@@ -181,7 +181,7 @@ mod tests {
             transaction_id: crate::shared::ids::TransactionID::new(),
             account_id,
             tx_type: TransactionType::Expense,
-            amount: Money::new(200, Currency::BRL),
+            amount: Money::from_cents(200, Currency::BRL),
             category_id: Some(crate::shared::ids::CategoryID::new()),
             description: "Food".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -189,7 +189,7 @@ mod tests {
         });
 
         let projection = store.get(account_id).unwrap();
-        assert_eq!(projection.balance, Money::new(800, Currency::BRL));
+        assert_eq!(projection.balance, Money::from_cents(800, Currency::BRL));
     }
 
     #[test]
@@ -203,7 +203,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "From".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(1000, Currency::BRL),
+            opening_balance: Money::from_cents(1000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
         store.handle_event(&AccountOpened {
@@ -211,24 +211,24 @@ mod tests {
             owner_id: UserID::new(),
             name: "To".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(500, Currency::BRL),
+            opening_balance: Money::from_cents(500, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
         store.handle_event(&TransferCompleted {
             from_account_id: from_id,
             to_account_id: to_id,
-            amount: Money::new(300, Currency::BRL),
+            amount: Money::from_cents(300, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
 
         assert_eq!(
             store.get(from_id).unwrap().balance,
-            Money::new(700, Currency::BRL)
+            Money::from_cents(700, Currency::BRL)
         );
         assert_eq!(
             store.get(to_id).unwrap().balance,
-            Money::new(800, Currency::BRL)
+            Money::from_cents(800, Currency::BRL)
         );
     }
 
@@ -242,7 +242,7 @@ mod tests {
             owner_id: UserID::new(),
             name: "Test".into(),
             currency: Currency::BRL,
-            opening_balance: Money::new(1000, Currency::BRL),
+            opening_balance: Money::from_cents(1000, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
         assert!(store.get(account_id).is_some());

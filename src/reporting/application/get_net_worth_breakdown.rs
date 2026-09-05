@@ -38,12 +38,12 @@ impl GetNetWorthBreakdownHandler {
 
         let total_accounts: Money = accounts.iter().fold(
             Money::zero(crate::shared::money::Currency::BRL),
-            |acc, &(_, m)| acc + m,
+            |acc, &(_, m)| (acc + m).unwrap(),
         );
 
         let total_investments: Money = investments.iter().fold(
             Money::zero(crate::shared::money::Currency::BRL),
-            |acc, &(_, m)| acc + m,
+            |acc, &(_, m)| (acc + m).unwrap(),
         );
 
         NetWorthBreakdown {
@@ -64,7 +64,7 @@ mod tests {
     use crate::shared::money::{Currency, Money};
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     #[test]
@@ -95,7 +95,10 @@ mod tests {
 
         let breakdown = handler.handle(GetNetWorthBreakdownQuery);
         assert_eq!(breakdown.accounts.len(), 2);
-        assert_eq!(breakdown.total_accounts.amount(), 15000_00);
+        assert_eq!(
+            breakdown.total_accounts.amount(),
+            rust_decimal::Decimal::from(15000_00) / rust_decimal::Decimal::from(100)
+        );
         assert!(breakdown.investments.is_empty());
     }
 
@@ -117,7 +120,10 @@ mod tests {
         let breakdown = handler.handle(GetNetWorthBreakdownQuery);
         assert!(breakdown.accounts.is_empty());
         assert_eq!(breakdown.investments.len(), 1);
-        assert_eq!(breakdown.total_investments.amount(), 250_00);
+        assert_eq!(
+            breakdown.total_investments.amount(),
+            rust_decimal::Decimal::from(250_00) / rust_decimal::Decimal::from(100)
+        );
     }
 
     #[test]

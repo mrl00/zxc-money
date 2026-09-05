@@ -93,7 +93,7 @@ mod tests {
     use crate::shared::money::Currency;
 
     fn brl(amount: i64) -> Money {
-        Money::new(amount, Currency::BRL)
+        Money::from_cents(amount, Currency::BRL)
     }
 
     async fn setup_with_position() -> Arc<MockPortfolioRepository> {

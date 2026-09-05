@@ -44,7 +44,7 @@ mod tests {
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
             name: "Due tomorrow".into(),
-            amount: Some(Money::new(50_00, Currency::BRL)),
+            amount: Some(Money::from_cents(50_00, Currency::BRL)),
             due_date: today + chrono::Duration::days(1),
             timestamp: chrono::Utc::now(),
         });
@@ -52,7 +52,7 @@ mod tests {
         store.handle_bill_scheduled(&BillScheduled {
             bill_id: BillID::new(),
             name: "Due in 30 days".into(),
-            amount: Some(Money::new(100_00, Currency::BRL)),
+            amount: Some(Money::from_cents(100_00, Currency::BRL)),
             due_date: today + chrono::Duration::days(30),
             timestamp: chrono::Utc::now(),
         });

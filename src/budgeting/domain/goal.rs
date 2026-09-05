@@ -1,4 +1,5 @@
 use chrono::{DateTime, NaiveDate, Utc};
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 
 use crate::shared::errors::BudgetingError;
@@ -113,7 +114,9 @@ impl FinancialGoal {
         if self.target_amount.is_zero() {
             return 100.0;
         }
-        (self.current_amount.amount() as f64 / self.target_amount.amount() as f64) * 100.0
+        (self.current_amount.amount().to_f64().unwrap_or(0.0)
+            / self.target_amount.amount().to_f64().unwrap_or(1.0))
+            * 100.0
     }
 }
 
@@ -122,13 +125,14 @@ mod tests {
     use super::*;
     use crate::shared::ids::{GoalID, UserID};
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
 
     fn sample_goal() -> FinancialGoal {
         FinancialGoal::new(
             GoalID::new(),
             UserID::new(),
             "Emergency Fund".into(),
-            Money::new(10_000_00, Currency::BRL),
+            Money::from_cents(10_000_00, Currency::BRL),
             NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         )
     }
@@ -144,8 +148,9 @@ mod tests {
     #[test]
     fn test_goal_contribute_partial() {
         let mut g = sample_goal();
-        g.contribute(Money::new(5_000_00, Currency::BRL)).unwrap();
-        assert_eq!(g.current_amount.amount(), 5_000_00);
+        g.contribute(Money::from_cents(5_000_00, Currency::BRL))
+            .unwrap();
+        assert_eq!(g.current_amount.amount(), Decimal::from(5000));
         assert_eq!(g.status, GoalStatus::InProgress);
         assert!((g.progress() - 50.0).abs() < f64::EPSILON);
     }
@@ -153,7 +158,8 @@ mod tests {
     #[test]
     fn test_goal_contribute_exact_target() {
         let mut g = sample_goal();
-        g.contribute(Money::new(10_000_00, Currency::BRL)).unwrap();
+        g.contribute(Money::from_cents(10_000_00, Currency::BRL))
+            .unwrap();
         assert_eq!(g.status, GoalStatus::Achieved);
         assert!((g.progress() - 100.0).abs() < f64::EPSILON);
     }
@@ -161,15 +167,17 @@ mod tests {
     #[test]
     fn test_goal_contribute_over_target() {
         let mut g = sample_goal();
-        g.contribute(Money::new(12_000_00, Currency::BRL)).unwrap();
+        g.contribute(Money::from_cents(12_000_00, Currency::BRL))
+            .unwrap();
         assert_eq!(g.status, GoalStatus::Achieved);
     }
 
     #[test]
     fn test_goal_contribute_when_achieved_fails() {
         let mut g = sample_goal();
-        g.contribute(Money::new(10_000_00, Currency::BRL)).unwrap();
-        let result = g.contribute(Money::new(1_000_00, Currency::BRL));
+        g.contribute(Money::from_cents(10_000_00, Currency::BRL))
+            .unwrap();
+        let result = g.contribute(Money::from_cents(1_000_00, Currency::BRL));
         assert!(result.is_err());
     }
 
@@ -177,7 +185,7 @@ mod tests {
     fn test_goal_contribute_when_abandoned_fails() {
         let mut g = sample_goal();
         g.abandon().unwrap();
-        let result = g.contribute(Money::new(1_000_00, Currency::BRL));
+        let result = g.contribute(Money::from_cents(1_000_00, Currency::BRL));
         assert!(result.is_err());
     }
 
@@ -191,18 +199,19 @@ mod tests {
     #[test]
     fn test_goal_abandon_when_achieved_fails() {
         let mut g = sample_goal();
-        g.contribute(Money::new(10_000_00, Currency::BRL)).unwrap();
+        g.contribute(Money::from_cents(10_000_00, Currency::BRL))
+            .unwrap();
         let result = g.abandon();
         assert!(result.is_err());
     }
 
     #[test]
     fn test_goal_progress_zero_target() {
-        let mut g = FinancialGoal::new(
+        let g = FinancialGoal::new(
             GoalID::new(),
             UserID::new(),
             "Zero Goal".into(),
-            Money::new(0, Currency::BRL),
+            Money::zero(Currency::BRL),
             NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
         );
         assert!((g.progress() - 100.0).abs() < f64::EPSILON);
@@ -213,7 +222,8 @@ mod tests {
     #[test]
     fn test_goal_progress_calculation() {
         let mut g = sample_goal();
-        g.contribute(Money::new(3_000_00, Currency::BRL)).unwrap();
+        g.contribute(Money::from_cents(3_000_00, Currency::BRL))
+            .unwrap();
         assert!((g.progress() - 30.0).abs() < f64::EPSILON);
     }
 

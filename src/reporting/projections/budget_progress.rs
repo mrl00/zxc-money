@@ -9,6 +9,7 @@ use crate::shared::events::DomainEvent;
 use crate::shared::ids::CategoryID;
 use crate::shared::money::Money;
 use crate::shared::period::Period;
+use rust_decimal::prelude::ToPrimitive;
 
 /// Key for budget progress: (category, period).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -66,7 +67,7 @@ impl BudgetProgressStore {
                 is_over: false,
             });
             entry.planned = e.planned_amount;
-            entry.remaining = entry.planned - entry.spent;
+            entry.remaining = (entry.planned - entry.spent).unwrap();
             entry.is_over = entry.spent.amount() > entry.planned.amount();
         }
 
@@ -89,12 +90,13 @@ impl BudgetProgressStore {
                     pct_used: 0.0,
                     is_over: false,
                 });
-                entry.spent = entry.spent + e.amount;
-                entry.remaining = entry.planned - entry.spent;
+                entry.spent = (entry.spent + e.amount).unwrap();
+                entry.remaining = (entry.planned - entry.spent).unwrap();
                 entry.is_over = entry.spent.amount() > entry.planned.amount();
-                if entry.planned.amount() > 0 {
-                    entry.pct_used =
-                        (entry.spent.amount() as f64 / entry.planned.amount() as f64) * 100.0;
+                if entry.planned.amount() > rust_decimal::Decimal::ZERO {
+                    entry.pct_used = (entry.spent.amount().to_f64().unwrap()
+                        / entry.planned.amount().to_f64().unwrap())
+                        * 100.0;
                 }
             }
         }
@@ -120,7 +122,7 @@ mod tests {
         store.handle_event(&BudgetDefined {
             budget_id: crate::shared::ids::BudgetID::new(),
             category_id: cat,
-            planned_amount: Money::new(planned, Currency::BRL),
+            planned_amount: Money::from_cents(planned, Currency::BRL),
             timestamp: chrono::Utc::now(),
         });
     }
@@ -134,7 +136,10 @@ mod tests {
         define_budget(&store, cat, 1000_00);
 
         let progress = store.get(cat, period).unwrap();
-        assert_eq!(progress.planned.amount(), 1000_00);
+        assert_eq!(
+            progress.planned.amount(),
+            rust_decimal::Decimal::from(1000_00) / rust_decimal::Decimal::from(100)
+        );
         assert!(progress.spent.is_zero());
     }
 
@@ -150,7 +155,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(300_00, Currency::BRL),
+            amount: Money::from_cents(300_00, Currency::BRL),
             category_id: Some(cat),
             description: "Food".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -158,8 +163,14 @@ mod tests {
         });
 
         let progress = store.get(cat, period).unwrap();
-        assert_eq!(progress.spent.amount(), 300_00);
-        assert_eq!(progress.remaining.amount(), 700_00);
+        assert_eq!(
+            progress.spent.amount(),
+            rust_decimal::Decimal::from(300_00) / rust_decimal::Decimal::from(100)
+        );
+        assert_eq!(
+            progress.remaining.amount(),
+            rust_decimal::Decimal::from(700_00) / rust_decimal::Decimal::from(100)
+        );
         assert!(!progress.is_over);
         assert!((progress.pct_used - 30.0).abs() < f64::EPSILON);
     }
@@ -176,7 +187,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(600_00, Currency::BRL),
+            amount: Money::from_cents(600_00, Currency::BRL),
             category_id: Some(cat),
             description: "Big purchase".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 20).unwrap(),
@@ -185,7 +196,10 @@ mod tests {
 
         let progress = store.get(cat, period).unwrap();
         assert!(progress.is_over);
-        assert_eq!(progress.spent.amount(), 600_00);
+        assert_eq!(
+            progress.spent.amount(),
+            rust_decimal::Decimal::from(600_00) / rust_decimal::Decimal::from(100)
+        );
     }
 
     #[test]
@@ -200,7 +214,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Income,
-            amount: Money::new(5000_00, Currency::BRL),
+            amount: Money::from_cents(5000_00, Currency::BRL),
             category_id: Some(cat),
             description: "Salary".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
@@ -222,7 +236,7 @@ mod tests {
             transaction_id: TransactionID::new(),
             account_id: crate::shared::ids::AccountID::new(),
             tx_type: TransactionType::Expense,
-            amount: Money::new(100_00, Currency::BRL),
+            amount: Money::from_cents(100_00, Currency::BRL),
             category_id: None,
             description: "Uncategorized".into(),
             date: chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),

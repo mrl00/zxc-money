@@ -103,6 +103,7 @@ mod tests {
     use crate::shared::events::InMemoryEventDispatcher;
     use crate::shared::mock::MockBudgetRepository;
     use crate::shared::money::{Currency, Money};
+    use rust_decimal::Decimal;
     use std::sync::Arc;
 
     fn setup() -> (
@@ -125,13 +126,13 @@ mod tests {
             owner_id: UserID::new(),
             category_id: CategoryID::new(),
             year: 2026,
-            monthly_amount: Money::new(500_00, Currency::BRL),
+            monthly_amount: Money::from_cents(500_00, Currency::BRL),
         };
 
         let ids = handler.handle(cmd).await.unwrap();
         assert_eq!(ids.len(), 12);
 
-        let owner_ids = budget_repo.find_by_owner(UserID::new()).await.unwrap();
+        let _owner_ids = budget_repo.find_by_owner(UserID::new()).await.unwrap();
         // MockGoalRepository uses find_by_owner with a new UserID, which won't match.
         // Let's just check the count via the repo directly.
     }
@@ -151,7 +152,7 @@ mod tests {
             owner_id,
             category_id,
             YearMonth::new(2026, 1).period(),
-            Money::new(500_00, Currency::BRL),
+            Money::from_cents(500_00, Currency::BRL),
         )
         .unwrap();
         budget_repo.save(&jan_budget).await.unwrap();
@@ -160,7 +161,7 @@ mod tests {
             owner_id,
             category_id,
             year: 2026,
-            monthly_amount: Money::new(500_00, Currency::BRL),
+            monthly_amount: Money::from_cents(500_00, Currency::BRL),
         };
 
         let ids = handler.handle(cmd).await.unwrap();
@@ -178,7 +179,7 @@ mod tests {
             owner_id: UserID::new(),
             category_id: CategoryID::new(),
             year: 2026,
-            monthly_amount: Money::new(1000_00, Currency::BRL),
+            monthly_amount: Money::from_cents(1000_00, Currency::BRL),
         };
 
         let ids = handler.handle(cmd).await.unwrap();
@@ -187,7 +188,7 @@ mod tests {
         // Verify each budget has the correct amount
         for &id in &ids {
             let budget = budget_repo.find_by_id(id).await.unwrap().unwrap();
-            assert_eq!(budget.planned_amount.amount(), 1000_00);
+            assert_eq!(budget.planned_amount.amount(), Decimal::from(1000));
         }
     }
 }

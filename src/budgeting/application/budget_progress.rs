@@ -1,3 +1,5 @@
+use rust_decimal::prelude::ToPrimitive;
+
 use crate::shared::ids::{BudgetID, CategoryID};
 use crate::shared::money::Money;
 use crate::shared::period::Period;
@@ -49,7 +51,9 @@ impl BudgetProgress {
         if self.planned.is_zero() {
             return if self.spent.is_zero() { 0.0 } else { 100.0 };
         }
-        (self.spent.amount() as f64 / self.planned.amount() as f64) * 100.0
+        (self.spent.amount().to_f64().unwrap_or(0.0)
+            / self.planned.amount().to_f64().unwrap_or(1.0))
+            * 100.0
     }
 }
 
@@ -90,11 +94,11 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::new(1000_00, Currency::BRL),
-            Money::new(500_00, Currency::BRL),
+            Money::from_cents(1000_00, Currency::BRL),
+            Money::from_cents(500_00, Currency::BRL),
         );
         assert!(!bp.is_over());
-        assert_eq!(bp.remaining().amount(), 500_00);
+        assert_eq!(bp.remaining().amount().to_i64().unwrap(), 500);
         assert!((bp.pct_used() - 50.0).abs() < f64::EPSILON);
     }
 
@@ -104,11 +108,11 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::new(1000_00, Currency::BRL),
-            Money::new(1000_00, Currency::BRL),
+            Money::from_cents(1000_00, Currency::BRL),
+            Money::from_cents(1000_00, Currency::BRL),
         );
         assert!(!bp.is_over());
-        assert_eq!(bp.remaining().amount(), 0);
+        assert_eq!(bp.remaining().amount().to_i64().unwrap(), 0);
         assert!((bp.pct_used() - 100.0).abs() < f64::EPSILON);
     }
 
@@ -118,8 +122,8 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::new(1000_00, Currency::BRL),
-            Money::new(1200_00, Currency::BRL),
+            Money::from_cents(1000_00, Currency::BRL),
+            Money::from_cents(1200_00, Currency::BRL),
         );
         assert!(bp.is_over());
         assert!((bp.pct_used() - 120.0).abs() < f64::EPSILON);
@@ -131,8 +135,8 @@ mod tests {
             BudgetID::new(),
             CategoryID::new(),
             sample_period(),
-            Money::new(0, Currency::BRL),
-            Money::new(0, Currency::BRL),
+            Money::zero(Currency::BRL),
+            Money::zero(Currency::BRL),
         );
         assert!(!bp.is_over());
         assert!((bp.pct_used()).abs() < f64::EPSILON);

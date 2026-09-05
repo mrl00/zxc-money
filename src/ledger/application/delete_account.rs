@@ -87,7 +87,7 @@ mod tests {
             "To Delete".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         account_repo.save(&account).await.unwrap();
@@ -111,7 +111,7 @@ mod tests {
             "Has Transactions".into(),
             AccountType::Checking,
             Currency::BRL,
-            Money::new(0, Currency::BRL),
+            Money::from_cents(0, Currency::BRL),
         )
         .unwrap();
         account_repo.save(&account).await.unwrap();
@@ -120,7 +120,7 @@ mod tests {
             crate::shared::ids::TransactionID::new(),
             account_id,
             TransactionType::Income,
-            Money::new(100, Currency::BRL),
+            Money::from_cents(100, Currency::BRL),
             "Salary".into(),
             chrono::NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
         )
